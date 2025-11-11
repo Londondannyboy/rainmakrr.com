@@ -403,7 +403,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     .companies-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(118, 75, 162, 0.85), rgba(0, 0, 0, 0.9));
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.75), rgba(102, 126, 234, 0.4), rgba(0, 0, 0, 0.85));
       z-index: 1;
     }
 
@@ -562,7 +562,26 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     /* Services Grid */
     .services-section {
       padding: 200px 60px;
-      background: #000;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(15, 10, 20, 1) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .services-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 30% 50%, rgba(102, 126, 234, 0.08), transparent 50%),
+                  radial-gradient(circle at 70% 50%, rgba(118, 75, 162, 0.08), transparent 50%);
+      z-index: 0;
+    }
+
+    .services-section > * {
+      position: relative;
+      z-index: 1;
     }
 
     .services-grid {
@@ -617,8 +636,31 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     /* CTA Section */
     .cta-section {
       padding: 200px 60px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      animation: pulse-slow 8s ease-in-out infinite;
+    }
+
+    @keyframes pulse-slow {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.3; }
+    }
+
+    .cta-section > * {
+      position: relative;
+      z-index: 1;
     }
 
     .cta-section h2 {
@@ -640,8 +682,20 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     /* Footer */
     footer {
       padding: 80px 60px 40px;
-      background: #000;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000 100%);
       border-top: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.05), transparent);
+      pointer-events: none;
     }
 
     .footer-content {
@@ -692,11 +746,15 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     }
 
     .content-section.dark {
-      background: #000;
+      background: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
     }
 
     .content-section.gradient {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15), rgba(0, 0, 0, 0.95));
+    }
+
+    .content-section.gradient-alt {
+      background: linear-gradient(225deg, rgba(118, 75, 162, 0.15), rgba(240, 147, 251, 0.1), rgba(0, 0, 0, 0.95));
     }
 
     .content-section.has-background {
@@ -722,6 +780,10 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       z-index: 1;
     }
 
+    .content-section.intro::before {
+      background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80');
+    }
+
     .content-section.top-agents::before {
       background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80');
     }
@@ -732,6 +794,16 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     .content-section.trends::before {
       background-image: url('https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=1920&q=80');
+    }
+
+    .content-section.why-use::before {
+      background-image: url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=1920&q=80');
+      opacity: 0.12;
+    }
+
+    .content-section.faq::before {
+      background-image: url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=80');
+      opacity: 0.12;
     }
 
     .content-section.animated {
@@ -1098,16 +1170,55 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     @media (max-width: 768px) {
       nav { padding: 20px; }
       .hero h1 { font-size: 42px; }
-      .stats-section, .companies-section, .services-section, .cta-section { padding: 100px 20px; }
+      .hero-subtitle { font-size: 16px; }
+
+      .stats-section, .companies-section, .services-section, .cta-section {
+        padding: 80px 20px;
+      }
+
+      .content-section {
+        padding: 60px 20px;
+      }
+
+      .section-title {
+        font-size: 32px;
+      }
+
+      .section-subtitle {
+        font-size: 16px;
+      }
+
       .companies-grid { grid-template-columns: 1fr; gap: 30px; }
       .portfolio-grid { grid-template-columns: 1fr; }
-      .portfolio-item { height: 60vh; }
+      .portfolio-item { height: 50vh; min-height: 300px; }
       .services-grid { grid-template-columns: 1fr; }
-      .content-section { padding: 80px 20px; }
       .agents-grid { grid-template-columns: 1fr; }
       .items-grid { grid-template-columns: 1fr; }
       .fee-row { grid-template-columns: 1fr; gap: 8px; }
       .fee-value { text-align: left; }
+
+      /* Make gradients more visible on mobile */
+      .content-section.gradient,
+      .content-section.gradient-alt {
+        background-size: 200% 200%;
+      }
+
+      /* Adjust background image opacity for mobile */
+      .content-section.has-background::before {
+        opacity: 0.1;
+      }
+
+      .fullwidth-image-section {
+        height: 60vh;
+      }
+
+      .cta-section h2 {
+        font-size: 36px;
+      }
+
+      .cta-section p {
+        font-size: 18px;
+      }
     }
   </style>
 </head>
@@ -1149,7 +1260,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- Intro Section -->
   {sections.intro && (
-    <section class="content-section dark animated">
+    <section class="content-section dark has-background intro animated">
       <h2 class="section-title">{sections.intro.title}</h2>
       {sections.intro.subtitle && <p class="section-subtitle">{sections.intro.subtitle}</p>}
 
@@ -1342,7 +1453,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- Selection Criteria Section -->
   {sections.selection && (
-    <section class="content-section gradient animated">
+    <section class="content-section gradient-alt animated">
       <h2 class="section-title">{sections.selection.title}</h2>
       {sections.selection.subtitle && <p class="section-subtitle">{sections.selection.subtitle}</p>}
 
@@ -1407,7 +1518,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- Why Use Section -->
   {sections.why_use && (
-    <section class="content-section gradient animated">
+    <section class="content-section gradient-alt has-background why-use animated">
       <h2 class="section-title">{sections.why_use.title}</h2>
       {sections.why_use.subtitle && <p class="section-subtitle">{sections.why_use.subtitle}</p>}
 
@@ -1424,7 +1535,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- FAQ Section -->
   {sections.faq && (
-    <section class="content-section dark animated">
+    <section class="content-section dark has-background faq animated">
       <h2 class="section-title">{sections.faq.title}</h2>
       {sections.faq.subtitle && <p class="section-subtitle">{sections.faq.subtitle}</p>}
 
@@ -1488,7 +1599,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- References Section -->
   {sections.references && (
-    <section class="content-section dark animated">
+    <section class="content-section gradient animated">
       <h2 class="section-title">{sections.references.title}</h2>
       {sections.references.subtitle && <p class="section-subtitle">{sections.references.subtitle}</p>}
 
