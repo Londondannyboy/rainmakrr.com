@@ -97,6 +97,49 @@ if (type === 'company' && company) {
   };
 }
 
+// Citations Schema for Homepage - E-E-A-T signals
+let citationSchema;
+if (type === 'homepage') {
+  citationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'Industry Rankings & Recognition',
+    description: 'Rankings and data from leading industry sources including Preqin, Private Equity International, and proprietary research',
+    citation: [
+      {
+        '@type': 'CreativeWork',
+        name: 'Preqin 2025 Service Provider Report',
+        url: 'https://www.preqin.com',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Preqin',
+          description: 'Leading provider of private capital data and intelligence',
+        },
+      },
+      {
+        '@type': 'CreativeWork',
+        name: 'Private Equity International Industry Analysis',
+        url: 'https://www.privateequityinternational.com',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Private Equity International',
+          description: 'Industry news, rankings, and market analysis',
+        },
+      },
+      {
+        '@type': 'CreativeWork',
+        name: 'Preqin League Tables 2018-2025',
+        url: 'https://www.gsequity.com/preqin',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Greenstone Equity Partners',
+          description: 'Preqin global rankings data for placement agents',
+        },
+      },
+    ],
+  };
+}
+
 let faqSchema;
 if (type === 'homepage') {
   faqSchema = {
@@ -146,3 +189,4 @@ if (type === 'homepage') {
 {articleSchema && <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />}
 {companySchema && <script type="application/ld+json" set:html={JSON.stringify(companySchema)} />}
 {faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />}
+{citationSchema && <script type="application/ld+json" set:html={JSON.stringify(citationSchema)} />}
