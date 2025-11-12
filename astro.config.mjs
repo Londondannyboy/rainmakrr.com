@@ -12,7 +12,9 @@ export default defineConfig({
     mode: 'standalone'
   }),
   integrations: [
-    tailwind(),
+    tailwind({
+      applyBaseStyles: false, // Prevent global CSS injection
+    }),
     cookieconsent({
       guiOptions: {
         consentModal: {
