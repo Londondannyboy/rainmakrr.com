@@ -99,14 +99,12 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
-  <!-- GSAP for animations -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-
-  <!-- HLS.js for Mux video -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- Defer GSAP and HLS.js to improve LCP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest" defer></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1267,7 +1265,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- Hero with Mux Video -->
   <section class="hero">
-    <video id="hero-video" class="hero-video" autoplay loop muted playsinline></video>
+    <video id="hero-video" class="hero-video" autoplay loop muted playsinline preload="none"></video>
     <div class="hero-overlay"></div>
 
     <div class="hero-content">
@@ -1346,14 +1344,14 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
   <section class="portfolio-section">
     <div class="portfolio-grid">
       <div class="portfolio-item">
-        <img src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1200&q=80" alt="Capital Raising">
+        <img src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1200&q=80" alt="Capital Raising" loading="lazy" decoding="async">
         <div class="portfolio-overlay">
           <div class="portfolio-title">Capital Raising</div>
           <div class="portfolio-desc">Connect with premier <strong>private equity placement agents</strong> specializing in PE fundraising</div>
         </div>
       </div>
       <div class="portfolio-item">
-        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80" alt="Fund Marketing">
+        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80" alt="Fund Marketing" loading="lazy" decoding="async">
         <div class="portfolio-overlay">
           <div class="portfolio-title">Fund Marketing</div>
           <div class="portfolio-desc">Access leading <strong>PE fundraising experts</strong> for top-tier administrative talent</div>
@@ -1409,7 +1407,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
   <!-- Full-width Image Section (MOVED UP) -->
   <section class="fullwidth-image-section">
-    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80" alt="Modern Workspace">
+    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80" alt="Modern Workspace" loading="lazy" decoding="async">
     <div class="fullwidth-image-overlay">
       <div class="fullwidth-image-content">
         <h2>Capital Raising Agencies</h2>
@@ -1513,14 +1511,14 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
   <section class="portfolio-section">
     <div class="portfolio-grid">
       <div class="portfolio-item">
-        <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=1200&q=80" alt="Career Development">
+        <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=1200&q=80" alt="Career Development" loading="lazy" decoding="async">
         <div class="portfolio-overlay">
           <div class="portfolio-title">Career Development</div>
           <div class="portfolio-desc">Expert guidance from top placement agents to advance your executive career</div>
         </div>
       </div>
       <div class="portfolio-item">
-        <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80" alt="Global Reach">
+        <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80" alt="Global Reach" loading="lazy" decoding="async">
         <div class="portfolio-overlay">
           <div class="portfolio-title">Global Network</div>
           <div class="portfolio-desc">International PE fundraising experts connecting talent worldwide</div>
@@ -1583,7 +1581,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
   <!-- Companies Section -->
   <section class="companies-section">
     <div class="companies-video-bg">
-      <video id="companies-video" autoplay loop muted playsinline></video>
+      <video id="companies-video" autoplay loop muted playsinline preload="none" loading="lazy"></video>
     </div>
     <div class="companies-overlay"></div>
 
@@ -1655,7 +1653,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     <div class="services-grid">
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80" alt="Executive Search">
+        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80" alt="Executive Search" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Executive Search</div>
           <div class="service-desc">Identifying and recruiting top-tier Placement talent for C-suite roles</div>
@@ -1663,7 +1661,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80" alt="Leadership Assessment">
+        <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80" alt="Leadership Assessment" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Leadership Assessment</div>
           <div class="service-desc">Comprehensive evaluation and profiling of executive candidates</div>
@@ -1671,7 +1669,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80" alt="Talent Advisory">
+        <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80" alt="Talent Advisory" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Talent Advisory</div>
           <div class="service-desc">Strategic guidance on organizational structure and leadership needs</div>
@@ -1679,7 +1677,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80" alt="Market Insights">
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80" alt="Market Insights" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Market Insights</div>
           <div class="service-desc">Comprehensive salary benchmarking and industry trend analysis</div>
@@ -1687,7 +1685,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=80" alt="Succession Planning">
+        <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=80" alt="Succession Planning" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Succession Planning</div>
           <div class="service-desc">Building robust leadership pipelines for long-term organizational success</div>
@@ -1695,7 +1693,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800&q=80" alt="Onboarding Support">
+        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800&q=80" alt="Onboarding Support" loading="lazy" decoding="async">
         <div class="service-overlay">
           <div class="service-title">Onboarding Support</div>
           <div class="service-desc">Ensuring seamless integration and success for new Placement hires</div>
@@ -1758,8 +1756,8 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
   </footer>
 
   <script define:vars={{ muxPlaybackId }}>
-    // Wait for DOM and libraries to load
-    window.addEventListener('DOMContentLoaded', function() {
+    // Wait for DOM and libraries to load - use load event since scripts are deferred
+    window.addEventListener('load', function() {
       // Initialize Mux HLS video for hero
       const heroVideo = document.getElementById('hero-video');
       const heroVideoSrc = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
@@ -1778,137 +1776,86 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
         });
       }
 
-      // Initialize Mux HLS video for companies section
-      const companiesVideo = document.getElementById('companies-video');
-      if (companiesVideo && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        const hls2 = new Hls();
-        hls2.loadSource(heroVideoSrc);
-        hls2.attachMedia(companiesVideo);
-        hls2.on(Hls.Events.MANIFEST_PARSED, function() {
-          companiesVideo.play().catch(e => console.log('Companies video autoplay prevented:', e));
-        });
-      } else if (companiesVideo && companiesVideo.canPlayType('application/vnd.apple.mpegurl')) {
-        companiesVideo.src = heroVideoSrc;
-        companiesVideo.addEventListener('loadedmetadata', function() {
-          companiesVideo.play().catch(e => console.log('Companies video autoplay prevented:', e));
-        });
+      // Initialize Mux HLS video for companies section - only when scrolled near
+      const companiesSection = document.querySelector('.companies-section');
+      if (companiesSection) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const companiesVideo = document.getElementById('companies-video');
+              const videoSrc = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+
+              if (companiesVideo && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const hls2 = new Hls();
+                hls2.loadSource(videoSrc);
+                hls2.attachMedia(companiesVideo);
+                hls2.on(Hls.Events.MANIFEST_PARSED, function() {
+                  companiesVideo.play().catch(e => console.log('Companies video autoplay prevented:', e));
+                });
+              } else if (companiesVideo && companiesVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                companiesVideo.src = videoSrc;
+                companiesVideo.addEventListener('loadedmetadata', function() {
+                  companiesVideo.play().catch(e => console.log('Companies video autoplay prevented:', e));
+                });
+              }
+              observer.disconnect();
+            }
+          });
+        }, { rootMargin: '200px' });
+        observer.observe(companiesSection);
       }
-      // GSAP Animations
-      if (typeof gsap !== 'undefined') {
+
+      // GSAP Animations - Simplified for better performance
+      if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
         gsap.registerPlugin(ScrollTrigger);
 
-    // Hero animations
-    gsap.to('.hero-badge', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 0.3,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero h1', {
-      opacity: 1,
-      y: 0,
-      duration: 1.2,
-      delay: 0.5,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero-subtitle', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 0.8,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero-cta', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 1.1,
-      ease: 'power3.out'
-    });
-
-    // Stats animation
-    gsap.utils.toArray('.stat-item').forEach((stat, i) => {
-      gsap.to(stat, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: i * 0.1,
-        scrollTrigger: {
-          trigger: stat,
-          start: 'top 85%'
-        }
-      });
-    });
-
-    // Companies cards animation
-    gsap.utils.toArray('.company-card').forEach((card, i) => {
-      gsap.to(card, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: i * 0.1,
-        scrollTrigger: {
-          trigger: card,
-          start: 'top 85%'
-        }
-      });
-    });
-
-        // Animate all content sections with .animated class
-        gsap.utils.toArray('.content-section.animated, .stats-section.animated, .services-section.animated').forEach((section) => {
-          gsap.to(section, {
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 80%'
-            }
-          });
+        // Hero animations - simplified
+        gsap.to('.hero-badge, .hero h1, .hero-subtitle, .hero-cta', {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: 'power2.out'
         });
 
-        // Animate item cards within sections
-        gsap.utils.toArray('.item-card, .agent-card, .phase-item, .faq-item, .reference-item').forEach((card, i) => {
-          gsap.to(card, {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            delay: i * 0.05,
-            scrollTrigger: {
-              trigger: card,
-              start: 'top 90%'
-            }
-          });
+        // Simplified scroll animations with fewer triggers
+        ScrollTrigger.batch('.stat-item, .company-card', {
+          onEnter: (elements) => {
+            gsap.to(elements, {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.08,
+              ease: 'power2.out'
+            });
+          },
+          start: 'top 85%',
+          once: true
         });
 
-        // Video parallax effect
+        // Batch animate content sections
+        ScrollTrigger.batch('.content-section.animated, .stats-section.animated, .services-section.animated', {
+          onEnter: (elements) => {
+            gsap.to(elements, {
+              opacity: 1,
+              y: 0,
+              duration: 0.8,
+              ease: 'power2.out'
+            });
+          },
+          start: 'top 80%',
+          once: true
+        });
+
+        // Reduced parallax effect - only on hero video
         gsap.to('.hero-video', {
-          scale: 1.2,
+          scale: 1.15,
           scrollTrigger: {
             trigger: '.hero',
             start: 'top top',
             end: 'bottom top',
             scrub: 1
           }
-        });
-
-        // Background image parallax for content sections
-        gsap.utils.toArray('.content-section.has-background::before').forEach((bg) => {
-          gsap.to(bg, {
-            yPercent: 30,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: bg,
-              start: 'top bottom',
-              end: 'bottom top',
-              scrub: 1
-            }
-          });
         });
       }
     });

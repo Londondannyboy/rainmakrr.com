@@ -1,5 +1,7 @@
 ---
 import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Schema from '../../components/Schema.astro';
 
 // Fetch all published articles with featured images
 const articles = await sql`
@@ -30,91 +32,500 @@ const articles = await sql`
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <SEO
+    title="Articles & Insights - Placement"
+    description="Expert insights on private equity placement agents, PE fundraising, and capital raising strategies"
+  />
+  <Schema type="article_list" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All Articles - Placement</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+  <!-- GSAP Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover { opacity: 0.6; }
+
+    /* Hero Section */
+    .hero {
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 100px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(240, 147, 251, 0.15), rgba(0, 0, 0, 0.95));
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 1000px;
+      position: relative;
+      z-index: 10;
+      opacity: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      padding: 12px 28px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 90px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 24px);
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* Articles Section */
+    .articles-section {
+      padding: 120px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .article-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      opacity: 1;
+    }
+
+    .article-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-8px);
+    }
+
+    .article-image {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+    }
+
+    .article-content {
+      padding: 32px;
+    }
+
+    .article-angle {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.2);
+      color: #667eea;
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      border: 1px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .article-title {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.3;
+    }
+
+    .article-title a {
+      text-decoration: none;
+      transition: opacity 0.3s;
+    }
+
+    .article-title a:hover {
+      opacity: 0.7;
+    }
+
+    .article-excerpt {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      font-size: 15px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .article-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .article-date {
+      font-weight: 500;
+    }
+
+    .read-more {
+      color: #667eea;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .read-more:hover {
+      color: #f093fb;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 100px 40px;
+      opacity: 1;
+    }
+
+    .empty-state h3 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .empty-state p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Footer */
+    footer {
+      padding: 80px 60px 40px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.05), transparent);
+      pointer-events: none;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 12px;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: #fff;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 30px; }
+
+      .nav-links {
+        gap: 20px;
+        font-size: 12px;
+      }
+
+      .hero {
+        padding: 140px 30px 80px;
+        min-height: 60vh;
+      }
+
+      .articles-section {
+        padding: 80px 30px;
+      }
+
+      .articles-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      footer {
+        padding: 60px 30px 30px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-50">
+
+<body>
   <!-- Navigation -->
-  <nav class="bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
-          <h1 class="text-2xl font-bold text-blue-600">
-            <a href="/">Placement</a>
-          </h1>
-        </div>
-        <div class="flex items-center space-x-8">
-          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
-        </div>
-      </div>
-    </div>
+  <nav>
+    <div class="logo">Placement</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/articles">Articles</a></li>
+      <li><a href="/companies">Companies</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/contact">Contact</a></li>
+    </ul>
   </nav>
 
-  <!-- Articles Header -->
-  <section class="bg-white py-12 border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 class="text-4xl font-bold text-gray-900 mb-2">All Articles</h1>
-      <p class="text-lg text-gray-600">Browse our complete collection of industry insights and news</p>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">Expert Insights & Analysis</div>
+      <h1>Articles & Insights</h1>
+      <p class="hero-subtitle">
+        Expert analysis on private equity placement agents, PE fundraising strategies, and capital raising best practices
+      </p>
     </div>
   </section>
 
-  <!-- Articles Grid -->
-  <section class="py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+  <!-- Articles Section -->
+  <section class="articles-section">
+    {articles.length > 0 ? (
+      <div class="articles-grid">
         {articles.map((article: any) => (
-          <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+          <article class="article-card">
             {(article.images?.featured || article.featured_image_legacy?.url) && (
-              <img src={article.images?.featured || article.featured_image_legacy.url} alt={article.featured_image_legacy?.alt || article.title} class="w-full h-48 object-cover" />
+              <img
+                src={article.images?.featured || article.featured_image_legacy.url}
+                alt={article.featured_image_legacy?.alt || article.title}
+                class="article-image"
+                loading="lazy"
+                decoding="async"
+              />
             )}
-            <div class="p-6">
+            <div class="article-content">
               {article.article_angle && (
-                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-3">
-                  {article.article_angle}
-                </span>
+                <span class="article-angle">{article.article_angle}</span>
               )}
-              <h2 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
-                <a href={`/${article.slug}`} class="hover:text-blue-600">
-                  {article.title}
-                </a>
+              <h2 class="article-title">
+                <a href={`/${article.slug}`}>{article.title}</a>
               </h2>
               {article.excerpt && (
-                <p class="text-gray-600 mb-4 line-clamp-3">
-                  {article.excerpt}
-                </p>
+                <p class="article-excerpt">{article.excerpt}</p>
               )}
-              <div class="flex items-center justify-between text-sm text-gray-500">
-                <time datetime={article.published_at || article.created_at}>
+              <div class="article-footer">
+                <time class="article-date" datetime={article.published_at || article.created_at}>
                   {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
                   })}
                 </time>
-                <a href={`/${article.slug}`} class="text-blue-600 hover:text-blue-800 font-medium">
-                  Read more →
-                </a>
+                <a href={`/${article.slug}`} class="read-more">Read more →</a>
               </div>
             </div>
           </article>
         ))}
       </div>
-
-      {articles.length === 0 && (
-        <div class="text-center py-12">
-          <p class="text-gray-600 text-lg">No articles published yet. Check back soon!</p>
-        </div>
-      )}
-    </div>
+    ) : (
+      <div class="empty-state">
+        <h3>Coming Soon</h3>
+        <p>We're currently curating expert insights and analysis. Check back soon!</p>
+      </div>
+    )}
   </section>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-white py-12 mt-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-gray-400">© {new Date().getFullYear()} Placement. All rights reserved.</p>
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Placement</h3>
+        <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
+          The definitive guide to Placement and PE Fundraising recruitment.
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h3>Resources</h3>
+        <ul class="footer-links">
+          <li><a href="/articles">Articles & Insights</a></li>
+          <li><a href="/companies">Agency Directory</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms & Conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Placement. All rights reserved.</p>
     </div>
   </footer>
+
+  <script>
+    // Wait for DOM and GSAP to load
+    window.addEventListener('load', function() {
+      if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animation
+        gsap.to('.hero-content', {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: 'power3.out'
+        });
+
+        // Article cards staggered animation
+        ScrollTrigger.batch('.article-card', {
+          onEnter: (elements) => {
+            gsap.to(elements, {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'power2.out'
+            });
+          },
+          start: 'top 85%',
+          once: true
+        });
+      }
+    });
+  </script>
 </body>
 </html>
