@@ -121,7 +121,7 @@ async function generateSitemapXML(): Promise<string> {
   <url>
     <loc>${BASE_URL}${pdf}</loc>
     <lastmod>${currentDate}</lastmod>
-    <changefreq>quarterly</changefreq>
+    <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>`;
   });
