@@ -1,0 +1,418 @@
+---
+import SEO from '../components/SEO.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Contact Us - Quest"
+    description="Get in touch with Quest - we'd love to hear from you"
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* Contact Section */
+    .contact-section {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 40px;
+      margin-bottom: 80px;
+    }
+
+    .contact-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .contact-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(102, 126, 234, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .contact-icon {
+      font-size: 48px;
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    .contact-card h3 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .contact-card p {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .contact-card a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 18px;
+      border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+      display: inline-block;
+      padding-bottom: 4px;
+    }
+
+    .contact-card a:hover {
+      color: #f093fb;
+      border-bottom-color: rgba(240, 147, 251, 0.5);
+    }
+
+    /* Info Section */
+    .info-section {
+      background: rgba(102, 126, 234, 0.05);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+      border-radius: 16px;
+      padding: 48px;
+      margin-bottom: 60px;
+    }
+
+    .info-section h2 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    .info-section p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .info-section ul {
+      list-style: none;
+      margin-top: 24px;
+    }
+
+    .info-section ul li {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 12px;
+      padding-left: 32px;
+      position: relative;
+    }
+
+    .info-section ul li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    /* Company Info */
+    .company-info {
+      text-align: center;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .company-info h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .company-info p {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 60px 60px 40px;
+      margin-top: 100px;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: #667eea;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 20px 30px;
+      }
+
+      .hero {
+        padding: 140px 30px 60px;
+        min-height: 40vh;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 18px;
+      }
+
+      .contact-section {
+        padding: 60px 30px;
+      }
+
+      .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .info-section {
+        padding: 32px;
+      }
+
+      .info-section h2 {
+        font-size: 26px;
+      }
+
+      .info-section p,
+      .info-section ul li {
+        font-size: 16px;
+      }
+
+      footer {
+        padding: 40px 30px 30px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav>
+    <a href="/" class="logo">Quest</a>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Get in Touch</h1>
+      <p>We'd love to hear from you</p>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="contact-section">
+    <div class="contact-grid">
+      <div class="contact-card">
+        <span class="contact-icon">✉️</span>
+        <h3>Email Us</h3>
+        <p>For general enquiries, editorial questions, or partnership opportunities</p>
+        <a href="mailto:hello@placement.quest">hello@placement.quest</a>
+      </div>
+
+      <div class="contact-card">
+        <span class="contact-icon">📍</span>
+        <h3>Location</h3>
+        <p>We're based in London, United Kingdom</p>
+        <p style="font-weight: 600; color: rgba(255, 255, 255, 0.9);">London, UK</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h2>What can we help you with?</h2>
+      <p>We welcome enquiries about:</p>
+      <ul>
+        <li>Agency profiles and directory listings</li>
+        <li>Editorial content and coverage</li>
+        <li>Partnership opportunities</li>
+        <li>Press and media enquiries</li>
+        <li>Technical issues or feedback</li>
+        <li>Data accuracy and corrections</li>
+      </ul>
+      <p style="margin-top: 32px;">We aim to respond to all enquiries within 48 hours. For urgent matters, please clearly indicate this in your email subject line.</p>
+    </div>
+
+    <div class="company-info">
+      <h3>Quest Media Limited</h3>
+      <p>
+        London, United Kingdom<br>
+        <a href="mailto:hello@placement.quest" style="color: #667eea; text-decoration: none; margin-top: 12px; display: inline-block;">hello@placement.quest</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms & Conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Quest. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

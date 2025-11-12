@@ -1,0 +1,438 @@
+---
+import SEO from '../components/SEO.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="About Us - Quest"
+    description="Learn about Quest and our mission to provide definitive guides to specialist recruitment sectors"
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* Content Section */
+    .content-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .content-block {
+      margin-bottom: 60px;
+    }
+
+    .content-block h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    .content-block p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .content-block ul {
+      list-style: none;
+      margin-top: 24px;
+    }
+
+    .content-block ul li {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 16px;
+      padding-left: 32px;
+      position: relative;
+    }
+
+    .content-block ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    /* Values Grid */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .value-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s ease;
+    }
+
+    .value-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(102, 126, 234, 0.3);
+      transform: translateY(-4px);
+    }
+
+    .value-card h3 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .value-card p {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: rgba(102, 126, 234, 0.05);
+      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 80px 40px;
+      text-align: center;
+      margin-top: 80px;
+    }
+
+    .cta-section h2 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fff;
+    }
+
+    .cta-section p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      color: #fff;
+      padding: 16px 40px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 18px;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Footer */
+    footer {
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 60px 60px 40px;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+      color: #667eea;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 20px 30px;
+      }
+
+      .hero {
+        padding: 140px 30px 60px;
+        min-height: 50vh;
+      }
+
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 18px;
+      }
+
+      .content-section {
+        padding: 60px 30px;
+      }
+
+      .content-block h2 {
+        font-size: 28px;
+      }
+
+      .content-block p,
+      .content-block ul li {
+        font-size: 16px;
+      }
+
+      .values-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-section {
+        padding: 60px 30px;
+      }
+
+      .cta-section h2 {
+        font-size: 32px;
+      }
+
+      .cta-section p {
+        font-size: 18px;
+      }
+
+      footer {
+        padding: 40px 30px 30px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav>
+    <a href="/" class="logo">Quest</a>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>About Quest</h1>
+      <p>We're building the definitive guides to specialist recruitment sectors</p>
+    </div>
+  </section>
+
+  <!-- Content Section -->
+  <section class="content-section">
+    <div class="content-block">
+      <h2>Our Mission</h2>
+      <p>Quest is dedicated to providing comprehensive, authoritative information about specialist recruitment agencies and services. We believe that finding the right recruitment partner is critical to career success and business growth, yet quality information in these niche markets is often scattered and difficult to find.</p>
+      <p>We're changing that by creating in-depth, curated directories and editorial content for each specialist recruitment sector we cover.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>What We Cover</h2>
+      <p>Quest operates multiple specialized platforms, each focused on a specific area of recruitment:</p>
+      <ul>
+        <li><strong>Placement.quest</strong> - The definitive guide to placement agents and PE fundraising recruitment</li>
+        <li><strong>Relocation.quest</strong> - Comprehensive coverage of international relocation services and agencies</li>
+        <li><strong>GTM.quest</strong> - Your resource for go-to-market and sales recruitment agencies</li>
+      </ul>
+    </div>
+
+    <div class="content-block">
+      <h2>Our Values</h2>
+      <div class="values-grid">
+        <div class="value-card">
+          <h3>Quality First</h3>
+          <p>We prioritize depth and accuracy over speed, ensuring every agency profile and article meets our high editorial standards.</p>
+        </div>
+        <div class="value-card">
+          <h3>Editorial Independence</h3>
+          <p>Our coverage is independent and unbiased. We don't accept payment for inclusion or favorable coverage.</p>
+        </div>
+        <div class="value-card">
+          <h3>Sector Expertise</h3>
+          <p>We invest deeply in understanding each sector we cover, from market dynamics to key players and trends.</p>
+        </div>
+        <div class="value-card">
+          <h3>User-Focused</h3>
+          <p>Everything we build is designed to help you find the right recruitment partner quickly and confidently.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h2>How We Work</h2>
+      <p>Our editorial process combines advanced technology with human expertise. We use AI-assisted research to gather and analyze information about agencies, markets, and trends, but every piece of content is reviewed and curated by our editorial team.</p>
+      <p>We continuously update our directory entries and publish new articles to ensure you have access to the most current information about each sector we cover.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>Based in London</h2>
+      <p>Quest Media Limited is based in London, United Kingdom. We serve a global audience of professionals, executives, and businesses looking for specialist recruitment services.</p>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <h2>Get in Touch</h2>
+    <p>Have questions about our coverage or want to suggest a sector we should cover?</p>
+    <a href="/contact" class="cta-button">Contact Us</a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms & Conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Quest. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>
