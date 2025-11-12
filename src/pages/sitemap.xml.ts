@@ -1,6 +1,6 @@
 // Dynamic sitemap for placement.quest
 import type { APIRoute } from 'astro';
-import { sql } from '../../lib/db';
+import { sql } from '../lib/db';
 
 const BASE_URL = 'https://placement.quest';
 
