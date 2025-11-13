@@ -34,8 +34,7 @@ const companies = await sql`
     serviced_deals,
     serviced_investors,
     primary_country,
-    primary_region,
-    additional_data
+    primary_region
   FROM companies
   WHERE slug = ${slug}
     AND company_type = 'placement_agent'
@@ -579,36 +578,6 @@ if (!company) {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {company.additional_data && company.additional_data.notable_deals && company.additional_data.notable_deals.length > 0 && (
-          <div class="content-card">
-            <h2 class="card-title">Notable Deals</h2>
-            <div class="card-content">
-              <ul style="list-style: none; display: grid; gap: 12px;">
-                {company.additional_data.notable_deals.map((deal: string) => (
-                  <li style="padding: 14px 18px; background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; border-radius: 8px; color: rgba(255, 255, 255, 0.9);">
-                    {deal}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {company.key_facts && company.key_facts.achievements && company.key_facts.achievements.length > 0 && (
-          <div class="content-card">
-            <h2 class="card-title">Notable Achievements</h2>
-            <div class="card-content">
-              <ul style="list-style: none; display: grid; gap: 12px;">
-                {company.key_facts.achievements.map((achievement: string) => (
-                  <li style="padding: 14px 18px; background: rgba(240, 147, 251, 0.1); border-left: 3px solid #f093fb; border-radius: 8px; color: rgba(255, 255, 255, 0.9);">
-                    {achievement}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         )}
