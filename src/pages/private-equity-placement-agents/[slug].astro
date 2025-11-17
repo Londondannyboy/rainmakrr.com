@@ -22,7 +22,6 @@ const companies = await sql`
     founded_year,
     employee_count,
     headquarters,
-    website_url,
     logo_url,
     global_rank,
     specializations,
@@ -520,14 +519,6 @@ if (!company) {
               <div class="meta-item">
                 <span class="meta-label">Headquarters:</span>
                 <span>{company.headquarters}</span>
-              </div>
-            )}
-            {company.website_url && company.website_url !== 'Unavailable from provided context' && (
-              <div class="meta-item">
-                <span class="meta-label">Website:</span>
-                <a href={company.website_url} target="_blank" rel="noopener noreferrer" class="meta-link">
-                  {company.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                </a>
               </div>
             )}
           </div>
