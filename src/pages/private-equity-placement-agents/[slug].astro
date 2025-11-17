@@ -176,7 +176,7 @@ console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_s
         {Object.entries(company.profile_sections)
           .filter(([key]) => key !== 'resources')
           .map(([key, section]: [string, any]) => (
-          <div class="group bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+          <div id={key} class="group bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
             <div class="flex items-start gap-4 mb-6">
               <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
                 {section.title.charAt(0)}
@@ -243,6 +243,47 @@ console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_s
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        <!-- Team Highlights Card -->
+        {(company.profile_sections.team || company.profile_sections.leadership) && (
+          <div class="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+              Leadership
+            </h3>
+            <div class="text-sm text-slate-300 leading-relaxed prose prose-invert prose-sm max-w-none">
+              <div set:html={
+                ((company.profile_sections.team || company.profile_sections.leadership).content)
+                  .split(/\n\n/)[0]
+                  .substring(0, 300) + '...'
+              }></div>
+            </div>
+            <a href="#team" class="inline-block mt-4 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              View full team →
+            </a>
+          </div>
+        )}
+
+        <!-- Key Deals Card -->
+        {company.profile_sections.deals && (
+          <div class="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-green-500"></div>
+              Recent Deals
+            </h3>
+            <div class="text-sm text-slate-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300">
+              <div set:html={
+                company.profile_sections.deals.content
+                  .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                  .split(/\n\n/)[0]
+                  .substring(0, 300) + '...'
+              }></div>
+            </div>
+            <a href="#deals" class="inline-block mt-4 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              View all deals →
+            </a>
           </div>
         )}
       </div>
