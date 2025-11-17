@@ -148,9 +148,10 @@ console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_s
       bottom: 0;
       background-image: var(--hero-image);
       background-size: cover;
-      background-position: center;
+      background-position: center 30%;
       opacity: 0.15;
       filter: blur(2px);
+      transform: scale(1.1);
     }
 
     .hero-content {
@@ -227,12 +228,24 @@ console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_s
 
     .card-content {
       font-size: 17px;
-      line-height: 2;
+      line-height: 2.2;
       color: rgba(255, 255, 255, 0.85);
     }
 
     .card-content p {
-      margin-bottom: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card-content a {
+      color: #667eea;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+      transition: all 0.3s;
+    }
+
+    .card-content a:hover {
+      color: #f093fb;
+      border-bottom-color: #f093fb;
     }
 
     .card-content strong {
@@ -338,6 +351,8 @@ console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_s
         <div class="card-content">
           <div set:html={
             section.content
+              // Markdown links: [text](url)
+              .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
               // Bold text
               .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
               // Split after sentence endings (. ! ?) followed by space and capital letter
