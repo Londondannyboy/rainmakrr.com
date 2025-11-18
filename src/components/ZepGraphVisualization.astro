@@ -125,19 +125,28 @@ const { companyId, companyName } = Astro.props;
       networkEl.classList.remove('hidden');
 
       // Create vis-network
-      const nodes = new vis.DataSet(graphData.nodes.map(node => ({
-        id: node.id,
-        label: node.label,
-        group: node.group || 'default',
-        title: node.title || node.label,
-        shape: 'dot',
-        size: node.label === companyName ? 30 : 20,  // Make company node bigger
-        font: {
-          color: '#e2e8f0',
-          size: 14,
-          face: 'system-ui'
-        }
-      })));
+      const nodes = new vis.DataSet(graphData.nodes.map(node => {
+        const hasArticle = node.hasArticle || node.url || node.group === 'company' || node.group === 'article';
+
+        return {
+          id: node.id,
+          label: node.label,
+          group: node.group || 'default',
+          title: node.title || node.label + (hasArticle ? ' (double-click to open)' : ''),
+          shape: 'dot',
+          size: node.label === companyName ? 30 : 20,
+          hasArticle: hasArticle,
+          url: node.url,
+          font: {
+            color: hasArticle ? '#fbbf24' : '#e2e8f0',  // Gold for clickable
+            size: 14,
+            face: 'system-ui',
+            bold: hasArticle ? { size: 15 } : undefined
+          },
+          borderWidth: hasArticle ? 3 : 2,  // Thicker border for clickable
+          borderWidthSelected: hasArticle ? 5 : 4
+        };
+      }));
 
       const edges = new vis.DataSet(graphData.edges.map(edge => ({
         from: edge.from,
@@ -212,37 +221,48 @@ const { companyId, companyName } = Astro.props;
 
       const network = new vis.Network(networkEl, data, options);
 
-      // Add click handler with smart navigation
+      // Add click handler to focus/zoom to nodes
       network.on('click', (params) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0];
           const node = nodes.get(nodeId);
           console.log('Clicked node:', node);
 
-          // Navigate based on node type
-          if (node.url) {
-            // If node has explicit URL, use it
-            window.location.href = node.url;
-          } else if (node.group === 'company') {
-            // Company nodes → navigate to company profile
-            const slug = node.label.toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '');
-            window.location.href = `/private-equity-placement-agents/${slug}`;
-          } else if (node.group === 'article') {
-            // Article nodes → navigate to article
-            const slug = node.label.toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '');
-            window.location.href = `/articles/${slug}`;
-          } else if (node.group === 'deal') {
-            // Deal nodes → search for deals with this company
-            const searchTerm = encodeURIComponent(node.label);
-            window.location.href = `/articles?search=${searchTerm}`;
-          } else {
-            // Other entities → search
-            const searchTerm = encodeURIComponent(node.label);
-            window.location.href = `/articles?search=${searchTerm}`;
+          // Focus/zoom to the clicked node
+          network.focus(nodeId, {
+            scale: 1.5,
+            animation: {
+              duration: 800,
+              easingFunction: 'easeInOutQuad'
+            }
+          });
+
+          // Select the node visually
+          network.selectNodes([nodeId]);
+        }
+      });
+
+      // Double-click to navigate (if article exists)
+      network.on('doubleClick', (params) => {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const node = nodes.get(nodeId);
+
+          // Only navigate if node has article/URL
+          if (node.hasArticle || node.url) {
+            if (node.url) {
+              window.location.href = node.url;
+            } else if (node.group === 'company') {
+              const slug = node.label.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+              window.location.href = `/private-equity-placement-agents/${slug}`;
+            } else if (node.group === 'article') {
+              const slug = node.label.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+              window.location.href = `/articles/${slug}`;
+            }
           }
         }
       });
