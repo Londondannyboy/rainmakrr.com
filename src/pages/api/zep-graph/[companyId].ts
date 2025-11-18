@@ -21,9 +21,9 @@ export async function GET({ params }: { params: { companyId: string } }) {
       { id: "9", label: "Sovereign Wealth Funds", group: "entity" },
       { id: "10", label: "Pension Funds", group: "entity" },
       { id: "11", label: "Family Offices", group: "entity" },
-      { id: "12", label: "Campbell Lutyens", group: "entity" },
-      { id: "13", label: "Eaton Partners", group: "entity" },
-      { id: "14", label: "First Avenue", group: "entity" }
+      { id: "12", label: "Campbell Lutyens", group: "company" },
+      { id: "13", label: "Eaton Partners", group: "company" },
+      { id: "14", label: "First Avenue", group: "company", url: "/private-equity-placement-agents/firstavenue" }
     ],
     edges: [
       { from: "1", to: "2", label: "Specializes In" },

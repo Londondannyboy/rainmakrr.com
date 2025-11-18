@@ -212,13 +212,38 @@ const { companyId, companyName } = Astro.props;
 
       const network = new vis.Network(networkEl, data, options);
 
-      // Add click handler
+      // Add click handler with smart navigation
       network.on('click', (params) => {
         if (params.nodes.length > 0) {
           const nodeId = params.nodes[0];
           const node = nodes.get(nodeId);
           console.log('Clicked node:', node);
-          // Could navigate to entity page or show details
+
+          // Navigate based on node type
+          if (node.url) {
+            // If node has explicit URL, use it
+            window.location.href = node.url;
+          } else if (node.group === 'company') {
+            // Company nodes → navigate to company profile
+            const slug = node.label.toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            window.location.href = `/private-equity-placement-agents/${slug}`;
+          } else if (node.group === 'article') {
+            // Article nodes → navigate to article
+            const slug = node.label.toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            window.location.href = `/articles/${slug}`;
+          } else if (node.group === 'deal') {
+            // Deal nodes → search for deals with this company
+            const searchTerm = encodeURIComponent(node.label);
+            window.location.href = `/articles?search=${searchTerm}`;
+          } else {
+            // Other entities → search
+            const searchTerm = encodeURIComponent(node.label);
+            window.location.href = `/articles?search=${searchTerm}`;
+          }
         }
       });
 
