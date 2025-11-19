@@ -2,6 +2,7 @@
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
+import PlacementAgentsComparisonTable from '../components/PlacementAgentsComparisonTable.astro';
 import '../styles/cookieconsent-custom.css';
 
 // Fetch homepage content
@@ -1840,6 +1841,9 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
       </a>
     </div>
   </section>
+
+  <!-- Comparison Table -->
+  <PlacementAgentsComparisonTable />
 
   <!-- Stats - Qualitative Statements (MOVED UP) -->
   <section class="stats-section animated">
