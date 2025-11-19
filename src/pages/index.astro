@@ -96,23 +96,19 @@ if (sections.role) {
   });
 }
 
-// Hero carousel items - rotates every 3 seconds
+// Hero carousel items - rotates every 3 seconds (starts with video 2 to show rotation immediately)
 const heroCarouselItems = [
   {
     type: 'video',
-    src: 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg', // Original Mux video
-  },
-  {
-    type: 'video',
-    src: 'ywv6R4Ht6P0089VKJN1KynQ00VCT401uxSqxrlqg1ML01eU', // Second Mux video
+    src: 'ywv6R4Ht6P0089VKJN1KynQ00VCT401uxSqxrlqg1ML01eU', // Second Mux video (START HERE)
   },
   {
     type: 'video',
     src: '5br2hylJ4F009vDLHrxWZ3C7UDTw5901GcXYBjSOWNV8k', // Third Mux video
   },
   {
-    type: 'image',
-    src: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1920&q=80&auto=format&fit=crop', // Professional team image
+    type: 'video',
+    src: 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg', // Original Mux video
   }
 ];
 
@@ -2346,7 +2342,42 @@ const muxPlaybackId = heroCarouselItems[0].src;
     </div>
   </footer>
 
-  <script define:vars={{ muxPlaybackId }}>
+  <script define:vars={{ muxPlaybackId, heroCarouselItems }}>
+    // Hero Carousel - rotate every 3 seconds
+    let currentCarouselIndex = 0;
+    const carouselInterval = 3000; // 3 seconds
+
+    function rotateHeroCarousel() {
+      const items = document.querySelectorAll('.hero-carousel-item');
+      if (items.length <= 1) return;
+
+      // Fade out current
+      items[currentCarouselIndex].classList.remove('active');
+
+      // Move to next
+      currentCarouselIndex = (currentCarouselIndex + 1) % items.length;
+
+      // Fade in next
+      items[currentCarouselIndex].classList.add('active');
+
+      // If next item is a video, try to load and play it
+      const nextItem = items[currentCarouselIndex];
+      if (nextItem.tagName === 'VIDEO' && !nextItem.src) {
+        const videoIndex = parseInt(nextItem.getAttribute('data-carousel-index'));
+        const videoSrc = `https://stream.mux.com/${heroCarouselItems[videoIndex].src}.m3u8`;
+
+        if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+          const hls = new Hls({ maxBufferLength: 10 });
+          hls.loadSource(videoSrc);
+          hls.attachMedia(nextItem);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => nextItem.play().catch(() => {}));
+        } else if (nextItem.canPlayType('application/vnd.apple.mpegurl')) {
+          nextItem.src = videoSrc;
+          nextItem.play().catch(() => {});
+        }
+      }
+    }
+
     // Performance: Check if mobile and connection speed
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const isSlowConnection = navigator.connection &&
@@ -2417,6 +2448,9 @@ const muxPlaybackId = heroCarouselItems[0].src;
       // Initialize first carousel item if it's a video
       initVideo('hero-carousel-0', '.hero');
       initVideo('companies-video', '.companies-section');
+
+      // Start carousel rotation after page loads
+      setInterval(rotateHeroCarousel, carouselInterval);
 
       // Load All functionality for top placement agencies
       const loadAllTopBtn = document.getElementById('load-all-top-agents');
