@@ -114,6 +114,20 @@ const heroCarouselItems = [
 
 // Keep original for backward compatibility
 const muxPlaybackId = heroCarouselItems[0].src;
+
+// Image optimization helpers for mobile performance
+function optimizeCloudinaryImage(url: string, width: number = 800) {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  // f_auto = WebP/AVIF, q_auto:good = quality optimization, w_X = max width, c_limit = don't upscale
+  const transformations = `f_auto,q_auto:good,w_${width},c_limit`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}
+
+function generateSrcSet(url: string) {
+  if (!url || !url.includes('cloudinary.com')) return '';
+  const widths = [400, 600, 800];
+  return widths.map(w => `${optimizeCloudinaryImage(url, w)} ${w}w`).join(', ');
+}
 ---
 
 <!DOCTYPE html>
@@ -171,10 +185,6 @@ const muxPlaybackId = heroCarouselItems[0].src;
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-
-  <!-- Load vis-network library once globally (instead of 83 times in each component) -->
-  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
 
   <!-- Performance: Font preconnect -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1729,10 +1739,14 @@ const muxPlaybackId = heroCarouselItems[0].src;
                 {company.featured_image_url && (
                   <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
                     <img
-                      src={company.featured_image_url}
+                      src={optimizeCloudinaryImage(company.featured_image_url, 800)}
+                      srcset={generateSrcSet(company.featured_image_url)}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                       alt={company.display_name}
-                      loading={index < 10 ? 'eager' : 'lazy'}
+                      loading={index < 2 ? 'eager' : 'lazy'}
                       decoding="async"
+                      width="800"
+                      height="200"
                       style="width: 100%; height: 100%; object-fit: cover;"
                     />
                   </div>
@@ -1870,10 +1884,14 @@ const muxPlaybackId = heroCarouselItems[0].src;
                 {company.featured_image_url && (
                   <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
                     <img
-                      src={company.featured_image_url}
+                      src={optimizeCloudinaryImage(company.featured_image_url, 800)}
+                      srcset={generateSrcSet(company.featured_image_url)}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                       alt={company.display_name}
-                      loading={index < 10 ? 'eager' : 'lazy'}
+                      loading="lazy"
                       decoding="async"
+                      width="800"
+                      height="200"
                       style="width: 100%; height: 100%; object-fit: cover;"
                     />
                   </div>
