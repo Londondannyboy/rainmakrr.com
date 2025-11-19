@@ -203,7 +203,9 @@ export const GET: APIRoute = async () => {
     status: 200,
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': 'public, max-age=60', // Cache for 1 minute (was 1 hour)
+      'Cache-Control': 'no-cache, no-store, must-revalidate', // No caching - force fresh generation
+      'Pragma': 'no-cache',
+      'Expires': '0',
     },
   });
 };
