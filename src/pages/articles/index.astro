@@ -15,7 +15,7 @@ const articles = await sql`
     article_angle,
     word_count,
     featured_image_url,
-    featured_image_alt
+    payload->>'featured_image_alt' as featured_image_alt
   FROM articles
   WHERE app = 'placement'
     AND status = 'published'
