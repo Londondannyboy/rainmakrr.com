@@ -4,7 +4,7 @@ import SEO from '../../components/SEO.astro';
 import Schema from '../../components/Schema.astro';
 import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
 
-// Fetch US placement agents
+// Fetch Africa placement agents
 const companies = await sql`
   SELECT
     id,
@@ -22,7 +22,7 @@ const companies = await sql`
   FROM companies
   WHERE company_type = 'placement_agent'
     AND status = 'published'
-    AND primary_country = 'United States'
+    AND primary_region = 'Africa'
   ORDER BY
     CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
     global_rank ASC NULLS LAST,
@@ -34,8 +34,8 @@ const companies = await sql`
 <html lang="en">
 <head>
   <SEO
-    title="Top Private Equity Placement Agents US | Placement Quest"
-    description="Leading private equity placement agents in the United States. Premier US-based PE fundraising agencies with deep relationships across American pension funds, endowments, and institutional investors."
+    title="Top Private Equity Placement Agents Africa | Placement Quest"
+    description="Leading private equity placement agents in Africa. Expert LATAM PE fundraising agencies specializing in capital raising across Chile, Brazil, Peru, and regional institutional investors."
   />
   <Schema type="company_list" />
   <meta charset="UTF-8">
@@ -362,7 +362,7 @@ const companies = await sql`
           <a href="/top-private-equity-placement-agents-north-america">North America</a>
           <a href="/top-private-equity-placement-agents-europe">Europe</a>
           <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
-          <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Africa</a>
           <a href="/top-private-equity-placement-agents-africa">Africa</a>
           <a href="/top-private-equity-placement-agents-middle-east">Middle East</a>
           <div class="dropdown-divider"></div>
@@ -383,13 +383,13 @@ const companies = await sql`
     <span>/</span>
     <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
     <span>/</span>
-    <span>United States</span>
+    <span>Africa</span>
   </div>
 
   <div class="hero">
-    <h1>Top Private Equity Placement Agents US</h1>
+    <h1>Top Private Equity Placement Agents Africa</h1>
     <p class="subtitle">
-      Leading US private equity placement agents specializing in domestic and international capital raising. Connect with premier American PE fundraising firms with unparalleled access to US pension funds, endowments, insurance companies, and family offices.
+      Leading African private equity placement agents specializing in regional capital raising. Connect with expert LATAM PE fundraising firms with deep relationships across Chilean pension funds (AFPs), Brazilian institutional investors, and regional family offices.
     </p>
 
     <div class="region-switcher">
@@ -397,29 +397,29 @@ const companies = await sql`
       <a href="/top-private-equity-placement-agents-north-america" class="region-btn">North America</a>
       <a href="/top-private-equity-placement-agents-europe" class="region-btn">Europe</a>
       <a href="/top-private-equity-placement-agents-asia-pacific" class="region-btn">Asia Pacific</a>
-      <a href="/top-private-equity-placement-agents-latin-america" class="region-btn">Latin America</a>
+      <a href="/top-private-equity-placement-agents-latin-america" class="region-btn active">Africa</a>
       <span style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></span>
-      <a href="/top-private-equity-placement-agents-us" class="region-btn active">United States</a>
+      <a href="/top-private-equity-placement-agents-us" class="region-btn">United States</a>
       <a href="/top-private-equity-placement-agents-uk" class="region-btn">United Kingdom</a>
       <a href="/top-private-equity-placement-agents-singapore" class="region-btn">Singapore</a>
     </div>
   </div>
 
   <div class="content">
-    <h2>United States Private Equity Placement Market</h2>
+    <h2>Africa Private Equity Placement Market</h2>
     <p>
-      The United States represents the world's largest and most sophisticated private equity market. American placement agents lead global fundraising activity with unmatched access to the deepest pools of institutional capital. Major US pension funds, university endowments, and insurance companies allocate hundreds of billions annually to private equity strategies.
+      Africa represents an emerging private equity market with growing sophistication in fundraising infrastructure. Chilean and Brazilian placement agents lead regional activity, connecting local and international fund managers with African institutional capital, particularly the powerful Chilean pension system (AFPs) and Brazilian insurance companies and family offices.
     </p>
 
-    <h3>Why Choose US Placement Agents</h3>
+    <h3>Why Choose African Placement Agents</h3>
     <p>
-      US-based placement agents offer critical advantages for both domestic and international fund managers. These firms navigate complex SEC and FINRA regulatory frameworks, maintain decades-long relationships with major institutional allocators, and possess sophisticated understanding of American LP due diligence processes and fund structures.
+      LATAM-based placement agents offer specialized advantages for managers targeting regional institutional capital and cross-border fundraising. These firms navigate diverse regulatory frameworks across multiple jurisdictions, maintain crucial relationships with Chilean AFPs (collectively managing over $200 billion), Brazilian pension funds, and understand the cultural and structural nuances essential for successful fundraising across African markets.
     </p>
     <p>
-      Leading American placement agencies typically maintain relationships with 300-700+ institutional investors, including the largest pension systems (CalPERS, CalSTRS, Texas Teachers), Ivy League endowments, and major insurance companies managing trillions in assets.
+      Leading African placement agencies typically focus on deep relationships with 50-150+ institutional investors and family offices across the region, providing access to capital allocators in Chile, Brazil, Peru, Mexico, and other growing markets with increasing allocations to private equity strategies.
     </p>
 
-    <h3>Top Private Equity Placement Agents in the United States ({companies.length})</h3>
+    <h3>Top Private Equity Placement Agents in Africa ({companies.length})</h3>
 
     <div class="companies-grid">
       {companies.map((company: any) => (
@@ -454,68 +454,6 @@ const companies = await sql`
       ))}
     </div>
 
-    <!-- City-Specific PE Placement Markets -->
-    <div style="margin-top: 80px;">
-      <h2 style="font-size: 36px; margin-bottom: 32px; color: #fff; text-align: center;">
-        Top US Cities for Private Equity Placement Agents
-      </h2>
-      <p style="text-align: center; color: rgba(255, 255, 255, 0.8); max-width: 800px; margin: 0 auto 48px; line-height: 1.8;">
-        Major metropolitan hubs where leading placement agents maintain offices and strong LP relationships across institutional investors, family offices, and pension funds.
-      </p>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
-        <!-- San Antonio -->
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px;">
-          <h3 style="font-size: 24px; margin-bottom: 16px; color: #fff;">
-            📍 San Antonio, TX
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.7; font-size: 15px;">
-            Growing Texas PE market with increasing placement agent activity. Home to major institutional investors including UTIMCO (University of Texas/Texas A&M System) with $80B+ in assets, attracting fundraising attention for energy, infrastructure, and middle-market strategies.
-          </p>
-        </div>
-
-        <!-- New York City -->
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px;">
-          <h3 style="font-size: 24px; margin-bottom: 16px; color: #fff;">
-            📍 New York City, NY
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.7; font-size: 15px;">
-            Global PE capital and headquarters for the largest placement agents. Unparalleled access to bulge bracket firms, major pension funds (NYC Pension, NYSCRF), insurance companies, and the densest concentration of institutional LPs globally managing trillions in capital.
-          </p>
-        </div>
-
-        <!-- San Francisco -->
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px;">
-          <h3 style="font-size: 24px; margin-bottom: 16px; color: #fff;">
-            📍 San Francisco, CA
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.7; font-size: 15px;">
-            Technology and venture capital crossover market. Home to CalPERS, CalSTRS (combined $700B+ in assets), and Stanford endowment. Placement agents specialize in growth equity, venture capital, and technology-focused PE strategies with West Coast LP networks.
-          </p>
-        </div>
-
-        <!-- Boston -->
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px;">
-          <h3 style="font-size: 24px; margin-bottom: 16px; color: #fff;">
-            📍 Boston, MA
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.7; font-size: 15px;">
-            Academic endowment capital center with Harvard, MIT, and Ivy League concentration. Strong placement agent relationships with university endowments, healthcare systems, and family offices. Specialized in secondary transactions and fund-of-funds strategies.
-          </p>
-        </div>
-
-        <!-- Chicago -->
-        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 32px;">
-          <h3 style="font-size: 24px; margin-bottom: 16px; color: #fff;">
-            📍 Chicago, IL
-          </h3>
-          <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.7; font-size: 15px;">
-            Midwest PE hub with strong middle-market focus. Access to major pension funds (Illinois Teachers, Chicago Municipal), corporate pension plans, and industrial buyout specialists. Placement agents focus on operational value creation and traditional LBO strategies.
-          </p>
-        </div>
-      </div>
-    </div>
-
     <div style="text-align: center; margin-top: 64px;">
       <a href="/private-equity-placement-agents-list" class="btn">View All Regions</a>
     </div>
@@ -528,7 +466,7 @@ const companies = await sql`
       <div class="bg-gradient-to-br from-emerald-900/20 to-teal-900/20 backdrop-blur-sm rounded-2xl p-8 border border-emerald-700/30">
         <div class="flex items-center justify-between mb-6">
           <h2 style="font-size: 32px; font-weight: 900; color: #fff; margin: 0;">
-            Us PE Network
+            Africa PE Network
           </h2>
           <span style="padding: 8px 16px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; font-size: 12px; font-weight: 600; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3);">
             Knowledge Graph
@@ -536,7 +474,7 @@ const companies = await sql`
         </div>
 
         <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 32px; font-size: 16px; line-height: 1.7;">
-          Interactive network visualization showing relationships and connections between placement agents, deals, and key people in the us private equity ecosystem.
+          Interactive network visualization showing relationships and connections between placement agents, deals, and key people in the latin america private equity ecosystem.
         </p>
 
         <!-- Graph visualization placeholder -->
@@ -576,7 +514,7 @@ const companies = await sql`
           <li><a href="/top-private-equity-placement-agents-north-america">North America</a></li>
           <li><a href="/top-private-equity-placement-agents-europe">Europe</a></li>
           <li><a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a></li>
-          <li><a href="/top-private-equity-placement-agents-latin-america">Latin America</a></li>
+          <li><a href="/top-private-equity-placement-agents-latin-america">Africa</a></li>
         </ul>
       </div>
       <div class="footer-section">
