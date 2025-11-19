@@ -28,31 +28,52 @@ const companies = await sql`
     name ASC
 `;
 
-// Group companies by country
-const companiesByCountry = companies.reduce((acc: any, company: any) => {
+// Country code mapping to full names
+const countryCodeMap: Record<string, string> = {
+  'NO': 'Norway',
+  'EE': 'Estonia',
+  'IT': 'Italy',
+  'LT': 'Lithuania',
+  'LV': 'Latvia',
+  'PT': 'Portugal',
+  'US': 'United States',
+  'UK': 'United Kingdom',
+};
+
+// Normalize country names
+const normalizedCompanies = companies.map((company: any) => ({
+  ...company,
+  primary_country: countryCodeMap[company.primary_country] || company.primary_country
+}));
+
+// Group by region, country, and specializations
+const companiesByRegion = normalizedCompanies.reduce((acc: any, company: any) => {
+  const region = company.primary_region || 'Other';
+  if (!acc[region]) acc[region] = [];
+  acc[region].push(company);
+  return acc;
+}, {});
+
+const companiesByCountry = normalizedCompanies.reduce((acc: any, company: any) => {
   const country = company.primary_country || 'Other';
-  if (!acc[country]) {
-    acc[country] = [];
-  }
+  if (!acc[country]) acc[country] = [];
   acc[country].push(company);
   return acc;
 }, {});
 
-// Sort countries: North America first (US), then Europe (UK, then alphabetically), then others
+// Extract unique values for filters
+const regions = ['North America', 'Europe', 'Asia Pacific', 'Latin America'];
+const countries = Object.keys(companiesByCountry).filter(c => c !== 'Other').sort();
+const allSpecializations = [...new Set(normalizedCompanies.flatMap((c: any) => c.specializations || []))].sort();
+
+// Sort countries by region priority
 const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
-  // US first (North America)
-  if (a === 'US') return -1;
-  if (b === 'US') return 1;
-
-  // UK second (Europe lead)
-  if (a === 'UK') return -1;
-  if (b === 'UK') return 1;
-
-  // Other last
+  if (a === 'United States') return -1;
+  if (b === 'United States') return 1;
+  if (a === 'United Kingdom') return -1;
+  if (b === 'United Kingdom') return 1;
   if (a === 'Other') return 1;
   if (b === 'Other') return -1;
-
-  // Rest alphabetically
   return a.localeCompare(b);
 });
 ---
@@ -418,6 +439,18 @@ const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
       font-size: 14px;
     }
 
+    .filter-link:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%) !important;
+      border-color: rgba(102, 126, 234, 0.5) !important;
+      transform: translateY(-2px);
+    }
+
+    .filter-link-secondary:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: #fff !important;
+    }
+
     @media (max-width: 768px) {
       nav { padding: 20px 30px; }
 
@@ -491,12 +524,84 @@ const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
     </div>
   </section>
 
+  <!-- Filter Navigation -->
+  <section style="background: rgba(0, 0, 0, 0.95); padding: 60px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+    <div style="max-width: 1400px; margin: 0 auto;">
+
+      <!-- Regions -->
+      <div style="margin-bottom: 48px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+          Browse by Region
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          {regions.map((region: string) => (
+            <a
+              href={`/top-private-equity-placement-agents-${region.toLowerCase().replace(' ', '-')}`}
+              style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.9); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.3s;"
+              class="filter-link"
+            >
+              {region}
+              <span style="margin-left: 8px; opacity: 0.6; font-size: 12px;">
+                ({companiesByRegion[region]?.length || 0})
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- Countries -->
+      <div style="margin-bottom: 48px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+          Browse by Country
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          {countries.slice(0, 12).map((country: string) => (
+            <a
+              href={`#${country.toLowerCase().replace(/\s+/g, '-')}`}
+              style="display: inline-block; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: rgba(255, 255, 255, 0.8); text-decoration: none; font-size: 13px; transition: all 0.3s;"
+              class="filter-link-secondary"
+            >
+              {country}
+              <span style="margin-left: 6px; opacity: 0.5; font-size: 11px;">
+                ({companiesByCountry[country]?.length})
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- Specializations -->
+      {allSpecializations.length > 0 && (
+        <div>
+          <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+            Browse by Specialization
+          </h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <a href="/venture-capital-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Venture Capital
+            </a>
+            <a href="/private-credit-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Private Credit
+            </a>
+            <a href="/real-estate-private-equity-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Real Estate PE
+            </a>
+            <a href="/boutique-private-equity-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Boutique Firms
+            </a>
+          </div>
+        </div>
+      )}
+
+    </div>
+  </section>
+
   <!-- Companies Section -->
   <section class="companies-section">
-    {companies.length > 0 ? (
+    {normalizedCompanies.length > 0 ? (
       <div>
         {sortedCountries.map((country: string) => (
-          <div style="margin-bottom: 80px;">
+          <div id={country.toLowerCase().replace(/\s+/g, '-')} style="margin-bottom: 80px; scroll-margin-top: 100px;">
             <h2 style="color: #fff; font-size: 32px; font-weight: 700; margin-bottom: 40px; text-align: center;">
               {country}
             </h2>
