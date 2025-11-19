@@ -105,6 +105,10 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
   <link rel="preconnect" href="https://stream.mux.com" crossorigin>
   <link rel="dns-prefetch" href="https://images.unsplash.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+
+  <!-- Load vis-network library once globally (instead of 83 times in each component) -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
 
   <!-- Performance: Preload critical assets -->
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap">
@@ -1625,10 +1629,10 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
                   <p class="company-description">{company.description}</p>
                 )}
 
-                <!-- Mini Knowledge Graph -->
+                <!-- Mini Deal Graph -->
                 <div style="margin: 20px 0; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px;">
                   <div style="font-size: 12px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-                    🌐 Knowledge Graph Preview
+                    🤝 Deal Graph Preview
                   </div>
                   <div style="height: 200px; overflow: hidden; border-radius: 8px;">
                     <ZepGraphVisualization companyId={company.slug} companyName={company.name} />

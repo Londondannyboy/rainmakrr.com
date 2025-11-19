@@ -1,8 +1,8 @@
 ---
 /**
- * Zep Knowledge Graph Visualization Component
+ * Zep Deal Graph Visualization Component
  *
- * Renders an interactive network graph showing company connections
+ * Renders an interactive network graph showing company deal connections
  * using vis-network library
  */
 
@@ -25,7 +25,7 @@ const networkId = `${uniqueId}-network`;
     <div id={loadingId} class="absolute inset-0 flex items-center justify-center">
       <div class="text-center">
         <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <p class="text-slate-400 text-sm">Loading knowledge graph...</p>
+        <p class="text-slate-400 text-sm">Loading deal graph...</p>
       </div>
     </div>
 
@@ -34,8 +34,8 @@ const networkId = `${uniqueId}-network`;
       <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
-      <p class="text-slate-400 text-sm">Knowledge graph visualization coming soon</p>
-      <p class="text-slate-500 text-xs mt-2">Building connections...</p>
+      <p class="text-slate-400 text-sm">Deal graph visualization coming soon</p>
+      <p class="text-slate-500 text-xs mt-2">Building deal connections...</p>
     </div>
 
     <!-- Graph canvas -->
@@ -59,15 +59,24 @@ const networkId = `${uniqueId}-network`;
   </div>
 </div>
 
-<!-- vis-network library from CDN -->
-<script is:inline src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
-
 <script define:vars={{ companyId, companyName, loadingId, errorId, networkId }}>
-  // Wait for vis-network to load
-  window.addEventListener('DOMContentLoaded', async () => {
+  // Lazy load graph when it becomes visible (IntersectionObserver)
+  const initGraph = async () => {
     const loadingEl = document.getElementById(loadingId);
     const errorEl = document.getElementById(errorId);
     const networkEl = document.getElementById(networkId);
+
+    // Wait for vis-network library to be available
+    if (typeof vis === 'undefined') {
+      await new Promise((resolve) => {
+        const checkVis = setInterval(() => {
+          if (typeof vis !== 'undefined') {
+            clearInterval(checkVis);
+            resolve();
+          }
+        }, 100);
+      });
+    }
 
     try {
       // Fetch graph data from API endpoint
@@ -107,7 +116,7 @@ const networkId = `${uniqueId}-network`;
         networkEl.innerHTML = `
           <img
             src="${graphData.screenshot_url}"
-            alt="Zep Knowledge Graph for ${companyName}"
+            alt="Deal Graph for ${companyName}"
             class="w-full h-full object-contain rounded-xl"
             style="background: #0f172a;"
           />
@@ -278,7 +287,27 @@ const networkId = `${uniqueId}-network`;
       errorEl.classList.remove('hidden');
       errorEl.classList.add('flex');
     }
-  });
+  };
+
+  // Use IntersectionObserver to lazy-load graphs only when they become visible
+  const container = document.getElementById(loadingId);
+  if (container) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // Graph is now visible, initialize it
+          initGraph();
+          // Stop observing after initialization
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      // Start loading when graph is 100px from viewport
+      rootMargin: '100px'
+    });
+
+    observer.observe(container);
+  }
 </script>
 
 <style>
