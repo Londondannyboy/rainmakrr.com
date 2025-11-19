@@ -3,7 +3,7 @@ import { sql } from '../../lib/db';
 import SEO from '../../components/SEO.astro';
 import Schema from '../../components/Schema.astro';
 
-// Fetch North America placement agents
+// Fetch US placement agents
 const companies = await sql`
   SELECT
     id,
@@ -21,7 +21,7 @@ const companies = await sql`
   FROM companies
   WHERE company_type = 'placement_agent'
     AND status = 'published'
-    AND primary_region = 'North America'
+    AND primary_country = 'United States'
   ORDER BY
     CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
     global_rank ASC NULLS LAST,
@@ -33,8 +33,8 @@ const companies = await sql`
 <html lang="en">
 <head>
   <SEO
-    title="Top Private Equity Placement Agents North America | Placement Quest"
-    description="Leading private equity placement agents in North America. Expert US-based PE fundraising agencies specializing in capital raising, LP networks, and institutional investor connections."
+    title="Top Private Equity Placement Agents US | Placement Quest"
+    description="Leading private equity placement agents in the United States. Premier US-based PE fundraising agencies with deep relationships across American pension funds, endowments, and institutional investors."
   />
   <Schema type="company_list" />
   <meta charset="UTF-8">
@@ -313,43 +313,43 @@ const companies = await sql`
     <span>/</span>
     <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
     <span>/</span>
-    <span>North America</span>
+    <span>United States</span>
   </div>
 
   <div class="hero">
-    <h1>Top Private Equity Placement Agents North America</h1>
+    <h1>Top Private Equity Placement Agents US</h1>
     <p class="subtitle">
-      Leading North American private equity placement agents specializing in institutional capital raising. Connect with premier US-based PE fundraising experts with extensive LP networks across pension funds, endowments, and family offices.
+      Leading US private equity placement agents specializing in domestic and international capital raising. Connect with premier American PE fundraising firms with unparalleled access to US pension funds, endowments, insurance companies, and family offices.
     </p>
 
     <div class="region-switcher">
       <a href="/private-equity-placement-agents-list" class="region-btn">All Regions</a>
-      <a href="/top-private-equity-placement-agents-north-america" class="region-btn active">North America</a>
+      <a href="/top-private-equity-placement-agents-north-america" class="region-btn">North America</a>
       <a href="/top-private-equity-placement-agents-europe" class="region-btn">Europe</a>
       <a href="/top-private-equity-placement-agents-asia-pacific" class="region-btn">Asia Pacific</a>
       <a href="/top-private-equity-placement-agents-latin-america" class="region-btn">Latin America</a>
       <span style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></span>
-      <a href="/top-private-equity-placement-agents-us" class="region-btn">United States</a>
+      <a href="/top-private-equity-placement-agents-us" class="region-btn active">United States</a>
       <a href="/top-private-equity-placement-agents-uk" class="region-btn">United Kingdom</a>
       <a href="/top-private-equity-placement-agents-singapore" class="region-btn">Singapore</a>
     </div>
   </div>
 
   <div class="content">
-    <h2>North America Private Equity Placement Market</h2>
+    <h2>United States Private Equity Placement Market</h2>
     <p>
-      North America represents the world's largest private equity market, with the United States leading global PE fundraising activity. The region's top private equity placement agents maintain unparalleled access to institutional limited partners, including the largest pension funds, university endowments, and sovereign wealth funds.
+      The United States represents the world's largest and most sophisticated private equity market. American placement agents lead global fundraising activity with unmatched access to the deepest pools of institutional capital. Major US pension funds, university endowments, and insurance companies allocate hundreds of billions annually to private equity strategies.
     </p>
 
-    <h3>Why Choose North American Placement Agents</h3>
+    <h3>Why Choose US Placement Agents</h3>
     <p>
-      US-based placement agents offer distinct advantages for fund managers targeting North American institutional investors. These firms combine deep LP relationships, regulatory expertise in SEC and FINRA compliance, and sophisticated understanding of US investor preferences and fund structures.
+      US-based placement agents offer critical advantages for both domestic and international fund managers. These firms navigate complex SEC and FINRA regulatory frameworks, maintain decades-long relationships with major institutional allocators, and possess sophisticated understanding of American LP due diligence processes and fund structures.
     </p>
     <p>
-      Leading North American placement agencies typically maintain relationships with 200-500+ institutional investors across the region, providing critical access to capital allocators managing trillions in assets.
+      Leading American placement agencies typically maintain relationships with 300-700+ institutional investors, including the largest pension systems (CalPERS, CalSTRS, Texas Teachers), Ivy League endowments, and major insurance companies managing trillions in assets.
     </p>
 
-    <h3>Top Private Equity Placement Agents in North America ({companies.length})</h3>
+    <h3>Top Private Equity Placement Agents in the United States ({companies.length})</h3>
 
     <div class="companies-grid">
       {companies.map((company: any) => (

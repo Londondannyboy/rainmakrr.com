@@ -3,7 +3,7 @@ import { sql } from '../../lib/db';
 import SEO from '../../components/SEO.astro';
 import Schema from '../../components/Schema.astro';
 
-// Fetch North America placement agents
+// Fetch Singapore placement agents
 const companies = await sql`
   SELECT
     id,
@@ -21,7 +21,7 @@ const companies = await sql`
   FROM companies
   WHERE company_type = 'placement_agent'
     AND status = 'published'
-    AND primary_region = 'North America'
+    AND primary_country = 'Singapore'
   ORDER BY
     CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
     global_rank ASC NULLS LAST,
@@ -33,8 +33,8 @@ const companies = await sql`
 <html lang="en">
 <head>
   <SEO
-    title="Top Private Equity Placement Agents North America | Placement Quest"
-    description="Leading private equity placement agents in North America. Expert US-based PE fundraising agencies specializing in capital raising, LP networks, and institutional investor connections."
+    title="Top Private Equity Placement Agents Singapore | Placement Quest"
+    description="Leading private equity placement agents in Singapore. Premier Singapore-based PE fundraising firms with deep relationships across Asian sovereign wealth funds, family offices, and institutional investors."
   />
   <Schema type="company_list" />
   <meta charset="UTF-8">
@@ -313,43 +313,43 @@ const companies = await sql`
     <span>/</span>
     <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
     <span>/</span>
-    <span>North America</span>
+    <span>Singapore</span>
   </div>
 
   <div class="hero">
-    <h1>Top Private Equity Placement Agents North America</h1>
+    <h1>Top Private Equity Placement Agents Singapore</h1>
     <p class="subtitle">
-      Leading North American private equity placement agents specializing in institutional capital raising. Connect with premier US-based PE fundraising experts with extensive LP networks across pension funds, endowments, and family offices.
+      Leading Singapore private equity placement agents serving as the gateway to Asian institutional capital. Connect with premier Singapore-based PE fundraising firms with unparalleled access to Southeast Asian sovereign wealth funds, family offices, and the world's most concentrated ultra-high-net-worth investor base.
     </p>
 
     <div class="region-switcher">
       <a href="/private-equity-placement-agents-list" class="region-btn">All Regions</a>
-      <a href="/top-private-equity-placement-agents-north-america" class="region-btn active">North America</a>
+      <a href="/top-private-equity-placement-agents-north-america" class="region-btn">North America</a>
       <a href="/top-private-equity-placement-agents-europe" class="region-btn">Europe</a>
       <a href="/top-private-equity-placement-agents-asia-pacific" class="region-btn">Asia Pacific</a>
       <a href="/top-private-equity-placement-agents-latin-america" class="region-btn">Latin America</a>
       <span style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></span>
       <a href="/top-private-equity-placement-agents-us" class="region-btn">United States</a>
       <a href="/top-private-equity-placement-agents-uk" class="region-btn">United Kingdom</a>
-      <a href="/top-private-equity-placement-agents-singapore" class="region-btn">Singapore</a>
+      <a href="/top-private-equity-placement-agents-singapore" class="region-btn active">Singapore</a>
     </div>
   </div>
 
   <div class="content">
-    <h2>North America Private Equity Placement Market</h2>
+    <h2>Singapore Private Equity Placement Market</h2>
     <p>
-      North America represents the world's largest private equity market, with the United States leading global PE fundraising activity. The region's top private equity placement agents maintain unparalleled access to institutional limited partners, including the largest pension funds, university endowments, and sovereign wealth funds.
+      Singapore has emerged as Asia's premier private equity hub and the undisputed capital for Asian fundraising activity. The city-state's strategic location, sophisticated financial infrastructure, and concentration of regional wealth make it the natural base for placement agents targeting Asian institutional capital. Singapore hosts major sovereign wealth funds (GIC, Temasek), the highest concentration of family offices per capita globally, and serves as the regional headquarters for most major global institutional investors.
     </p>
 
-    <h3>Why Choose North American Placement Agents</h3>
+    <h3>Why Choose Singapore Placement Agents</h3>
     <p>
-      US-based placement agents offer distinct advantages for fund managers targeting North American institutional investors. These firms combine deep LP relationships, regulatory expertise in SEC and FINRA compliance, and sophisticated understanding of US investor preferences and fund structures.
+      Singapore-based placement agents offer unmatched advantages for managers targeting Asian and global capital. These firms navigate MAS regulations, maintain privileged relationships with GIC and Temasek, possess direct access to Southeast Asia's ultra-high-net-worth family office ecosystem, and understand the sophisticated cross-border structures essential for Asian fundraising. Singapore's tax efficiency and regulatory clarity make it the preferred jurisdiction for Asian PE fund structures.
     </p>
     <p>
-      Leading North American placement agencies typically maintain relationships with 200-500+ institutional investors across the region, providing critical access to capital allocators managing trillions in assets.
+      Leading Singapore placement agencies typically maintain relationships with 100-300+ institutional investors and family offices across Asia-Pacific, providing critical access to capital allocators in Singapore, Hong Kong, Australia, Japan, South Korea, and emerging Southeast Asian markets collectively managing trillions in assets.
     </p>
 
-    <h3>Top Private Equity Placement Agents in North America ({companies.length})</h3>
+    <h3>Top Private Equity Placement Agents in Singapore ({companies.length})</h3>
 
     <div class="companies-grid">
       {companies.map((company: any) => (
