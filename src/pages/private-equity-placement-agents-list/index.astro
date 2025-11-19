@@ -62,7 +62,7 @@ const companiesByCountry = normalizedCompanies.reduce((acc: any, company: any) =
 }, {});
 
 // Extract unique values for filters
-const regions = ['North America', 'Europe', 'Asia Pacific', 'Latin America'];
+const regions = ['North America', 'Europe', 'Asia Pacific', 'Latin America', 'Africa', 'Middle East'];
 const countries = Object.keys(companiesByCountry).filter(c => c !== 'Other').sort();
 const allSpecializations = [...new Set(normalizedCompanies.flatMap((c: any) => c.specializations || []))].sort();
 
