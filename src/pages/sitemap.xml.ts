@@ -33,7 +33,8 @@ async function generateSitemapXML(): Promise<string> {
   const currentDate = new Date().toISOString().split('T')[0];
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
 
   // Add static pages
   staticPages.forEach((page) => {
@@ -49,14 +50,21 @@ async function generateSitemapXML(): Promise<string> {
   </url>`;
   });
 
-  // Add all published articles from database
+  // Add all published articles from database with news detection
   try {
     const articles = await sql`
       SELECT
         slug,
+        title,
         updated_at,
         published_at,
-        created_at
+        created_at,
+        featured_image_url,
+        featured_image_title,
+        featured_image_alt,
+        hero_image_url,
+        hero_image_title,
+        hero_image_alt
       FROM articles
       WHERE app = 'placement'
         AND status = 'published'
@@ -70,12 +78,39 @@ async function generateSitemapXML(): Promise<string> {
         ? new Date(lastModDate).toISOString().split('T')[0]
         : currentDate;
 
+      // News detection: articles published in last 48 hours
+      const publishedDate = article.published_at ? new Date(article.published_at) : null;
+      const now = new Date();
+      const hoursSincePublished = publishedDate
+        ? (now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60)
+        : Infinity;
+
+      const isNews = hoursSincePublished <= 48;
+      const priority = isNews ? '0.9' : '0.7';
+      const changefreq = isNews ? 'daily' : 'monthly';
+
       xml += `
   <url>
     <loc>${BASE_URL}/${article.slug}</loc>
     <lastmod>${formattedDate}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>`;
+
+      // Add image tags if article has featured or hero image
+      const imageUrl = article.featured_image_url || article.hero_image_url;
+      const imageTitle = article.featured_image_title || article.hero_image_title || article.title;
+      const imageAlt = article.featured_image_alt || article.hero_image_alt || article.title;
+
+      if (imageUrl) {
+        xml += `
+    <image:image>
+      <image:loc>${imageUrl}</image:loc>
+      <image:title>${imageTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</image:title>
+      <image:caption>${imageAlt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</image:caption>
+    </image:image>`;
+      }
+
+      xml += `
   </url>`;
     });
   } catch (error) {
@@ -83,13 +118,17 @@ async function generateSitemapXML(): Promise<string> {
     // Continue generating sitemap even if articles fail
   }
 
-  // Add all published placement agent company pages
+  // Add all published placement agent company pages with images
   try {
     const companies = await sql`
       SELECT
         slug,
+        name,
         updated_at,
-        created_at
+        created_at,
+        featured_image_url,
+        hero_image_url,
+        logo_url
       FROM companies
       WHERE status = 'published'
         AND company_type = 'placement_agent'
@@ -107,7 +146,21 @@ async function generateSitemapXML(): Promise<string> {
     <loc>${BASE_URL}/private-equity-placement-agents/${company.slug}</loc>
     <lastmod>${formattedDate}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.8</priority>`;
+
+      // Add image tags for company images
+      const imageUrl = company.featured_image_url || company.hero_image_url || company.logo_url;
+      if (imageUrl) {
+        const imageName = company.name || 'Placement Agent';
+        xml += `
+    <image:image>
+      <image:loc>${imageUrl}</image:loc>
+      <image:title>${imageName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')} - Placement Agent Profile</image:title>
+      <image:caption>${imageName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')} private equity placement agent</image:caption>
+    </image:image>`;
+      }
+
+      xml += `
   </url>`;
     });
   } catch (error) {
