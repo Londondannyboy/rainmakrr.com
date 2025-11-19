@@ -12,7 +12,7 @@ const staticPages = [
   '/articles',
   '/privacy',
   '/terms',
-  '/private-equity-placement-agents',
+  '/private-equity-placement-agents-list',
   '/resources/placement-agents-guide',
 ];
 
@@ -143,7 +143,7 @@ async function generateSitemapXML(): Promise<string> {
 
       xml += `
   <url>
-    <loc>${BASE_URL}/private-equity-placement-agents/${company.slug}</loc>
+    <loc>${BASE_URL}/private-equity-placement-agents-list/${company.slug}</loc>
     <lastmod>${formattedDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>`;

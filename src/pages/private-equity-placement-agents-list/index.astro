@@ -38,14 +38,21 @@ const companiesByCountry = companies.reduce((acc: any, company: any) => {
   return acc;
 }, {});
 
-// Sort countries: UK first, then USA, then alphabetically
+// Sort countries: North America first (US), then Europe (UK, then alphabetically), then others
 const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
+  // US first (North America)
+  if (a === 'US') return -1;
+  if (b === 'US') return 1;
+
+  // UK second (Europe lead)
   if (a === 'UK') return -1;
   if (b === 'UK') return 1;
-  if (a === 'USA') return -1;
-  if (b === 'USA') return 1;
+
+  // Other last
   if (a === 'Other') return 1;
   if (b === 'Other') return -1;
+
+  // Rest alphabetically
   return a.localeCompare(b);
 });
 ---
@@ -403,7 +410,7 @@ const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
     <a href="/" class="logo">Placement</a>
     <ul class="nav-links">
       <li><a href="/articles">Articles</a></li>
-      <li><a href="/private-equity-placement-agents">Placement Agents</a></li>
+      <li><a href="/private-equity-placement-agents-list">Placement Agents</a></li>
     </ul>
   </nav>
 
@@ -429,7 +436,7 @@ const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
             </h2>
             <div class="companies-grid">
               {companiesByCountry[country].map((company: any) => (
-                <a href={`/private-equity-placement-agents/${company.slug}`} class="company-card">
+                <a href={`/private-equity-placement-agents-list/${company.slug}`} class="company-card">
                   {company.featured_image_url && (
                     <div style="width: 100%; height: 200px; overflow: hidden; margin-bottom: 20px; border-radius: 8px 8px 0 0; margin: -20px -20px 20px -20px;">
                       <img
@@ -505,7 +512,7 @@ const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
         <h3>Resources</h3>
         <ul class="footer-links">
           <li><a href="/articles">Articles & Insights</a></li>
-          <li><a href="/private-equity-placement-agents">Agency Directory</a></li>
+          <li><a href="/private-equity-placement-agents-list">Agency Directory</a></li>
         </ul>
       </div>
 

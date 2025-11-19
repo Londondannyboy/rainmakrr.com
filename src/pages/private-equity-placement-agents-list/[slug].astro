@@ -175,7 +175,7 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
         </a>
         <div class="flex items-center space-x-8">
           <a href="/articles" class="text-slate-300 hover:text-white transition-colors text-sm font-medium">Articles</a>
-          <a href="/private-equity-placement-agents" class="text-blue-400 text-sm font-medium">Placement Agents</a>
+          <a href="/private-equity-placement-agents-list" class="text-blue-400 text-sm font-medium">Placement Agents</a>
         </div>
       </div>
     </div>
@@ -605,7 +605,7 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
       <!-- Article Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Example Article 1: The company profile itself -->
-        <a href={`/private-equity-placement-agents/${company.slug}`} class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl p-6 border border-slate-700/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
+        <a href={`/private-equity-placement-agents-list/${company.slug}`} class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl p-6 border border-slate-700/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
           <div class="flex items-start gap-4 mb-4">
             <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
               {company.display_name.charAt(0)}
@@ -678,7 +678,7 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
 
     <!-- Navigation -->
     <div class="mt-12 flex justify-between items-center">
-      <a href="/private-equity-placement-agents"
+      <a href="/private-equity-placement-agents-list"
          class="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-xl transition-all duration-300 border border-slate-700/50 hover:border-blue-500/30">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>

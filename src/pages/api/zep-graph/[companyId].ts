@@ -128,7 +128,7 @@ export async function GET({ params }: { params: { companyId: string } }) {
       { id: "11", label: "Family Offices", group: "entity" },
       { id: "12", label: "Campbell Lutyens", group: "company" },
       { id: "13", label: "Eaton Partners", group: "company" },
-      { id: "14", label: "First Avenue", group: "company", url: "/private-equity-placement-agents/firstavenue" }
+      { id: "14", label: "First Avenue", group: "company", url: "/private-equity-placement-agents-list/firstavenue" }
     ],
     edges: [
       { from: "1", to: "2", label: "Specializes In" },
