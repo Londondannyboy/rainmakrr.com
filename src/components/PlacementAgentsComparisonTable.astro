@@ -27,6 +27,14 @@ const topAgents = await sql`
   LIMIT 15
 `;
 
+// Image optimization for small logos (48x48px display)
+function optimizeCloudinaryLogo(url: string): string {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  // For 48x48px logos: WebP, 60% quality, 96px width (2x for retina)
+  const transformations = 'f_auto,q_60,w_96,h_96,c_fill';
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}
+
 // Industry estimates for top placement agents (based on Preqin 2025 and industry research)
 const agentEstimates: Record<string, any> = {
   'campbell-lutyens': {
@@ -173,10 +181,12 @@ const tableData = topAgents.map((agent: any) => {
                 <div style="display: flex; align-items: center; gap: 12px;">
                   {(agent.featured_image_url || agent.logo_url) && (
                     <img
-                      src={agent.featured_image_url || agent.logo_url}
+                      src={optimizeCloudinaryLogo(agent.featured_image_url || agent.logo_url)}
                       alt={agent.display_name}
                       style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: rgba(255, 255, 255, 0.05);"
                       loading="lazy"
+                      width="96"
+                      height="96"
                     />
                   )}
                   <div>
