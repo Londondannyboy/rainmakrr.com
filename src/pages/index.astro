@@ -96,8 +96,28 @@ if (sections.role) {
   });
 }
 
-// Mux video playback ID - can be moved to database later
-const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
+// Hero carousel items - rotates every 3 seconds
+const heroCarouselItems = [
+  {
+    type: 'video',
+    src: 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg', // Original Mux video
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920&q=80&auto=format&fit=crop', // Business meeting
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=80&auto=format&fit=crop', // Handshake
+  },
+  {
+    type: 'image',
+    src: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1920&q=80&auto=format&fit=crop', // Team collaboration
+  }
+];
+
+// Keep original for backward compatibility
+const muxPlaybackId = heroCarouselItems[0].src;
 ---
 
 <!DOCTYPE html>
@@ -284,7 +304,16 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
       overflow: hidden;
     }
 
-    .hero-video {
+    .hero-carousel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .hero-carousel-item {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -293,9 +322,24 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
       width: auto;
       height: auto;
       transform: translate(-50%, -50%);
-      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
       z-index: 0;
+    }
+
+    .hero-carousel-item.active {
       opacity: 0.7;
+      z-index: 1;
+    }
+
+    .hero-video {
+      object-fit: cover;
+    }
+
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
 
     .hero-overlay {
@@ -1579,9 +1623,31 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
     </ul>
   </nav>
 
-  <!-- Hero with Mux Video -->
+  <!-- Hero with Carousel -->
   <section class="hero">
-    <video id="hero-video" class="hero-video" autoplay loop muted playsinline preload="none" poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect fill='%23000' width='1920' height='1080'/%3E%3C/svg%3E"></video>
+    <div class="hero-carousel">
+      {heroCarouselItems.map((item, index) => (
+        item.type === 'video' ? (
+          <video
+            id={`hero-carousel-${index}`}
+            class={`hero-carousel-item hero-video ${index === 0 ? 'active' : ''}`}
+            autoplay={index === 0}
+            loop
+            muted
+            playsinline
+            preload="none"
+            data-carousel-index={index}
+          ></video>
+        ) : (
+          <div
+            id={`hero-carousel-${index}`}
+            class={`hero-carousel-item hero-image ${index === 0 ? 'active' : ''}`}
+            style={`background-image: url('${item.src}');`}
+            data-carousel-index={index}
+          ></div>
+        )
+      ))}
+    </div>
     <div class="hero-overlay"></div>
 
     <div class="hero-content">
@@ -1721,73 +1787,6 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
     </div>
   </section>
 
-  <!-- Other Companies Section -->
-  {otherCompanies.length > 0 && (
-    <section class="companies-section" style="margin-top: 80px;">
-      <div class="companies-content">
-        <div class="section-header">
-          <h2>Private Equity Placement Agents List - Additional Agencies</h2>
-          <p style="font-size: 16px; line-height: 1.7; color: rgba(255, 255, 255, 0.8);">
-            Additional placement agencies in our comprehensive private equity placement agents list, serving the PE fundraising market across various strategies and regions.
-          </p>
-        </div>
-
-        <div class="companies-grid">
-          {otherCompanies.map((company: any, index: number) => (
-            <a href={`/private-equity-placement-agents-list/${company.slug}`} aria-label={`View ${company.display_name} profile - Private equity placement agent`} style="text-decoration: none; color: inherit;">
-              <div class={`company-card${index >= 10 ? ' hidden-card' : ''}`}>
-                {company.featured_image_url && (
-                  <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
-                    <img
-                      src={company.featured_image_url}
-                      alt={company.display_name}
-                      loading={index < 10 ? 'eager' : 'lazy'}
-                      decoding="async"
-                      style="width: 100%; height: 100%; object-fit: cover;"
-                    />
-                  </div>
-                )}
-                <div class="company-header">
-                  <div>
-                    <h3 class="company-name">{company.display_name}</h3>
-                    {company.primary_country && (
-                      <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
-                    )}
-                    {company.global_rank && (
-                      <div class="company-location">🏆 Rank #{company.global_rank}</div>
-                    )}
-                  </div>
-                </div>
-                {company.description && (
-                  <p class="company-description">{company.description}</p>
-                )}
-
-                {company.specializations && company.specializations.length > 0 && (
-                  <div class="company-tags">
-                    {company.specializations.slice(0, 3).map((spec: string) => (
-                      <span class="tag">{spec}</span>
-                    ))}
-                  </div>
-                )}
-                <div style="margin-top: 16px; color: #667eea; font-weight: 600; font-size: 14px;">
-                  View Profile →
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {otherCompanies.length > 10 && (
-          <div id="load-buttons-other" style="text-align: center; margin-top: 48px;">
-            <button id="load-all-other-agents" class="btn btn-primary">
-              Load All Other Placement Agents
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
-  )}
-
   <!-- Latest News & Insights -->
   {articles && articles.length > 0 && (
     <section class="content-section gradient animated">
@@ -1856,6 +1855,73 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
 
   <!-- Comparison Table -->
   <PlacementAgentsComparisonTable />
+
+  <!-- Other Companies Section - Moved after Comparison Table -->
+  {otherCompanies.length > 0 && (
+    <section class="companies-section" style="margin-top: 0; padding-top: 0;">
+      <div class="companies-content">
+        <div class="section-header" style="margin-top: 80px;">
+          <h2>Additional Private Equity Placement Agents</h2>
+          <p style="font-size: 16px; line-height: 1.7; color: rgba(255, 255, 255, 0.8);">
+            Additional placement agencies in our comprehensive directory, serving the PE fundraising market across various strategies and regions.
+          </p>
+        </div>
+
+        <div class="companies-grid">
+          {otherCompanies.map((company: any, index: number) => (
+            <a href={`/private-equity-placement-agents-list/${company.slug}`} aria-label={`View ${company.display_name} profile - Private equity placement agent`} style="text-decoration: none; color: inherit;">
+              <div class={`company-card${index >= 10 ? ' hidden-card' : ''}`}>
+                {company.featured_image_url && (
+                  <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
+                    <img
+                      src={company.featured_image_url}
+                      alt={company.display_name}
+                      loading={index < 10 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      style="width: 100%; height: 100%; object-fit: cover;"
+                    />
+                  </div>
+                )}
+                <div class="company-header">
+                  <div>
+                    <h3 class="company-name">{company.display_name}</h3>
+                    {company.primary_country && (
+                      <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
+                    )}
+                    {company.global_rank && (
+                      <div class="company-location">🏆 Rank #{company.global_rank}</div>
+                    )}
+                  </div>
+                </div>
+                {company.description && (
+                  <p class="company-description">{company.description}</p>
+                )}
+
+                {company.specializations && company.specializations.length > 0 && (
+                  <div class="company-tags">
+                    {company.specializations.slice(0, 3).map((spec: string) => (
+                      <span class="tag">{spec}</span>
+                    ))}
+                  </div>
+                )}
+                <div style="margin-top: 16px; color: #667eea; font-weight: 600; font-size: 14px;">
+                  View Profile →
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        {otherCompanies.length > 10 && (
+          <div id="load-buttons-other" style="text-align: center; margin-top: 48px;">
+            <button id="load-all-other-agents" class="btn btn-primary">
+              Load All Additional Placement Agents
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
 
   <!-- Stats - Qualitative Statements (MOVED UP) -->
   <section class="stats-section animated">
@@ -2348,7 +2414,8 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
 
     // Initialize videos when sections are near viewport
     window.addEventListener('DOMContentLoaded', function() {
-      initVideo('hero-video', '.hero');
+      // Initialize first carousel item if it's a video
+      initVideo('hero-carousel-0', '.hero');
       initVideo('companies-video', '.companies-section');
 
       // Load All functionality for top placement agencies
