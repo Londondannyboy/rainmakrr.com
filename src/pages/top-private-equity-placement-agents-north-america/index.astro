@@ -87,6 +87,54 @@ const companies = await sql`
       color: #fff;
     }
 
+    /* Dropdown navigation */
+    .nav-item {
+      position: relative;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 250px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 1000;
+      margin-top: 12px;
+    }
+
+    .nav-item:hover .dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s;
+    }
+
+    .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      opacity: 1;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
     .breadcrumbs {
       max-width: 1400px;
       margin: 0 auto;
@@ -304,7 +352,21 @@ const companies = await sql`
     <a href="/" class="logo">Placement Quest</a>
     <ul class="nav-links">
       <li><a href="/articles">Articles</a></li>
-      <li><a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a></li>
+      <li class="nav-item">
+        <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
+        <div class="dropdown">
+          <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-north-america">North America</a>
+          <a href="/top-private-equity-placement-agents-europe">Europe</a>
+          <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-us">United States</a>
+          <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+          <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+        </div>
+      </li>
     </ul>
   </nav>
 

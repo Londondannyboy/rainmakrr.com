@@ -183,6 +183,54 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
 
     .nav-links a:hover { opacity: 0.6; }
 
+    /* Dropdown navigation */
+    .nav-item {
+      position: relative;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 250px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 1000;
+      margin-top: 12px;
+    }
+
+    .nav-item:hover .dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s;
+    }
+
+    .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      opacity: 1;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
     /* Hero with Mux Video */
     .hero {
       height: 100vh;
@@ -1466,7 +1514,21 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
     <a href="/" class="logo">Placement Quest</a>
     <ul class="nav-links">
       <li><a href="/articles">Articles</a></li>
-      <li><a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a></li>
+      <li class="nav-item">
+        <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
+        <div class="dropdown">
+          <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-north-america">North America</a>
+          <a href="/top-private-equity-placement-agents-europe">Europe</a>
+          <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-us">United States</a>
+          <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+          <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+        </div>
+      </li>
     </ul>
   </nav>
 
@@ -1492,25 +1554,11 @@ const muxPlaybackId = 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg';
     </div>
   </section>
 
-  <!-- Intro Section -->
-  {sections.intro && sections.intro.content && (
-    <section class="content-section dark has-background intro animated">
-      <h2 class="section-title">{sections.intro.title}</h2>
-      {sections.intro.subtitle && <p class="section-subtitle">{sections.intro.subtitle}</p>}
-
-      <div class="intro-content">
-        {sections.intro.content.paragraphs?.map((para: any) => (
-          <p set:html={para.text}></p>
-        ))}
-      </div>
-    </section>
-  )}
-
   <!-- Top Companies Section -->
   <section class="companies-section">
     <div class="companies-content">
       <div class="section-header">
-        <h2>Private Equity Placement Agents List - Top Tier</h2>
+        <h2>Top Private Equity Placement Agents</h2>
         <p style="font-size: 18px; line-height: 1.8; margin-bottom: 16px;">
           Our curated private equity placement agents list features leading agencies with proven track records in raising capital for PE funds. These top-tier agencies serve as the vital bridge between General Partners (GPs) seeking capital and institutional Limited Partners (LPs).
         </p>
