@@ -214,7 +214,7 @@ export const GET: APIRoute = async () => {
   return new Response(sitemap, {
     status: 200,
     headers: {
-      'Content-Type': 'application/xml',
+      'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate', // No caching - force fresh generation
       'Pragma': 'no-cache',
       'Expires': '0',

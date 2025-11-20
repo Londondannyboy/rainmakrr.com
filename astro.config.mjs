@@ -12,6 +12,15 @@ export default defineConfig({
     mode: 'standalone'
   }),
   compressHTML: true,
+
+  // Redirects for old URL patterns (SEO)
+  redirects: {
+    // Redirect old /articles/* URLs to root /* (301 permanent for SEO)
+    '/articles/[...slug]': {
+      status: 301,
+      destination: '/[...slug]',
+    },
+  },
   build: {
     inlineStylesheets: 'auto', // Inline critical CSS
   },
