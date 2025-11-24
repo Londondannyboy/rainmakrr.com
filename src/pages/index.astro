@@ -96,19 +96,11 @@ if (sections.role) {
   });
 }
 
-// Hero carousel items - rotates every 3 seconds (starts with video 2 to show rotation immediately)
+// Single hero video - no rotation, just showcase the video
 const heroCarouselItems = [
   {
     type: 'video',
-    src: 'ywv6R4Ht6P0089VKJN1KynQ00VCT401uxSqxrlqg1ML01eU', // Second Mux video (START HERE)
-  },
-  {
-    type: 'video',
-    src: '5br2hylJ4F009vDLHrxWZ3C7UDTw5901GcXYBjSOWNV8k', // Third Mux video
-  },
-  {
-    type: 'video',
-    src: 'ZdBjAaWzf4UvDAa9bvBikfP00btysIpiwHq016LSwYZeg', // Original Mux video
+    src: 'mOMmHitiSizSxgTqzF1Y7tcryugkc700QL65SMOC2WEU', // Main showcase video
   }
 ];
 
@@ -1717,30 +1709,14 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         )
       ))}
     </div>
-    <div class="hero-overlay"></div>
-
-    <div class="hero-content">
-      <div class="hero-badge">The Definitive Industry Resource</div>
-
-      <div style="font-size: 72px; font-weight: 900; line-height: 1.1; margin-bottom: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center;">
-        Placement Quest
-      </div>
-
-      <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 24px; text-align: center; color: rgba(255, 255, 255, 0.95);">
-        Top Private Equity Placement Agents List
-      </h1>
-
-      <p class="hero-subtitle">
-        Comprehensive private equity placement agents list featuring expert rankings, capital raising insights, and market intelligence. Your definitive resource for PE fundraising success.
-      </p>
-    </div>
   </section>
 
   <!-- Top Companies Section -->
   <section class="companies-section">
     <div class="companies-content">
       <div class="section-header">
-        <h2>Top Private Equity Placement Agents</h2>
+        <h1>Top Private Equity Placement Agents</h1>
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px; color: rgba(255, 255, 255, 0.9);">Hot Top Private Equity Placement Agents List</h2>
         <p style="font-size: 18px; line-height: 1.8; margin-bottom: 24px; font-weight: 600;">
           Our curated private equity placement agents list features the world's leading fundraising advisors, including firms ranked in <a href="https://www.preqin.com" target="_blank" rel="noopener" style="color: #667eea; text-decoration: underline;">Preqin's 2025 Global Placement Agent Rankings</a>. These elite agencies serve as the vital bridge between General Partners (GPs) seeking capital and institutional Limited Partners (LPs).
         </p>
