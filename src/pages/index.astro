@@ -764,7 +764,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
     .companies-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 40px;
     }
 
@@ -1760,11 +1760,30 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         font-size: 16px;
       }
 
-      .companies-grid { grid-template-columns: 1fr; gap: 30px; }
+      /* Agents grid fully responsive on mobile */
+      .companies-grid {
+        grid-template-columns: 1fr !important;
+        gap: 24px !important;
+        margin: 0 -20px;
+        padding: 0 20px;
+      }
 
       /* Center company card images on mobile */
+      .company-card {
+        padding: 24px !important;
+      }
+
       .company-card img {
         object-position: center center !important;
+        margin: -24px -24px 16px -24px !important;
+      }
+
+      .company-name {
+        font-size: 18px !important;
+      }
+
+      .company-description {
+        font-size: 14px !important;
       }
 
       .portfolio-grid { grid-template-columns: 1fr; }
