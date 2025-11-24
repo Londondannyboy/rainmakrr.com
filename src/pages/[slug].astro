@@ -15,7 +15,7 @@ marked.setOptions({
   gfm: true,      // GitHub Flavored Markdown
 });
 
-// Fetch the article with images - using Quest schema
+// Fetch the article with images and video - using Quest schema
 const articleResult = await sql`
   SELECT
     id,
@@ -29,6 +29,7 @@ const articleResult = await sql`
     word_count,
     hero_image_url,
     hero_image_alt,
+    hero_video_url,
     content_image_1_url,
     content_image_1_alt,
     content_image_2_url,
@@ -115,8 +116,22 @@ const html = insertImagesIntoHTML(baseHtml, null, {
           <span>{article.word_count} words</span>
         </div>
 
-        <!-- Hero Image - Using Quest schema -->
-        {article.hero_image_url && (
+        <!-- Hero Video/Image - Video supersedes image if available -->
+        {article.hero_video_url ? (
+          <div class="mb-8 relative rounded-lg overflow-hidden shadow-lg">
+            <video
+              autoplay
+              loop
+              muted
+              playsinline
+              class="w-full h-auto"
+              poster={article.hero_image_url || ''}
+            >
+              <source src={`https://stream.mux.com/${article.hero_video_url}.m3u8`} type="application/x-mpegURL" />
+              <source src={`https://stream.mux.com/${article.hero_video_url}/high.mp4`} type="video/mp4" />
+            </video>
+          </div>
+        ) : article.hero_image_url && (
           <div class="mb-8">
             <img
               src={article.hero_image_url}
