@@ -1798,14 +1798,14 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         font-size: 18px;
       }
 
-      /* News section responsive - Featured panels */
-      .content-section.gradient > div > div > div:nth-child(1) {
+      /* News section responsive - Featured panels (2 to 1) */
+      div[style*="grid-template-columns: 1fr 1fr"][style*="margin-bottom: 40px"] {
         grid-template-columns: 1fr !important;
         gap: 24px !important;
       }
 
-      /* News section responsive - Small panels */
-      .content-section.gradient > div > div > div:nth-child(2) {
+      /* News section responsive - Small panels (3 columns to 1) */
+      div[style*="repeat(3, 1fr)"][style*="margin-bottom: 60px"] {
         grid-template-columns: 1fr !important;
         gap: 24px !important;
       }
