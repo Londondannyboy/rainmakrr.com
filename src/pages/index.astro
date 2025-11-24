@@ -42,6 +42,9 @@ const companies = await sql`
 const topCompanies = companies.filter((c: any) => c.tags && c.tags.includes('top'));
 const otherCompanies = companies.filter((c: any) => !c.tags || !c.tags.includes('top'));
 
+// Combined list: top agents first, then others
+const allAgents = [...topCompanies, ...otherCompanies];
+
 // Fetch articles with video/image support and content for full sections
 const articlesRaw = await sql`
   SELECT
@@ -59,7 +62,7 @@ const articlesRaw = await sql`
   WHERE app = 'placement'
     AND status = 'published'
   ORDER BY published_at DESC NULLS LAST
-  LIMIT 5
+  LIMIT 8
 `;
 
 // Extract Mux playback ID from URL or use as-is if already just the ID
@@ -245,6 +248,29 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
           "description": "Full regulatory registration (SEC, FCA, etc.) and adherence to industry best practices including ILPA guidelines"
         }
       ]
+    }
+  </script>
+
+  <!-- Structured Data: VideoObject for SEO -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "name": "Top Private Equity Placement Agents - Industry Overview",
+      "description": "Explore the world's leading private equity placement agents. Comprehensive guide to PE fundraising advisors, LP networks, and capital raising strategies for fund managers.",
+      "thumbnailUrl": "https://image.mux.com/qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y/thumbnail.jpg?width=1920&height=1080&time=0",
+      "contentUrl": "https://stream.mux.com/qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y/high.mp4",
+      "embedUrl": "https://placement.quest/",
+      "uploadDate": "2025-01-01T00:00:00Z",
+      "duration": "PT30S",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Placement",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://placement.quest/logo.png"
+        }
+      }
     }
   </script>
 
@@ -1676,6 +1702,70 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         font-size: 18px;
       }
     }
+
+    /* Article content styles for database HTML with Tailwind classes */
+    .article-content {
+      color: #fff !important;
+    }
+    .article-content p {
+      margin-bottom: 1rem;
+      color: #fff !important;
+    }
+    .article-content .text-lg { font-size: 1.125rem; }
+    .article-content .text-2xl { font-size: 1.5rem; }
+    .article-content .text-gray-700,
+    .article-content .text-gray-600,
+    .article-content .text-gray-900,
+    .article-content p[class*="text-gray"] {
+      color: #fff !important;
+    }
+    .article-content .text-blue-600 { color: #93c5fd !important; }
+    .article-content .text-blue-800:hover, .article-content a:hover { color: #bfdbfe !important; }
+    .article-content .leading-relaxed { line-height: 1.625; }
+    .article-content .font-bold { font-weight: 700; }
+    .article-content .underline { text-decoration: underline; }
+    .article-content .italic { font-style: italic; }
+    .article-content .mb-4 { margin-bottom: 1rem; }
+    .article-content .mb-6 { margin-bottom: 1.5rem; }
+    .article-content .mt-8 { margin-top: 2rem; }
+    .article-content .my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+    .article-content .pl-4 { padding-left: 1rem; }
+    .article-content .border-l-4 { border-left: 4px solid; }
+    .article-content .border-blue-500 { border-color: #93c5fd; }
+    .article-content blockquote {
+      border-left: 4px solid #93c5fd;
+      padding-left: 1rem;
+      margin: 1.5rem 0;
+      font-style: italic;
+      color: #e0e0e0 !important;
+    }
+    .article-content h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff !important;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    .article-content h2[class*="text-gray"],
+    .article-content h2.text-gray-900 {
+      color: #fff !important;
+    }
+    .article-content ul, .article-content ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+      color: #fff !important;
+    }
+    .article-content .list-disc { list-style-type: disc; }
+    .article-content .list-inside { list-style-position: inside; }
+    .article-content .space-y-2 > * + * { margin-top: 0.5rem; }
+    .article-content li { margin-bottom: 0.5rem; color: #fff !important; }
+    .article-content a {
+      color: #93c5fd !important;
+      text-decoration: underline;
+    }
+    .article-content a:hover {
+      color: #bfdbfe !important;
+    }
   </style>
 
   <!-- Performance: Defer non-critical CSS (company detail page CSS) -->
@@ -1695,7 +1785,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 <body>
   <!-- Navigation -->
   <nav>
-    <a href="/" class="logo">Placement Quest</a>
+    <a href="/" class="logo">Placement</a>
     <ul class="nav-links">
       <li><a href="/articles">News</a></li>
       <li class="nav-item">
@@ -1749,24 +1839,35 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
   </section>
 
-  <!-- Welcome Section - Impressive Hero Panel -->
-  <section class="welcome-section" style="padding: 120px 60px; background: linear-gradient(180deg, #000 0%, rgba(102, 126, 234, 0.1) 50%, #000 100%); text-align: center;">
-    <div style="max-width: 1200px; margin: 0 auto;">
-      <!-- Animated Welcome Text -->
-      <div class="welcome-text" style="font-size: clamp(48px, 10vw, 120px); font-weight: 900; line-height: 1; margin-bottom: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: welcomeFade 1.5s ease-out;">
-        Welcome to Placement Quest
+  <!-- Welcome Section - Two Panel Design -->
+  <section class="welcome-section" style="padding: 100px 40px; background: linear-gradient(180deg, #000 0%, rgba(102, 126, 234, 0.15) 50%, #000 100%);">
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <!-- Two Panel Intro -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 60px;">
+        <!-- Panel 1: Welcome -->
+        <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%); border: 2px solid rgba(102, 126, 234, 0.4); border-radius: 24px; padding: 48px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(240, 147, 251, 0.3) 0%, transparent 70%); border-radius: 50%;"></div>
+          <div class="welcome-text" style="font-size: clamp(36px, 6vw, 72px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: welcomeFade 1.5s ease-out;">
+            Welcome to Placement Quest
+          </div>
+          <div style="font-size: 16px; color: rgba(255, 255, 255, 0.7); font-weight: 500; letter-spacing: 2px; text-transform: uppercase;">
+            Your Journey Starts Here
+          </div>
+        </div>
+
+        <!-- Panel 2: Guide Description -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 48px; display: flex; flex-direction: column; justify-content: center;">
+          <h1 style="font-size: clamp(24px, 3vw, 36px); font-weight: 700; margin-bottom: 20px; color: #fff; line-height: 1.3;">
+            Your Guide To The Top Private Equity Placement Agents
+          </h1>
+          <p style="font-size: 16px; line-height: 1.8; color: rgba(255, 255, 255, 0.8); margin: 0;">
+            Discover the world's leading placement agents, compare firms side-by-side, and find the perfect fundraising partner for your fund.
+          </p>
+        </div>
       </div>
 
-      <h1 style="font-size: clamp(28px, 4vw, 48px); font-weight: 700; margin-bottom: 32px; color: #fff; line-height: 1.2;">
-        Your Guide To The Top Private Equity Placement Agents
-      </h1>
-
-      <p style="font-size: 20px; line-height: 1.8; color: rgba(255, 255, 255, 0.85); max-width: 900px; margin: 0 auto 48px;">
-        Discover the world's leading placement agents, compare firms side-by-side, and find the perfect fundraising partner for your fund. Our comprehensive directory features Preqin-ranked agencies with detailed profiles, fee structures, and LP networks.
-      </p>
-
       <!-- Quick Stats -->
-      <div style="display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; margin-bottom: 60px;">
+      <div style="display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; margin-bottom: 50px;">
         <div style="text-align: center;">
           <div style="font-size: 48px; font-weight: 900; color: #667eea;">50+</div>
           <div style="font-size: 14px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 1px;">Top Agents</div>
@@ -1784,14 +1885,23 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       <!-- CTA Buttons -->
       <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
         <a href="#comparison-table" class="btn btn-primary" style="padding: 20px 40px; font-size: 16px;">
-          📊 View Comparison Table
+          View Comparison Table
         </a>
         <a href="#top-agents" class="btn btn-secondary" style="padding: 20px 40px; font-size: 16px;">
-          🏆 Browse Top Agents
+          Browse Top Agents
         </a>
       </div>
     </div>
   </section>
+
+  <!-- Responsive styles for two-panel intro -->
+  <style>
+    @media (max-width: 900px) {
+      .welcome-section > div > div:first-child {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
 
   <!-- Comparison Table - Moved Up for Quick Access -->
   <div id="comparison-table">
@@ -1856,11 +1966,11 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         </div>
       </div>
 
-      {topCompanies.length > 0 ? (
+      {allAgents.length > 0 ? (
         <div class="companies-grid">
-          {topCompanies.map((company: any, index: number) => (
+          {allAgents.map((company: any, index: number) => (
             <a href={`/private-equity-placement-agents-list/${company.slug}`} aria-label={`View ${company.display_name} profile - Private equity placement agent`} style="text-decoration: none; color: inherit;">
-              <div class={`company-card${index >= 10 ? ' hidden-card' : ''}`}>
+              <div class={`company-card${index >= 20 ? ' hidden-card' : ''}`}>
                 {company.featured_image_url && (
                   <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
                     <img
@@ -1868,7 +1978,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                       srcset={generateSrcSet(company.featured_image_url)}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                       alt={company.display_name}
-                      loading={index < 2 ? 'eager' : 'lazy'}
+                      loading={index < 4 ? 'eager' : 'lazy'}
                       decoding="async"
                       width="800"
                       height="200"
@@ -1912,57 +2022,156 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         </div>
       )}
 
-      {topCompanies.length > 10 && (
+      {allAgents.length > 20 && (
         <div id="load-buttons-top" style="text-align: center; margin-top: 48px;">
           <button id="load-all-top-agents" class="btn btn-primary">
-            Load All Top Placement Agents
+            Load All {allAgents.length} Placement Agents
           </button>
         </div>
       )}
     </div>
   </section>
 
-  <!-- Latest News & Insights -->
+  <!-- Recent Placement News - Funky Design -->
   {articles && articles.length > 0 && (
-    <section class="content-section gradient animated">
-      <h2 class="section-title">Latest PE Fundraising News & Insights</h2>
-      <p class="section-subtitle">Stay informed with the latest insights, trends, and analysis from the private equity fundraising world</p>
-
-      <div class="news-grid">
-        {articles.slice(0, 3).map((article: any) => (
-          <div class="news-card">
-            {/* Video GIF or Image - GIF/Video supersedes image */}
-            {(article.gif_url || article.hero_image_url) && (
-              <div style="width: 100%; height: 180px; overflow: hidden; margin-bottom: 16px; border-radius: 8px;">
-                <img
-                  src={article.gif_url || article.hero_image_url}
-                  alt={article.title}
-                  style="width: 100%; height: 100%; object-fit: cover;"
-                  loading="lazy"
-                />
-              </div>
-            )}
-            <div class="news-date">
-              {new Date(article.published_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </div>
-            <h3 class="news-title">{article.title}</h3>
-            {article.excerpt && (
-              <p class="news-excerpt">{article.excerpt}</p>
-            )}
-            <a href={`/${article.slug}`} class="news-link">
-              Read Article →
-            </a>
+    <section class="content-section gradient animated" style="padding: 80px 40px;">
+      <div style="max-width: 1400px; margin: 0 auto;">
+        <!-- Section Header -->
+        <div style="text-align: center; margin-bottom: 60px;">
+          <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 8px 24px; border-radius: 50px; margin-bottom: 24px;">
+            <span style="font-size: 14px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Latest Updates</span>
           </div>
-        ))}
+          <h2 style="font-size: clamp(32px, 5vw, 52px); font-weight: 900; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Recent Placement News
+          </h2>
+          <p style="font-size: 18px; color: rgba(255, 255, 255, 0.7); max-width: 600px; margin: 0 auto;">
+            Stay ahead with the latest insights and trends from the private equity fundraising world
+          </p>
+        </div>
+
+        <!-- Two Featured Panels -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+          {articles.slice(0, 2).map((article: any, index: number) => (
+            <a href={`/${article.slug}`} style="text-decoration: none; display: block;">
+              <div style={`background: ${index === 0 ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%)' : 'linear-gradient(135deg, rgba(240, 147, 251, 0.2) 0%, rgba(102, 126, 234, 0.2) 100%)'}; border: 2px solid ${index === 0 ? 'rgba(102, 126, 234, 0.5)' : 'rgba(240, 147, 251, 0.4)'}; border-radius: 20px; padding: 0; overflow: hidden; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); height: 100%;`} class="featured-news-panel">
+                {(article.gif_url || article.hero_image_url) && (
+                  <div style="width: 100%; height: 220px; overflow: hidden;">
+                    <img
+                      src={article.gif_url || article.hero_image_url}
+                      alt={article.title}
+                      style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease;"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+                <div style="padding: 28px;">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style={`width: 8px; height: 8px; border-radius: 50%; background: ${index === 0 ? '#667eea' : '#f093fb'}; animation: pulse 2s infinite;`}></div>
+                    <span style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 1px;">
+                      {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <h3 style="font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 12px; line-height: 1.3;">
+                    {article.title}
+                  </h3>
+                  {article.excerpt && (
+                    <p style="font-size: 14px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin: 0;">
+                      {article.excerpt.substring(0, 120)}...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        <!-- Six News Panels Grid -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 50px;">
+          {articles.slice(2, 8).map((article: any, index: number) => (
+            <a href={`/${article.slug}`} style="text-decoration: none; display: block;">
+              <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 0; overflow: hidden; transition: all 0.3s ease; height: 100%;" class="news-panel-small">
+                {(article.gif_url || article.hero_image_url) && (
+                  <div style="width: 100%; height: 140px; overflow: hidden;">
+                    <img
+                      src={article.gif_url || article.hero_image_url}
+                      alt={article.title}
+                      style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+                <div style="padding: 20px;">
+                  <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                  <h4 style="font-size: 15px; font-weight: 600; color: #fff; margin: 0; line-height: 1.4;">
+                    {article.title.length > 60 ? article.title.substring(0, 60) + '...' : article.title}
+                  </h4>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        <!-- Funky More News Button -->
+        <div style="text-align: center;">
+          <a href="/articles" style="display: inline-flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); padding: 18px 48px; border-radius: 60px; text-decoration: none; font-size: 16px; font-weight: 700; color: #fff; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden;" class="more-news-btn">
+            <span style="position: relative; z-index: 1;">More News</span>
+            <svg style="width: 20px; height: 20px; position: relative; z-index: 1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+            </svg>
+          </a>
+        </div>
       </div>
 
-      <div style="text-align: center; margin-top: 48px;">
-        <a href="/articles" class="btn btn-secondary">View All News</a>
-      </div>
+      <!-- Funky hover styles -->
+      <style>
+        .featured-news-panel:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+        }
+        .featured-news-panel:hover img {
+          transform: scale(1.05);
+        }
+        .news-panel-small:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(102, 126, 234, 0.4) !important;
+          transform: translateY(-4px);
+        }
+        .news-panel-small:hover img {
+          transform: scale(1.08);
+        }
+        .more-news-btn:hover {
+          transform: translateY(-4px) scale(1.02);
+          box-shadow: 0 12px 48px rgba(240, 147, 251, 0.5);
+        }
+        .more-news-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s ease;
+        }
+        .more-news-btn:hover::before {
+          left: 100%;
+        }
+        @media (max-width: 1024px) {
+          .content-section.gradient > div > div:nth-child(2) {
+            grid-template-columns: 1fr !important;
+          }
+          .content-section.gradient > div > div:nth-child(3) {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 640px) {
+          .content-section.gradient > div > div:nth-child(3) {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      </style>
     </section>
   )}
 
@@ -1984,8 +2193,8 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         </h2>
         <div
           class="article-content"
-          style="color: rgba(255, 255, 255, 0.85); line-height: 1.8; font-size: 16px;"
-          set:html={marked(article.content || '')}
+          style="line-height: 1.8; font-size: 16px;"
+          set:html={article.content || ''}
         />
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
           <a href={`/${article.slug}`} class="news-link" style="font-size: 16px;">
@@ -2029,74 +2238,6 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
   </section>
 
-  <!-- Other Companies Section -->
-  {otherCompanies.length > 0 && (
-    <section class="companies-section" style="margin-top: 0; padding-top: 0;">
-      <div class="companies-content">
-        <div class="section-header" style="margin-top: 80px;">
-          <h2>Additional Private Equity Placement Agents</h2>
-          <p style="font-size: 16px; line-height: 1.7; color: rgba(255, 255, 255, 0.8);">
-            Additional placement agencies in our comprehensive directory, serving the PE fundraising market across various strategies and regions.
-          </p>
-        </div>
-
-        <div class="companies-grid">
-          {otherCompanies.map((company: any, index: number) => (
-            <a href={`/private-equity-placement-agents-list/${company.slug}`} aria-label={`View ${company.display_name} profile - Private equity placement agent`} style="text-decoration: none; color: inherit;">
-              <div class={`company-card${index >= 10 ? ' hidden-card' : ''}`}>
-                {company.featured_image_url && (
-                  <div style="width: 100%; height: 200px; overflow: hidden; margin: -40px -40px 24px -40px; border-radius: 24px 24px 0 0;">
-                    <img
-                      src={optimizeCloudinaryImage(company.featured_image_url, 800)}
-                      srcset={generateSrcSet(company.featured_image_url)}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-                      alt={company.display_name}
-                      loading="lazy"
-                      decoding="async"
-                      width="800"
-                      height="200"
-                      style="width: 100%; height: 100%; object-fit: cover;"
-                    />
-                  </div>
-                )}
-                <div class="company-header">
-                  <div>
-                    <h3 class="company-name">{company.display_name}</h3>
-                    {company.primary_country && (
-                      <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
-                    )}
-                    {company.global_rank && (
-                      <div class="company-location">🏆 Rank #{company.global_rank}</div>
-                    )}
-                  </div>
-                </div>
-                <p class="company-description">{generateVariedDescription(company, 'secondary')}</p>
-
-                {company.specializations && company.specializations.length > 0 && (
-                  <div class="company-tags">
-                    {company.specializations.slice(0, 3).map((spec: string) => (
-                      <span class="tag">{spec}</span>
-                    ))}
-                  </div>
-                )}
-                <div style="margin-top: 16px; color: #667eea; font-weight: 600; font-size: 14px;">
-                  View Profile →
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {otherCompanies.length > 10 && (
-          <div id="load-buttons-other" style="text-align: center; margin-top: 48px;">
-            <button id="load-all-other-agents" class="btn btn-primary">
-              Load All Additional Placement Agents
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
-  )}
 
   <!-- Stats - Qualitative Statements (MOVED UP) -->
   <section class="stats-section animated">
@@ -2481,7 +2622,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <footer>
     <div class="footer-content">
       <div class="footer-section">
-        <h3>Placement Quest</h3>
+        <h3>Placement</h3>
         <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
           Your definitive resource for top private equity placement agencies and capital raising intelligence.
         </p>
@@ -2517,7 +2658,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
 
     <div class="footer-bottom">
-      <p>© 2025 Placement Quest. All rights reserved.</p>
+      <p>© 2025 Placement. All rights reserved.</p>
     </div>
   </footer>
 
