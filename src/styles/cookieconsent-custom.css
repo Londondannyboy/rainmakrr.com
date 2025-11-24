@@ -197,13 +197,26 @@
 @media (max-width: 768px) {
   #cc-main .cm {
     margin: 0 10px 10px !important;
-    padding: 20px !important;
+    padding: 20px 16px !important;
     border-radius: 12px !important;
+    max-width: calc(100vw - 20px) !important;
+    width: 100% !important;
+  }
+
+  #cc-main .cm__title {
+    font-size: 18px !important;
+    margin-bottom: 12px !important;
+  }
+
+  #cc-main .cm__desc {
+    font-size: 14px !important;
+    margin-bottom: 16px !important;
   }
 
   #cc-main .cm__btns {
     flex-direction: column !important;
     width: 100% !important;
+    gap: 8px !important;
   }
 
   #cc-main .cm__btn,
@@ -211,10 +224,29 @@
   #cc-main .cm__btn--secondary {
     width: 100% !important;
     text-align: center !important;
+    padding: 14px 20px !important;
+    font-size: 14px !important;
   }
 
   #cc-main .pm {
-    max-width: calc(100vw - 40px) !important;
-    margin: 20px !important;
+    max-width: calc(100vw - 20px) !important;
+    margin: 10px !important;
+    padding: 20px !important;
+  }
+
+  #cc-main .pm__title {
+    font-size: 18px !important;
+  }
+
+  #cc-main .pm__section {
+    padding: 12px 0 !important;
+  }
+
+  #cc-main .pm__section__title {
+    font-size: 15px !important;
+  }
+
+  #cc-main .pm__section__desc {
+    font-size: 13px !important;
   }
 }
