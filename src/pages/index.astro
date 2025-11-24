@@ -1862,11 +1862,6 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
   </section>
 
-  <!-- Comparison Table - Moved Up for Quick Access -->
-  <div id="comparison-table">
-    <PlacementAgentsComparisonTable />
-  </div>
-
   <!-- Recent Placement News - Funky Design -->
   {articles && articles.length > 0 && (
     <section class="content-section gradient animated" style="padding: 80px 40px;">
@@ -2009,6 +2004,11 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       </style>
     </section>
   )}
+
+  <!-- Comparison Table - Moved Up for Quick Access -->
+  <div id="comparison-table">
+    <PlacementAgentsComparisonTable />
+  </div>
 
   <!-- Top Companies Section -->
   <section id="top-agents" class="companies-section">
