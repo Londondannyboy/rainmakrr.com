@@ -8,7 +8,7 @@ import '../styles/cookieconsent-custom.css';
 
 // Fetch homepage content
 const homepageContent = await sql`
-  SELECT section_type, title, subtitle, content
+  SELECT section_type, title, subtitle, content, hero_background_type, hero_background_url
   FROM homepage_content
   WHERE site = 'placement' AND is_active = true
   ORDER BY section_order ASC
@@ -118,11 +118,17 @@ if (sections.role) {
   });
 }
 
-// Single hero video - no rotation, just showcase the video
+// Hero video from database (CMS-managed)
+const heroSection = sections.hero as any;
+const heroBackgroundType = heroSection?.hero_background_type || 'video';
+const heroBackgroundUrl = heroSection?.hero_background_url || '';
+// Extract Mux playback ID from URL (format: https://stream.mux.com/{playbackId}.m3u8)
+const heroPlaybackId = heroBackgroundUrl.match(/stream\.mux\.com\/([^./]+)/)?.[1] || 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
+
 const heroCarouselItems = [
   {
-    type: 'video',
-    src: 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y', // Main showcase video
+    type: heroBackgroundType,
+    src: heroPlaybackId,
   }
 ];
 

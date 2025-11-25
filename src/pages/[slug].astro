@@ -61,8 +61,11 @@ function getMuxPlaybackId(playbackId: string | null, videoUrl: string | null): s
 
 const muxPlaybackId = getMuxPlaybackId(article.video_playback_id, article.video_url);
 
-// Parse markdown to HTML
-const baseHtml = marked(article.content);
+// Check if content is HTML or Markdown
+const isHtml = article.content && article.content.includes('<');
+
+// Parse content - if it's HTML, use directly; if markdown, parse it
+const baseHtml = isHtml ? article.content : marked(article.content);
 
 // Intelligently insert images before H2/H3 headings using Quest schema
 const html = insertImagesIntoHTML(baseHtml, null, {
@@ -71,6 +74,14 @@ const html = insertImagesIntoHTML(baseHtml, null, {
   content3_image_legacy: article.content_image_3_url ? { url: article.content_image_3_url, alt: article.content_image_3_alt } : null,
   content4_image_legacy: null
 });
+
+// Check if excerpt is truncated
+const isTruncatedExcerpt = article.excerpt && (
+  article.excerpt.trim().endsWith("'") ||
+  article.excerpt.trim().endsWith('"') ||
+  article.excerpt.trim().endsWith('with') ||
+  article.excerpt.length < 50
+);
 ---
 
 <!DOCTYPE html>
@@ -112,7 +123,7 @@ const html = insertImagesIntoHTML(baseHtml, null, {
         <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
           {article.title}
         </h1>
-        {article.excerpt && (
+        {article.excerpt && !isTruncatedExcerpt && (
           <p class="text-xl text-gray-600 mb-6 leading-relaxed">
             {article.excerpt}
           </p>
