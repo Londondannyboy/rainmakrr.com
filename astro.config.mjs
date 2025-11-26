@@ -49,9 +49,9 @@ export default defineConfig({
     cookieconsent({
       guiOptions: {
         consentModal: {
-          layout: 'cloud inline',
-          position: 'bottom center',
-          equalWeightButtons: false,
+          layout: 'bar inline',
+          position: 'bottom',
+          equalWeightButtons: true,
           flipButtons: false
         },
         preferencesModal: {
@@ -65,9 +65,6 @@ export default defineConfig({
         necessary: {
           readOnly: true,
           enabled: true
-        },
-        analytics: {
-          enabled: false
         }
       },
       language: {
@@ -76,32 +73,22 @@ export default defineConfig({
         translations: {
           en: {
             consentModal: {
-              title: 'We use cookies',
-              description: 'This website uses essential cookies to ensure proper functionality and analytics cookies to understand how you interact with it. You can accept all cookies or customize your preferences.',
-              acceptAllBtn: 'Accept all',
-              acceptNecessaryBtn: 'Reject all',
-              showPreferencesBtn: 'Manage preferences'
+              title: '',
+              description: 'We use essential cookies only.',
+              acceptAllBtn: 'Accept',
+              acceptNecessaryBtn: 'Decline'
             },
             preferencesModal: {
               title: 'Cookie Preferences',
-              acceptAllBtn: 'Accept all',
-              acceptNecessaryBtn: 'Reject all',
-              savePreferencesBtn: 'Save preferences',
+              acceptAllBtn: 'Accept',
+              acceptNecessaryBtn: 'Decline',
+              savePreferencesBtn: 'Save',
               closeIconLabel: 'Close',
               sections: [
                 {
-                  title: 'Cookie Usage',
-                  description: 'We use cookies to enhance your browsing experience and analyze our traffic. You can choose which cookies to accept.'
-                },
-                {
-                  title: 'Strictly Necessary Cookies',
-                  description: 'These cookies are essential for the website to function properly. They cannot be disabled.',
+                  title: 'Essential Cookies',
+                  description: 'These cookies are required for the website to function properly.',
                   linkedCategory: 'necessary'
-                },
-                {
-                  title: 'Analytics Cookies',
-                  description: 'These cookies help us understand how visitors interact with our website by collecting and reporting information anonymously.',
-                  linkedCategory: 'analytics'
                 }
               ]
             }
