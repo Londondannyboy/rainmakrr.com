@@ -1,6 +1,6 @@
 ---
 // Optimized Google Fonts using astro-font
-// Replaces render-blocking Google Fonts links with preloaded, optimized fonts
+// Reduced from 7 weights (219KB) to 4 weights (~100KB)
 import { AstroFont } from "astro-font";
 ---
 
@@ -9,7 +9,7 @@ import { AstroFont } from "astro-font";
     {
       src: [],
       name: "Inter",
-      googleFontsURL: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap',
+      googleFontsURL: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap',
       preload: true,
       display: "swap",
       selector: "body",
