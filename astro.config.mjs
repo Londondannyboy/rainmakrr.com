@@ -32,7 +32,7 @@ export default defineConfig({
     },
   },
   build: {
-    inlineStylesheets: 'auto', // Inline critical CSS
+    inlineStylesheets: 'always', // Inline ALL CSS - eliminates render-blocking request
   },
   vite: {
     build: {
