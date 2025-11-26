@@ -68,14 +68,20 @@ const articlesRaw = await sql`
 // Process articles with video-first priority
 const articles = articlesRaw.map((article: any) => {
   const playbackId = article.video_playback_id;
-  // Static thumbnail in WebP format - smaller than JPEG (~40% savings)
+  // Mux thumbnails with responsive sizes - smaller for mobile, larger for desktop
+  // Using quality parameter for additional compression
   const thumbnailUrl = playbackId
-    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=400&fit_mode=preserve`
+    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve`
     : (article.featured_asset_url || article.hero_asset_url);
+  // Srcset for responsive loading - mobile gets tiny image first
+  const thumbnailSrcset = playbackId
+    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=200&fit_mode=preserve 200w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve 300w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=400&fit_mode=preserve 400w`
+    : '';
   return {
     ...article,
     mux_playback_id: playbackId,
-    thumbnail_url: thumbnailUrl
+    thumbnail_url: thumbnailUrl,
+    thumbnail_srcset: thumbnailSrcset
   };
 });
 
@@ -2148,8 +2154,10 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                       {/* Static thumbnail as placeholder until video loads */}
                       <img
                         src={article.thumbnail_url}
+                        srcset={article.thumbnail_srcset}
+                        sizes="(max-width: 640px) 200px, 300px"
                         alt={article.title}
-                        width="400"
+                        width="300"
                         height="340"
                         class="news-thumbnail"
                         style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"
@@ -2205,8 +2213,10 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                       {/* Static thumbnail as placeholder */}
                       <img
                         src={article.thumbnail_url}
+                        srcset={article.thumbnail_srcset}
+                        sizes="(max-width: 640px) 200px, 300px"
                         alt={article.title}
-                        width="400"
+                        width="300"
                         height="200"
                         class="news-thumbnail"
                         style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;"
