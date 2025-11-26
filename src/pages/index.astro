@@ -4,7 +4,13 @@ import { marked } from 'marked';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
 import PlacementAgentsComparisonTable from '../components/PlacementAgentsComparisonTable.astro';
+import { getVisitorCountry, sortAgentsByGeo, getCountryName, getRegionForCountry } from '../lib/geo';
 // Using system fonts - no Google Fonts needed
+
+// Detect visitor's country for geo-targeting
+const visitorCountry = getVisitorCountry(Astro.request);
+const visitorCountryName = getCountryName(visitorCountry);
+const visitorRegion = getRegionForCountry(visitorCountry);
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -42,8 +48,12 @@ const companies = await sql`
 const topCompanies = companies.filter((c: any) => c.tags && c.tags.includes('top'));
 const otherCompanies = companies.filter((c: any) => !c.tags || !c.tags.includes('top'));
 
-// Combined list: top agents first, then others
-const allAgents = [...topCompanies, ...otherCompanies];
+// Apply geo-targeting: sort each group by visitor's country/region
+const topCompaniesSorted = sortAgentsByGeo(topCompanies, visitorCountry);
+const otherCompaniesSorted = sortAgentsByGeo(otherCompanies, visitorCountry);
+
+// Combined list: top agents first (geo-sorted), then others (geo-sorted)
+const allAgents = [...topCompaniesSorted, ...otherCompaniesSorted];
 
 // Fetch articles with video/image support and content for full sections
 const articlesRaw = await sql`
@@ -2329,6 +2339,15 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         <p style="font-size: 18px; line-height: 1.8; margin-bottom: 24px; font-weight: 600;">
           Our curated private equity placement agents list features the world's leading fundraising advisors, including firms ranked in <a href="https://www.preqin.com" target="_blank" rel="noopener" style="color: #667eea; text-decoration: underline;">Preqin's 2025 Global Placement Agent Rankings</a>. These elite agencies serve as the vital bridge between General Partners (GPs) seeking capital and institutional Limited Partners (LPs).
         </p>
+
+        {(visitorCountryName || visitorRegion) && (
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(240, 147, 251, 0.2) 100%); padding: 10px 20px; border-radius: 50px; margin-bottom: 24px; border: 1px solid rgba(102, 126, 234, 0.3);">
+            <span style="font-size: 16px;">📍</span>
+            <span style="font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9);">
+              Showing {visitorCountryName || visitorRegion} agents first
+            </span>
+          </div>
+        )}
 
         <div style="background: rgba(102, 126, 234, 0.1); border-left: 4px solid #667eea; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
           <div class="callout-title" style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #667eea;">
