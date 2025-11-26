@@ -1,6 +1,6 @@
 export const siteConfig = {
-  name: 'Placement',
-  title: 'Top Private Equity Placement Agents 2025 | Placement',
+  name: 'Placement Quest',
+  title: 'Top Private Equity Placement Agents 2025 | Placement Quest',
   description: 'Directory of 85+ top private equity placement agents. Expert rankings, fee structures, and LP networks for PE fundraising.',
   url: 'https://placement.quest',
   ogImage: 'https://placement.quest/og-image.jpg',
