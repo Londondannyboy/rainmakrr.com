@@ -223,12 +223,43 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     <link rel="preload" as="image" href={articles[0].thumbnail_url} />
   )}
 
-  <!-- Critical CSS inline - renders logo/nav immediately without waiting for external CSS -->
+  <!-- Critical CSS inline - above-the-fold styles for instant render -->
   <style>
+    body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#000;color:#fff;margin:0}
     .logo{font-size:20px;font-weight:900;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
     nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:24px 60px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.1)}
-    body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#000;color:#fff;margin:0}
+    .hero{height:100vh;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .hero-carousel{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0}
+    .hero-carousel-item{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;width:auto;height:auto;transform:translate(-50%,-50%);opacity:0;transition:opacity 1.2s ease-in-out;z-index:0}
+    .hero-carousel-item.active{opacity:.7;z-index:1}
+    .hero-video{object-fit:cover}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(102,126,234,.3),rgba(0,0,0,.6));z-index:1}
+    .hero-content{position:relative;z-index:10;text-align:center;padding:0 40px;max-width:1400px}
+    .hero-badge{display:inline-flex;align-items:center;background:rgba(255,255,255,.15);backdrop-filter:blur(20px);padding:12px 28px;border-radius:100px;border:1px solid rgba(255,255,255,.3);margin-bottom:40px;font-size:14px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase}
+    .hero h1{font-size:clamp(48px,8vw,140px);font-weight:900;line-height:1;letter-spacing:-.03em;margin-bottom:40px;text-transform:uppercase;text-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .hero-subtitle{font-size:clamp(18px,2.5vw,28px);font-weight:300;line-height:1.7;max-width:900px;margin:0 auto 60px}
   </style>
+
+  <!-- Defer non-critical CSS - runs immediately to catch stylesheets -->
+  <script>
+    (function(){
+      // Immediately check for existing stylesheets
+      function deferCSS(){
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(function(link){
+          if(link.href.includes('/_astro/')&&link.href.includes('.css')&&!link.dataset.deferred){
+            link.dataset.deferred='1';
+            link.media='print';
+            link.onload=function(){this.media='all'};
+          }
+        });
+      }
+      deferCSS();
+      // Also observe for dynamically added stylesheets
+      new MutationObserver(function(m){m.forEach(function(r){
+        r.addedNodes.forEach(function(n){if(n.tagName==='LINK')deferCSS()});
+      })}).observe(document.head,{childList:true});
+    })();
+  </script>
 
   <!-- Structured Data: Key Criteria List -->
   <script type="application/ld+json">
