@@ -89,32 +89,106 @@ export const countryNames: Record<string, string> = {
   'SA': 'Saudi Arabia',
 };
 
+// Browser language to country mapping
+const languageToCountry: Record<string, string> = {
+  'en-US': 'US',
+  'en-GB': 'GB',
+  'en-AU': 'AU',
+  'en-CA': 'CA',
+  'en-NZ': 'NZ',
+  'en-IE': 'IE',
+  'en-ZA': 'ZA',
+  'en-SG': 'SG',
+  'en-HK': 'HK',
+  'de-DE': 'DE',
+  'de-AT': 'AT',
+  'de-CH': 'CH',
+  'fr-FR': 'FR',
+  'fr-CA': 'CA',
+  'fr-BE': 'BE',
+  'fr-CH': 'CH',
+  'es-ES': 'ES',
+  'es-MX': 'MX',
+  'it-IT': 'IT',
+  'nl-NL': 'NL',
+  'nl-BE': 'BE',
+  'pt-BR': 'BR',
+  'pt-PT': 'PT',
+  'ja-JP': 'JP',
+  'zh-CN': 'CN',
+  'zh-HK': 'HK',
+  'zh-TW': 'TW',
+  'ko-KR': 'KR',
+};
+
+/**
+ * Parse Accept-Language header to get country
+ */
+function getCountryFromLanguage(acceptLanguage: string | null): string | null {
+  if (!acceptLanguage) return null;
+
+  // Parse Accept-Language: en-US,en;q=0.9,de;q=0.8
+  const languages = acceptLanguage.split(',').map(lang => {
+    const [code] = lang.trim().split(';');
+    return code;
+  });
+
+  // Try exact matches first (en-US, en-GB)
+  for (const lang of languages) {
+    if (languageToCountry[lang]) {
+      return languageToCountry[lang];
+    }
+  }
+
+  // Try partial matches (en -> US as default for English)
+  for (const lang of languages) {
+    const base = lang.split('-')[0];
+    if (base === 'en') return 'US';
+    if (base === 'de') return 'DE';
+    if (base === 'fr') return 'FR';
+    if (base === 'es') return 'ES';
+    if (base === 'it') return 'IT';
+    if (base === 'ja') return 'JP';
+    if (base === 'zh') return 'CN';
+    if (base === 'ko') return 'KR';
+    if (base === 'pt') return 'PT';
+    if (base === 'nl') return 'NL';
+  }
+
+  return null;
+}
+
 /**
  * Detect visitor's country from request headers
- * Supports Cloudflare, Vercel, AWS CloudFront, and fallbacks
+ * Priority: CDN geo headers > Browser language fallback
  */
 export function getVisitorCountry(request: Request): string | null {
   const headers = request.headers;
 
-  // Cloudflare (most common for Railway)
+  // 1. Cloudflare (most common for Railway)
   const cfCountry = headers.get('cf-ipcountry');
   if (cfCountry && cfCountry !== 'XX') return cfCountry.toUpperCase();
 
-  // Vercel
+  // 2. Vercel
   const vercelCountry = headers.get('x-vercel-ip-country');
   if (vercelCountry) return vercelCountry.toUpperCase();
 
-  // AWS CloudFront
+  // 3. AWS CloudFront
   const awsCountry = headers.get('cloudfront-viewer-country');
   if (awsCountry) return awsCountry.toUpperCase();
 
-  // Fastly
+  // 4. Fastly
   const fastlyCountry = headers.get('x-country-code');
   if (fastlyCountry) return fastlyCountry.toUpperCase();
 
-  // Generic geo header
+  // 5. Generic geo header
   const geoCountry = headers.get('x-geo-country');
   if (geoCountry) return geoCountry.toUpperCase();
+
+  // 6. FALLBACK: Browser language (Accept-Language header)
+  const acceptLanguage = headers.get('accept-language');
+  const langCountry = getCountryFromLanguage(acceptLanguage);
+  if (langCountry) return langCountry;
 
   return null;
 }

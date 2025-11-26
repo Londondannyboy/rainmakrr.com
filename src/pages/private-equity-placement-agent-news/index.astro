@@ -518,15 +518,30 @@ function getThumbnail(article: any): string {
           <div class="articles-grid" style="grid-template-columns: 1fr; gap: 24px;">
             {articles.map((article: any, index: number) => (
               <article class="article-card" style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; padding: 0; background: transparent; border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 24px;">
-                <a href={`/${article.slug}`} style="display: block; height: 140px; border-radius: 12px; overflow: hidden;">
+                <a href={`/${article.slug}`} style="display: block; height: 140px; border-radius: 12px; overflow: hidden; position: relative;">
                   <img src={getThumbnail(article)} alt={article.title} style="width: 100%; height: 100%; object-fit: cover;" loading={index < 3 ? 'eager' : 'lazy'} />
+                  {article.country && (
+                    <span style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                      🌍 {article.country}
+                    </span>
+                  )}
                 </a>
                 <div style="display: flex; flex-direction: column; justify-content: center;">
-                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <!-- Meta: Date | Country | Category -->
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <time style="font-size: 12px; color: rgba(255, 255, 255, 0.5); display: flex; align-items: center; gap: 4px;">
+                      <span style="opacity: 0.7;">📅</span> {formatDate(article.published_at)}
+                    </time>
                     {article.country && (
-                      <span style="font-size: 11px; font-weight: 600; color: #667eea; text-transform: uppercase;">{article.country}</span>
+                      <span style="font-size: 11px; font-weight: 600; color: #667eea; text-transform: uppercase; background: rgba(102, 126, 234, 0.15); padding: 3px 8px; border-radius: 4px;">
+                        {article.country}
+                      </span>
                     )}
-                    <time style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">{formatDate(article.published_at)}</time>
+                    {article.article_angle && (
+                      <span style="font-size: 11px; font-weight: 600; color: #f093fb; text-transform: uppercase; background: rgba(240, 147, 251, 0.15); padding: 3px 8px; border-radius: 4px;">
+                        {article.article_angle}
+                      </span>
+                    )}
                   </div>
                   <h3 style="font-size: 17px; font-weight: 600; line-height: 1.4; margin-bottom: 8px;">
                     <a href={`/${article.slug}`} style="color: #fff; text-decoration: none; transition: color 0.2s;">{article.title}</a>
