@@ -20,6 +20,11 @@ const staticPages = [
   '/private-credit-placement-agents',
   '/real-estate-private-equity-placement-agents',
   '/boutique-private-equity-placement-agents',
+  // Educational/informational pages (long-tail SEO)
+  '/what-do-placement-agents-do',
+  '/placement-agent-fees',
+  '/how-placement-agents-work',
+  '/choosing-a-placement-agent',
   // Regional pages - complete coverage
   '/top-private-equity-placement-agents-north-america',
   '/top-private-equity-placement-agents-europe',
