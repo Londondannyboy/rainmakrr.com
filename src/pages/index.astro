@@ -1810,11 +1810,17 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       /* Center company card images on mobile */
       .company-card {
         padding: 24px !important;
+        overflow: hidden;
+      }
+
+      .company-image-container {
+        margin: -24px -24px 16px -24px !important;
+        width: calc(100% + 48px) !important;
+        border-radius: 16px 16px 0 0 !important;
       }
 
       .company-card img {
         object-position: center center !important;
-        margin: -24px -24px 16px -24px !important;
       }
 
       .company-name {

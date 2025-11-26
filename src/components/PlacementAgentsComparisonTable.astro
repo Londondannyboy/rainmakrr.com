@@ -200,7 +200,7 @@ function generateTableDescription(agent: any): string {
         <tbody>
           {tableData.map((agent: any, index: number) => (
             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background-color 0.2s;" class="table-row">
-              <td style="padding: 20px; font-size: 15px; color: rgba(255, 255, 255, 0.9); font-weight: 700;">
+              <td data-label="Rank" style="padding: 20px; font-size: 15px; color: rgba(255, 255, 255, 0.9); font-weight: 700;">
                 {agent.preqinRank ? (
                   <span style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%); color: #667eea; padding: 6px 12px; border-radius: 6px; font-size: 14px; border: 1px solid rgba(102, 126, 234, 0.4);">
                     #{agent.preqinRank}
@@ -210,7 +210,7 @@ function generateTableDescription(agent: any): string {
                   <span style="color: rgba(255, 255, 255, 0.3);">—</span>
                 )}
               </td>
-              <td style="padding: 20px;">
+              <td data-label="Firm" style="padding: 20px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                   {(agent.featured_asset_url || agent.logo_url) && (
                     <img
@@ -237,19 +237,19 @@ function generateTableDescription(agent: any): string {
                   </div>
                 </div>
               </td>
-              <td style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.75); line-height: 1.6; max-width: 300px;">
+              <td data-label="Description" style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.75); line-height: 1.6; max-width: 300px;">
                 {generateTableDescription(agent)}
               </td>
-              <td style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
+              <td data-label="Location" style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
                 {agent.headquarters_city ? `${agent.headquarters_city}, ${agent.primary_country}` : agent.primary_country}
               </td>
-              <td style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
+              <td data-label="Founded" style="padding: 20px; font-size: 14px; color: rgba(255, 255, 255, 0.8);">
                 {agent.yearFounded || <span style="color: rgba(255, 255, 255, 0.3);">N/A</span>}
               </td>
-              <td style="padding: 20px; font-size: 15px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
+              <td data-label="Est. Raised" style="padding: 20px; font-size: 15px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">
                 {agent.estRaisedTotal}
               </td>
-              <td style="padding: 20px; font-size: 13px; color: rgba(255, 255, 255, 0.7);">
+              <td data-label="Specializations" style="padding: 20px; font-size: 13px; color: rgba(255, 255, 255, 0.7);">
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                   {agent.specializations && agent.specializations.length > 0 ? (
                     agent.specializations.slice(0, 2).map((spec: string) => (
@@ -295,6 +295,45 @@ function generateTableDescription(agent: any): string {
   @media (max-width: 768px) {
     .comparison-table-section {
       padding: 60px 20px !important;
+    }
+
+    /* Stack table rows as cards on mobile */
+    .comparison-table {
+      min-width: unset !important;
+    }
+
+    .comparison-table thead {
+      display: none;
+    }
+
+    .comparison-table tbody tr {
+      display: block;
+      margin-bottom: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comparison-table tbody td {
+      display: flex;
+      flex-direction: column;
+      padding: 12px 0 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .comparison-table tbody td:last-child {
+      border-bottom: none;
+    }
+
+    .comparison-table tbody td::before {
+      content: attr(data-label);
+      font-size: 11px;
+      font-weight: 700;
+      color: #667eea;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
     }
   }
 </style>
