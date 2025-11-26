@@ -1,0 +1,353 @@
+---
+import SEO from '../components/SEO.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="How Placement Agents Work | PE Fundraising Process Guide"
+    description="Learn how placement agents work in private equity fundraising. Step-by-step guide to the fundraising process, from pitch development to final close."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover { opacity: 0.6; }
+
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 80px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(240, 147, 251, 0.15), rgba(0, 0, 0, 0.95));
+    }
+
+    .hero-content { max-width: 900px; }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .content-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .content-block {
+      margin-bottom: 60px;
+    }
+
+    .content-block h2 {
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .content-block p {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .process-step {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 32px;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .step-content h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .step-content p {
+      margin-bottom: 0;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .highlight-box {
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 24px;
+      border-radius: 12px;
+      margin: 32px 0;
+    }
+
+    .highlight-box p {
+      margin-bottom: 0;
+    }
+
+    .timeline-note {
+      display: inline-block;
+      background: rgba(240, 147, 251, 0.15);
+      color: #f093fb;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .cta-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(240, 147, 251, 0.1));
+      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 28px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 18px 40px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    footer {
+      padding: 60px 40px 30px;
+      background: #000;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 30px; }
+      .nav-links { display: none; }
+      .hero { padding: 140px 30px 60px; }
+      .content-section { padding: 60px 30px; }
+      .process-step { flex-direction: column; gap: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <a href="/" class="logo">Placement</a>
+    <ul class="nav-links">
+      <li><a href="/private-equity-placement-agent-news">News</a></li>
+      <li><a href="/private-equity-placement-agents-list">Placement Agents</a></li>
+    </ul>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>How Placement Agents Work</h1>
+      <p>A step-by-step guide to the private equity fundraising process</p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="content-block">
+      <h2>The Fundraising Process</h2>
+      <p>A typical placement agent engagement follows a structured process designed to maximize LP coverage and optimize fundraising outcomes. While timelines vary, most fund raises take 12-18 months from initial engagement to final close.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>Step-by-Step Process</h2>
+
+      <div class="process-step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Initial Assessment & Strategy</h3>
+          <p>The agent evaluates your fund strategy, track record, and market positioning. Together, you define target LP segments, geographic focus, and realistic fundraising timelines.</p>
+          <span class="timeline-note">Weeks 1-4</span>
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Materials Development</h3>
+          <p>Creation or refinement of the pitch deck, private placement memorandum (PPM), DDQ responses, and other marketing materials. The agent provides market feedback on positioning and messaging.</p>
+          <span class="timeline-note">Weeks 4-8</span>
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>LP Targeting & Outreach</h3>
+          <p>The agent identifies and prioritizes potential LPs based on allocation appetite, investment history, and fit with your strategy. Initial outreach begins with warm introductions and materials distribution.</p>
+          <span class="timeline-note">Weeks 8-12</span>
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h3>Roadshow Execution</h3>
+          <p>Coordinated investor meetings across key markets. The agent manages scheduling, logistics, and follow-up. Multiple rounds of meetings typically occur over 3-6 months.</p>
+          <span class="timeline-note">Months 3-9</span>
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h3>Due Diligence Support</h3>
+          <p>As LPs progress through their evaluation process, the agent coordinates due diligence requests, reference calls, and follow-up materials. This phase often determines the pace of commitments.</p>
+          <span class="timeline-note">Months 6-12</span>
+        </div>
+      </div>
+
+      <div class="process-step">
+        <div class="step-number">6</div>
+        <div class="step-content">
+          <h3>Closing & Documentation</h3>
+          <p>Final negotiation of terms, side letters, and subscription documents. The agent helps navigate LP-specific requirements and coordinates multiple closings to reach fund targets.</p>
+          <span class="timeline-note">Months 10-18</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <p><strong>Timeline Reality:</strong> First-time managers should expect 15-24 months for a full fundraise. Established managers with strong track records may close in 9-12 months. Market conditions significantly impact timing.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>Key Success Factors</h2>
+      <p>Successful fundraises typically share several characteristics:</p>
+      <ul style="list-style: none; margin-top: 20px;">
+        <li style="margin-bottom: 14px; padding-left: 28px; position: relative;"><span style="position: absolute; left: 0; color: #667eea; font-weight: 600;">→</span><strong>Early Preparation:</strong> Materials and data room should be ready before launching</li>
+        <li style="margin-bottom: 14px; padding-left: 28px; position: relative;"><span style="position: absolute; left: 0; color: #667eea; font-weight: 600;">→</span><strong>Anchor Commitments:</strong> Securing 1-2 anchor LPs early builds momentum</li>
+        <li style="margin-bottom: 14px; padding-left: 28px; position: relative;"><span style="position: absolute; left: 0; color: #667eea; font-weight: 600;">→</span><strong>Consistent Messaging:</strong> Clear, differentiated positioning across all meetings</li>
+        <li style="margin-bottom: 14px; padding-left: 28px; position: relative;"><span style="position: absolute; left: 0; color: #667eea; font-weight: 600;">→</span><strong>Responsive Communication:</strong> Quick turnaround on LP requests accelerates decisions</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Find Your Placement Partner</h2>
+    <p>Explore our directory of experienced placement agents ready to support your fundraise</p>
+    <a href="/private-equity-placement-agents-list" class="cta-button">View Directory</a>
+  </section>
+
+  <footer>
+    <p>© 2025 <a href="/">Placement</a>. Your guide to <a href="/">top private equity placement agents</a>.</p>
+  </footer>
+</body>
+</html>
