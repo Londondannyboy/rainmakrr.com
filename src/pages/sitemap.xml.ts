@@ -9,7 +9,7 @@ const staticPages = [
   '',  // homepage
   '/about',
   '/contact',
-  '/articles',
+  '/private-equity-placement-agent-news',
   '/privacy',
   '/terms',
   '/search',

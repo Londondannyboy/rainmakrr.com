@@ -20,6 +20,16 @@ export default defineConfig({
       status: 301,
       destination: '/[...slug]',
     },
+    // Redirect old /articles to new SEO-friendly news URL
+    '/articles': {
+      status: 301,
+      destination: '/private-equity-placement-agent-news',
+    },
+    // Also handle /news as alias
+    '/news': {
+      status: 301,
+      destination: '/private-equity-placement-agent-news',
+    },
   },
   build: {
     inlineStylesheets: 'auto', // Inline critical CSS
