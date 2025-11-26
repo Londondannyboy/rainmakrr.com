@@ -1,8 +1,8 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
-// import tailwind from '@astrojs/tailwind'; // Removed for performance - using inline styles
-import cookieconsent from '@jop-software/astro-cookieconsent';
+// Removed: tailwind (performance) and cookieconsent (32KB render-blocking CSS)
+// Cookie consent is now a simple inline component
 
 // https://astro.build/config
 export default defineConfig({
@@ -45,57 +45,7 @@ export default defineConfig({
     }
   },
   integrations: [
-    // tailwind(), // Removed for performance - using inline styles
-    cookieconsent({
-      guiOptions: {
-        consentModal: {
-          layout: 'bar inline',
-          position: 'bottom',
-          equalWeightButtons: true,
-          flipButtons: false
-        },
-        preferencesModal: {
-          layout: 'box',
-          position: 'right',
-          equalWeightButtons: false,
-          flipButtons: false
-        }
-      },
-      categories: {
-        necessary: {
-          readOnly: true,
-          enabled: true
-        }
-      },
-      language: {
-        default: 'en',
-        autoDetect: 'browser',
-        translations: {
-          en: {
-            consentModal: {
-              title: '',
-              description: 'We use essential cookies only.',
-              acceptAllBtn: 'Accept',
-              acceptNecessaryBtn: 'Decline'
-            },
-            preferencesModal: {
-              title: 'Cookie Preferences',
-              acceptAllBtn: 'Accept',
-              acceptNecessaryBtn: 'Decline',
-              savePreferencesBtn: 'Save',
-              closeIconLabel: 'Close',
-              sections: [
-                {
-                  title: 'Essential Cookies',
-                  description: 'These cookies are required for the website to function properly.',
-                  linkedCategory: 'necessary'
-                }
-              ]
-            }
-          }
-        }
-      }
-    })
+    // Empty - using inline styles and simple cookie component
   ],
   server: {
     host: true // Listen on all network interfaces (0.0.0.0)

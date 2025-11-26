@@ -5,7 +5,6 @@ import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
 import PlacementAgentsComparisonTable from '../components/PlacementAgentsComparisonTable.astro';
 import OptimizedFonts from '../components/OptimizedFonts.astro';
-import '../styles/cookieconsent-custom.css';
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -158,20 +157,6 @@ function generateSrcSet(url: string) {
   return widths.map(w => `${optimizeCloudinaryImage(url, w)} ${w}w`).join(', ');
 }
 
-// Optimize Unsplash images
-function optimizeUnsplashImage(url: string, width: number = 1200, quality: number = 40) {
-  if (!url || !url.includes('unsplash.com')) return url;
-  // Add WebP format, compression, and proper sizing
-  const params = `w=${width}&q=${quality}&auto=format&fit=crop&fm=webp`;
-  return url.includes('?') ? `${url.split('?')[0]}?${params}` : `${url}?${params}`;
-}
-
-function generateUnsplashSrcSet(url: string) {
-  if (!url || !url.includes('unsplash.com')) return '';
-  const widths = [400, 800, 1200];
-  return widths.map(w => `${optimizeUnsplashImage(url, w, 40)} ${w}w`).join(', ');
-}
-
 // Clean duplicate consecutive headings and fix accessibility from HTML content (SEO fix)
 function cleanDuplicateHeadings(html: string): string {
   if (!html) return '';
@@ -232,6 +217,11 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <!-- Preconnect to Mux for faster image loading -->
   <link rel="preconnect" href="https://image.mux.com" crossorigin>
   <link rel="preconnect" href="https://stream.mux.com" crossorigin>
+
+  <!-- Preload first article thumbnail for faster LCP -->
+  {articles[0]?.thumbnail_url && (
+    <link rel="preload" as="image" href={articles[0].thumbnail_url} />
+  )}
 
   <!-- Critical CSS inline - renders logo/nav immediately without waiting for external CSS -->
   <style>
@@ -306,7 +296,6 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   </script>
 
   <!-- Performance: Critical resource hints -->
-  <link rel="preconnect" href="https://stream.mux.com" crossorigin>
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
@@ -1981,35 +1970,9 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     }
   </style>
 
-  <!-- Performance: Defer non-critical CSS (company detail page CSS) -->
   <script>
-    // Defer _slug_ CSS (company detail pages) - not needed on homepage
-    (function() {
-      const links = document.querySelectorAll('link[rel="stylesheet"]');
-      links.forEach(link => {
-        if (link.href.includes('_slug_')) {
-          link.media = 'print';
-          link.onload = function() { this.media = 'all'; };
-        }
-      });
-    })();
-
     // Hamburger Menu Toggle
     document.addEventListener('DOMContentLoaded', function() {
-      // Delay cookie consent by 3 seconds so hero video loads first
-      const ccMain = document.getElementById('cc-main');
-      if (ccMain) {
-        ccMain.style.opacity = '0';
-        ccMain.style.transition = 'opacity 0.5s';
-        setTimeout(() => { ccMain.style.opacity = '1'; }, 3000);
-      }
-
-      // Accessibility: Add aria-label to cookie consent dialog
-      const cookieDialog = document.querySelector('#cc-main .cm[role="dialog"]');
-      if (cookieDialog && !cookieDialog.getAttribute('aria-label')) {
-        cookieDialog.setAttribute('aria-label', 'Cookie consent');
-      }
-
       const hamburger = document.getElementById('hamburger-menu');
       const navMenu = document.getElementById('nav-menu');
       const navItems = navMenu.querySelectorAll('.nav-item');
@@ -2110,6 +2073,37 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       ))}
     </div>
   </section>
+
+  <!-- Simple Inline Cookie Notice (GDPR compliant, non-blocking) -->
+  <div id="cookie-notice" style="display: none; background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-bottom: 1px solid rgba(102, 126, 234, 0.2); padding: 12px 20px;">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <p style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin: 0;">
+        We use essential cookies only for site functionality.
+        <a href="/privacy" style="color: #667eea; text-decoration: underline;">Privacy Policy</a>
+      </p>
+      <div style="display: flex; gap: 8px;">
+        <button id="cookie-accept" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Accept</button>
+        <button id="cookie-decline" style="background: transparent; color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.3); padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer;">Decline</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const notice = document.getElementById('cookie-notice');
+      const accepted = localStorage.getItem('cookie-consent');
+      if (!accepted && notice) {
+        notice.style.display = 'block';
+        document.getElementById('cookie-accept').onclick = function() {
+          localStorage.setItem('cookie-consent', 'accepted');
+          notice.style.display = 'none';
+        };
+        document.getElementById('cookie-decline').onclick = function() {
+          localStorage.setItem('cookie-consent', 'declined');
+          notice.style.display = 'none';
+        };
+      }
+    })();
+  </script>
 
   <!-- Welcome Section - Single Slim Panel -->
   <section class="welcome-section" style="padding: 60px 40px; background: linear-gradient(180deg, #000 0%, rgba(102, 126, 234, 0.1) 50%, #000 100%);">
