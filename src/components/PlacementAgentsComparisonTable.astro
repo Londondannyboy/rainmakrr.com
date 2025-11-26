@@ -226,8 +226,8 @@ function generateTableDescription(agent: any): string {
                       {agent.display_name}
                     </a>
                     {agent.website && (
-                      <a href={agent.website} target="_blank" rel="noopener" style="color: rgba(102, 126, 234, 0.8); text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: color 0.3s;" class="website-link">
-                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <a href={agent.website} target="_blank" rel="noopener" aria-label={`Visit ${agent.display_name} website`} style="color: rgba(102, 126, 234, 0.8); text-decoration: none; font-size: 12px; display: flex; align-items: center; gap: 4px; transition: color 0.2s;" class="website-link">
+                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                         </svg>
                         Visit Website

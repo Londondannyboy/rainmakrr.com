@@ -1990,6 +1990,12 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
     // Hamburger Menu Toggle
     document.addEventListener('DOMContentLoaded', function() {
+      // Accessibility: Add aria-label to cookie consent dialog
+      const cookieDialog = document.querySelector('#cc-main .cm[role="dialog"]');
+      if (cookieDialog && !cookieDialog.getAttribute('aria-label')) {
+        cookieDialog.setAttribute('aria-label', 'Cookie consent');
+      }
+
       const hamburger = document.getElementById('hamburger-menu');
       const navMenu = document.getElementById('nav-menu');
       const navItems = navMenu.querySelectorAll('.nav-item');
@@ -2443,7 +2449,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <section class="pdf-guide-cta animated">
     <div class="pdf-guide-content">
       <div class="pdf-guide-badge">Free Resource</div>
-      <h5 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Top Private Equity Placement Agents Resources</h5>
+      <h2 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Top Private Equity Placement Agents Resources</h2>
       <div class="guide-subtitle" style="font-size: 22px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-bottom: 16px;">Download Our Comprehensive Guide 2025</div>
       <p>
         Get instant access to our 30-page guide featuring leading placement agents, fee structures, selection criteria, market statistics, and expert insights for successful PE fundraising.
@@ -2539,7 +2545,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
   <!-- CTA Section -->
   <section class="cta-section">
-    <h6 style="font-size: clamp(32px, 5vw, 48px); font-weight: 900; margin-bottom: 24px; line-height: 1.2;">Top Private Equity Placement Agents Contact</h6>
+    <h2 style="font-size: clamp(32px, 5vw, 48px); font-weight: 900; margin-bottom: 24px; line-height: 1.2;">Top Private Equity Placement Agents Contact</h2>
     <p>
       Explore our directory of top placement agents and stay up-to-date<br>
       with the latest news and insights from the private equity sector

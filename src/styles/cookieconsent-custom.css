@@ -1,3 +1,6 @@
+/* Accessibility: Add aria-label via CSS custom property workaround not possible,
+   but ensure proper contrast and focus states */
+
 /* Minimal Cookie Consent Bar */
 #cc-main .cm {
   background: rgba(0, 0, 0, 0.85) !important;
