@@ -20,41 +20,41 @@ const networkId = `${uniqueId}-network`;
 ---
 
 <div class="zep-graph-container">
-  <div id={uniqueId} class="w-full h-96 bg-slate-900/50 rounded-xl border border-slate-700/30 relative">
+  <div id={uniqueId} style="width: 100%; height: 24rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid rgba(51, 65, 85, 0.3); position: relative;">
     <!-- Loading state -->
-    <div id={loadingId} class="absolute inset-0 flex items-center justify-center">
-      <div class="text-center">
-        <div class="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <p class="text-slate-400 text-sm">Loading deal graph...</p>
+    <div id={loadingId} style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center;">
+        <div style="width: 3rem; height: 3rem; border: 4px solid rgba(16, 185, 129, 0.3); border-top-color: #10b981; border-radius: 9999px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+        <p style="color: #94a3b8; font-size: 0.875rem;">Loading deal graph...</p>
       </div>
     </div>
 
     <!-- Error state -->
-    <div id={errorId} class="absolute inset-0 hidden flex-col items-center justify-center p-6 text-center">
-      <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div id={errorId} style="position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;" class="error-state">
+      <svg style="width: 3rem; height: 3rem; color: #475569; margin-bottom: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
-      <p class="text-slate-400 text-sm">Deal graph visualization coming soon</p>
-      <p class="text-slate-500 text-xs mt-2">Building deal connections...</p>
+      <p style="color: #94a3b8; font-size: 0.875rem;">Deal graph visualization coming soon</p>
+      <p style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">Building deal connections...</p>
     </div>
 
     <!-- Graph canvas -->
-    <div id={networkId} class="w-full h-full"></div>
+    <div id={networkId} style="width: 100%; height: 100%;"></div>
   </div>
 
   <!-- Graph legend -->
-  <div class="mt-4 flex items-center justify-center gap-6 text-xs">
-    <div class="flex items-center gap-2">
-      <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-      <span class="text-slate-400">Companies</span>
+  <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 1.5rem; font-size: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #3b82f6;"></div>
+      <span style="color: #94a3b8;">Companies</span>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="w-3 h-3 rounded-full bg-purple-500"></div>
-      <span class="text-slate-400">Deals</span>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #a855f7;"></div>
+      <span style="color: #94a3b8;">Deals</span>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-      <span class="text-slate-400">People</span>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #10b981;"></div>
+      <span style="color: #94a3b8;">People</span>
     </div>
   </div>
 </div>
@@ -92,51 +92,48 @@ const networkId = `${uniqueId}-network`;
 
       // Handle 3D video (Attempt #2)
       if (graphData.type === 'video' && graphData.video_url) {
-        loadingEl.classList.add('hidden');
+        loadingEl.style.display = 'none';
         networkEl.innerHTML = `
           <video
             autoplay
             loop
             muted
             playsinline
-            class="w-full h-full object-contain rounded-xl"
-            style="background: #0f172a;"
+            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem; background: #0f172a;"
           >
             <source src="${graphData.video_url}" type="video/webm" />
             Your browser does not support video playback.
           </video>
         `;
-        networkEl.classList.remove('hidden');
+        networkEl.style.display = 'block';
         return;
       }
 
       // Handle screenshot (Attempt #3)
       if (graphData.type === 'screenshot' && graphData.screenshot_url) {
-        loadingEl.classList.add('hidden');
+        loadingEl.style.display = 'none';
         networkEl.innerHTML = `
           <img
             src="${graphData.screenshot_url}"
             alt="Deal Graph for ${companyName}"
-            class="w-full h-full object-contain rounded-xl"
-            style="background: #0f172a;"
+            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem; background: #0f172a;"
           />
         `;
-        networkEl.classList.remove('hidden');
+        networkEl.style.display = 'block';
         return;
       }
 
       // Handle interactive data (Attempt #1)
       if (!graphData.nodes || graphData.nodes.length === 0) {
         // No data - show coming soon message
-        loadingEl.classList.add('hidden');
-        errorEl.classList.remove('hidden');
-        errorEl.classList.add('flex');
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'flex';
         return;
       }
 
       // Hide loading, show graph
-      loadingEl.classList.add('hidden');
-      networkEl.classList.remove('hidden');
+      loadingEl.style.display = 'none';
+      networkEl.style.display = 'block';
 
       // Create vis-network
       const nodes = new vis.DataSet(graphData.nodes.map(node => {
@@ -283,9 +280,8 @@ const networkId = `${uniqueId}-network`;
 
     } catch (error) {
       console.error('Error loading graph:', error);
-      loadingEl.classList.add('hidden');
-      errorEl.classList.remove('hidden');
-      errorEl.classList.add('flex');
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'flex';
     }
   };
 
@@ -311,6 +307,10 @@ const networkId = `${uniqueId}-network`;
 </script>
 
 <style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   #graph-network {
     border-radius: 0.75rem;
   }

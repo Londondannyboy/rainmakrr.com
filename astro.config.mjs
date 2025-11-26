@@ -1,7 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
-import tailwind from '@astrojs/tailwind';
+// import tailwind from '@astrojs/tailwind'; // Removed for performance - using inline styles
 import cookieconsent from '@jop-software/astro-cookieconsent';
 
 // https://astro.build/config
@@ -45,7 +45,7 @@ export default defineConfig({
     }
   },
   integrations: [
-    tailwind(),
+    // tailwind(), // Removed for performance - using inline styles
     cookieconsent({
       guiOptions: {
         consentModal: {
