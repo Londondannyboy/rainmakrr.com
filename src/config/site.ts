@@ -1,25 +1,41 @@
 export const siteConfig = {
   name: 'Placement',
-  title: 'Top Private Equity Placement Agents List | Placement',
-  description: 'Top Private Equity Placement Agents List - comprehensive rankings, fee structures, capital raising insights, and market intelligence for PE fundraising.',
+  title: 'Top Private Equity Placement Agents List 2025 | Placement Quest',
+  description: 'Comprehensive directory of 85+ top private equity placement agents worldwide. Expert rankings, fee structures, LP networks, and capital raising insights for PE fundraising success.',
   url: 'https://placement.quest',
-  ogImage: 'https://placement.quest/og-image.jpg', // TODO: Add actual OG image
+  ogImage: 'https://placement.quest/og-image.jpg',
   links: {
-    twitter: 'https://twitter.com/placement', // TODO: Add actual Twitter
-    linkedin: 'https://linkedin.com/company/placement', // TODO: Add actual LinkedIn
+    twitter: 'https://twitter.com/placementquest',
+    linkedin: 'https://linkedin.com/company/placementquest',
   },
   keywords: [
-    'private equity placement agents list',
+    // Primary keywords (high volume)
     'private equity placement agents',
+    'private equity placement agents list',
     'top private equity placement agents',
-    'placement agents',
     'PE placement agents',
+    'placement agent directory',
+    // Secondary keywords (intent-based)
     'private equity fundraising',
-    'capital raising',
+    'PE capital raising',
+    'placement agent fees',
     'placement agent services',
-    'PE fundraising',
-    'private equity capital raising',
+    'LP investor networks',
+    // Long-tail keywords
+    'best private equity placement agents 2025',
+    'how to choose a placement agent',
+    'placement agent rankings',
+    'venture capital placement agents',
+    'private credit placement agents',
+    'real estate PE placement agents',
+    'boutique placement agents',
+    // Geographic modifiers
+    'placement agents north america',
+    'placement agents europe',
+    'placement agents asia',
+    'UK placement agents',
+    'US placement agents',
   ],
-  author: 'Placement Editorial Team',
+  author: 'Placement Quest Editorial Team',
   language: 'en',
 };

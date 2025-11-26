@@ -1,6 +1,55 @@
 # robots.txt for placement.quest
+# Updated: November 2025
+
+# Allow all search engines
 User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /api/
+
+# Googlebot specific settings
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# Allow Googlebot-Image for better image indexing
+User-agent: Googlebot-Image
+Allow: /
+
+# Bingbot
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 2
+
+# AI/LLM crawlers - allow access to llms.txt files
+User-agent: GPTBot
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /
+Crawl-delay: 5
+
+User-agent: ChatGPT-User
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /
+
+User-agent: Claude-Web
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /llms.txt
+Allow: /llms-full.txt
 Allow: /
 
 # Sitemap location
 Sitemap: https://placement.quest/sitemap.xml
+
+# Host directive (for Yandex and others)
+Host: https://placement.quest

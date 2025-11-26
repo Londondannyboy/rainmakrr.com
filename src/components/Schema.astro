@@ -2,12 +2,15 @@
 import { siteConfig } from '../config/site';
 
 interface Props {
-  type?: 'homepage' | 'article' | 'company';
+  type?: 'homepage' | 'article' | 'company' | 'directory';
   article?: any;
   company?: any;
+  companies?: any[];  // For directory pages ItemList
+  pageTitle?: string;
+  pageDescription?: string;
 }
 
-const { type = 'homepage', article, company } = Astro.props;
+const { type = 'homepage', article, company, companies, pageTitle, pageDescription } = Astro.props;
 
 const organizationSchema = {
   '@context': 'https://schema.org',
@@ -149,6 +152,55 @@ if (type === 'homepage') {
   };
 }
 
+// ItemList Schema for directory pages - helps with rich snippets
+let itemListSchema;
+if (type === 'directory' && companies && companies.length > 0) {
+  itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: pageTitle || 'Private Equity Placement Agents Directory',
+    description: pageDescription || 'Comprehensive list of top private equity placement agents',
+    numberOfItems: companies.length,
+    itemListElement: companies.slice(0, 20).map((company: any, index: number) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Organization',
+        name: company.display_name || company.name,
+        description: company.description?.substring(0, 200) || `${company.display_name || company.name} - Private equity placement agent`,
+        url: `${siteConfig.url}/private-equity-placement-agents-list/${company.slug}`,
+        logo: company.logo_url,
+        address: company.headquarters ? {
+          '@type': 'PostalAddress',
+          addressLocality: company.headquarters,
+        } : undefined,
+      },
+    })),
+  };
+}
+
+// CollectionPage schema for better indexing of directory pages
+let collectionPageSchema;
+if (type === 'directory') {
+  collectionPageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: pageTitle || 'Private Equity Placement Agents',
+    description: pageDescription || 'Browse our directory of top private equity placement agents',
+    url: Astro.url.href,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+    about: {
+      '@type': 'Thing',
+      name: 'Private Equity Placement Agents',
+      description: 'Financial intermediaries specializing in capital raising for private equity funds',
+    },
+  };
+}
+
 let faqSchema;
 if (type === 'homepage') {
   faqSchema = {
@@ -199,3 +251,5 @@ if (type === 'homepage') {
 {companySchema && <script type="application/ld+json" set:html={JSON.stringify(companySchema)} />}
 {faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />}
 {citationSchema && <script type="application/ld+json" set:html={JSON.stringify(citationSchema)} />}
+{itemListSchema && <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />}
+{collectionPageSchema && <script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />}

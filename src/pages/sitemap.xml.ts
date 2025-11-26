@@ -12,6 +12,7 @@ const staticPages = [
   '/articles',
   '/privacy',
   '/terms',
+  '/search',
   '/private-equity-placement-agents-list',
   '/resources/placement-agents-guide',
   '/resources/placement-agent-software',
@@ -19,10 +20,14 @@ const staticPages = [
   '/private-credit-placement-agents',
   '/real-estate-private-equity-placement-agents',
   '/boutique-private-equity-placement-agents',
+  // Regional pages - complete coverage
   '/top-private-equity-placement-agents-north-america',
   '/top-private-equity-placement-agents-europe',
   '/top-private-equity-placement-agents-asia-pacific',
   '/top-private-equity-placement-agents-latin-america',
+  '/top-private-equity-placement-agents-middle-east',
+  '/top-private-equity-placement-agents-africa',
+  // Country-specific pages
   '/top-private-equity-placement-agents-us',
   '/top-private-equity-placement-agents-uk',
   '/top-private-equity-placement-agents-singapore',
