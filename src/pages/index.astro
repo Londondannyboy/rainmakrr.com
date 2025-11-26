@@ -1146,7 +1146,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       margin-bottom: 60px;
     }
 
-    .footer-section h3 {
+    .footer-section .footer-title {
       font-size: 18px;
       font-weight: 700;
       margin-bottom: 20px;
@@ -2098,7 +2098,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         </div>
 
         <h1 style="font-size: clamp(18px, 2.5vw, 24px); font-weight: 600; margin-bottom: 12px; color: #fff; line-height: 1.3;">
-          Your Guide To The Top Private Equity Placement Agents
+          Top Private Equity Placement Agents
         </h1>
 
         <p style="font-size: 15px; line-height: 1.7; color: rgba(255, 255, 255, 0.75); margin: 0 auto; max-width: 700px;">
@@ -2117,9 +2117,9 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
           <div style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #f093fb 100%); padding: 8px 24px; border-radius: 50px; margin-bottom: 24px;">
             <span style="font-size: 14px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Latest Updates</span>
           </div>
-          <h2 style="font-size: clamp(40px, 7vw, 64px); font-weight: 900; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          <div class="section-title-styled" style="font-size: clamp(40px, 7vw, 64px); font-weight: 900; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
             Recent Placement News
-          </h2>
+          </div>
           <p style="font-size: 18px; color: rgba(255, 255, 255, 0.7); max-width: 700px; margin: 0 auto;">
             Stay ahead with the latest insights and trends from the private equity fundraising world
           </p>
@@ -2162,9 +2162,9 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                           {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </div>
-                      <h3 style="font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 16px; line-height: 1.3;">
+                      <div class="news-title" style="font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 16px; line-height: 1.3;">
                         {article.title}
-                      </h3>
+                      </div>
                       {article.excerpt && (
                         <p style="font-size: 16px; color: rgba(255, 255, 255, 0.75); line-height: 1.6; margin: 0;">
                           {article.excerpt.substring(0, 150)}...
@@ -2177,9 +2177,9 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
             ))}
           </div>
 
-          <!-- Six News Panels Grid -->
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-bottom: 60px;">
-            {articles.slice(2, 8).map((article: any, index: number) => (
+          <!-- One Additional News Panel (reduced from 6 for SEO - total 3 cards) -->
+          <div style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 28px; margin-bottom: 60px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            {articles.slice(2, 3).map((article: any, index: number) => (
               <a href={`/${article.slug}`} style="text-decoration: none; display: block;">
                 <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 0; overflow: hidden; transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column;" class="news-panel-small">
                   {(article.gif_url || article.hero_asset_url) && (
@@ -2209,9 +2209,9 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                     <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
                       {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </div>
-                    <h4 style="font-size: 18px; font-weight: 700; color: #fff; margin: 0; line-height: 1.4;">
+                    <div class="news-title-small" style="font-size: 18px; font-weight: 700; color: #fff; margin: 0; line-height: 1.4;">
                       {article.title.length > 60 ? article.title.substring(0, 60) + '...' : article.title}
-                    </h4>
+                    </div>
                   </div>
                 </div>
               </a>
@@ -2290,15 +2290,15 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <section id="top-agents" class="companies-section">
     <div class="companies-content">
       <div class="section-header">
-        <h2 style="font-size: 36px;">Top Private Equity Placement Agents Directory</h2>
+        <h2 style="font-size: 36px;">Top Private Equity Placement Agents Directory 2025</h2>
         <p style="font-size: 18px; line-height: 1.8; margin-bottom: 24px; font-weight: 600;">
           Our curated private equity placement agents list features the world's leading fundraising advisors, including firms ranked in <a href="https://www.preqin.com" target="_blank" rel="noopener" style="color: #667eea; text-decoration: underline;">Preqin's 2025 Global Placement Agent Rankings</a>. These elite agencies serve as the vital bridge between General Partners (GPs) seeking capital and institutional Limited Partners (LPs).
         </p>
 
         <div style="background: rgba(102, 126, 234, 0.1); border-left: 4px solid #667eea; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
-          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #667eea;">
+          <div class="callout-title" style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #667eea;">
             What Defines a Top Placement Agent? Key Criteria
-          </h3>
+          </div>
           <ol style="list-style-position: inside; color: rgba(255, 255, 255, 0.9); line-height: 1.9; font-size: 16px; counter-reset: item; list-style: none; padding-left: 0;">
             <li style="counter-increment: item; margin-bottom: 12px; padding-left: 32px; position: relative;">
               <span style="position: absolute; left: 0; font-weight: 700; color: #667eea;">1.</span>
@@ -2366,7 +2366,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                 )}
                 <div class="company-header">
                   <div>
-                    <h3 class="company-name">{company.display_name}</h3>
+                    <div class="company-name">{company.display_name}</div>
                     {company.primary_country && (
                       <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
                     )}
@@ -2395,7 +2395,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
         </div>
       ) : (
         <div class="empty-state">
-          <h3>Coming Soon</h3>
+          <div class="empty-state-title" style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">Coming Soon</div>
           <p>We're currently curating the finest PE fundraising advisors. Check back soon!</p>
         </div>
       )}
@@ -2410,42 +2410,14 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
   </section>
 
-  <!-- Full Article Sections for SEO -->
-  {articles && articles.length > 3 && articles.slice(3, 5).map((article: any) => (
-    <section class="content-section animated" style="background: rgba(0, 0, 0, 0.95);">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <div class="news-date" style="margin-bottom: 16px;">
-          {new Date(article.published_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </div>
-        <h2 class="section-title" style="text-align: left; margin-bottom: 24px;">
-          <a href={`/${article.slug}`} style="color: inherit; text-decoration: none;">
-            {article.title}
-          </a>
-        </h2>
-        <div
-          class="article-content"
-          style="line-height: 1.8; font-size: 16px;"
-          set:html={cleanDuplicateHeadings(article.content || '')}
-        />
-        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-          <a href={`/${article.slug}`} class="news-link" style="font-size: 16px;">
-            Read Full Article →
-          </a>
-        </div>
-      </div>
-    </section>
-  ))}
+  <!-- Full Article Sections - REMOVED for SEO optimization (content moved to individual article pages) -->
 
   <!-- PDF Guide CTA Section -->
   <section class="pdf-guide-cta animated">
     <div class="pdf-guide-content">
       <div class="pdf-guide-badge">Free Resource</div>
-      <h2>Download Our Comprehensive Guide</h2>
-      <h3>Top Private Equity Placement Agents Guide 2025</h3>
+      <h5 style="font-size: 28px; font-weight: 700; margin-bottom: 12px;">Top Private Equity Placement Agents Resources</h5>
+      <div class="guide-subtitle" style="font-size: 22px; font-weight: 600; color: rgba(255, 255, 255, 0.9); margin-bottom: 16px;">Download Our Comprehensive Guide 2025</div>
       <p>
         Get instant access to our 30-page guide featuring leading placement agents, fee structures, selection criteria, market statistics, and expert insights for successful PE fundraising.
       </p>
@@ -2493,348 +2465,46 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     </div>
   </section>
 
-  <!-- Role Section -->
-  {sections.role && sections.role.content && sections.role.content.items && (
-    <section class="content-section gradient animated">
-      <h2 class="section-title">{sections.role.title}</h2>
-      {sections.role.subtitle && <p class="section-subtitle">{sections.role.subtitle}</p>}
+  <!-- Role Section - MOVED TO /what-do-placement-agents-do (SEO optimization) -->
 
-      <div class="items-grid">
-        {sections.role.content.items.map((item: any) => (
-          <div class="item-card">
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-          </div>
-        ))}
-      </div>
+  <!-- Portfolio/How It Works/Full-width Image Sections - REMOVED for SEO optimization -->
 
-      {sections.role.content.summary && (
-        <div class="summary-text">{sections.role.content.summary}</div>
-      )}
-    </section>
-  )}
+  <!-- Fee Structures, Selection Criteria - MOVED TO /placement-agent-fees and /choosing-a-placement-agent -->
 
-  <!-- Portfolio Item - Capital Raising -->
-  <section class="portfolio-section">
-    <div style="max-width: 1400px; margin: 0 auto; padding: 80px 60px 40px;">
-      <h2 style="font-size: clamp(36px, 5vw, 56px); font-weight: 900; margin-bottom: 24px; text-align: center; line-height: 1.2;">
-        How Placement Agents Drive Fundraising Success
-      </h2>
-      <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-        <p style="font-size: 18px; line-height: 1.8; color: rgba(255, 255, 255, 0.85); margin-bottom: 20px;">
-          Placement agents serve as strategic partners in the fundraising process, leveraging deep LP relationships and market intelligence to position funds for success.
-        </p>
-        <p style="font-size: 18px; line-height: 1.8; color: rgba(255, 255, 255, 0.85); margin-bottom: 20px;">
-          From crafting compelling investment narratives to orchestrating targeted LP outreach, these advisors streamline capital formation across private equity, venture capital, infrastructure, and credit strategies.
-        </p>
-        <p style="font-size: 17px; line-height: 1.8; color: rgba(255, 255, 255, 0.75);">
-          The modern placement agent brings sophisticated market positioning, regulatory navigation expertise, and data-driven investor targeting. With the global alternatives market exceeding $20 trillion in AUM, selecting the right placement partner has become essential for fund managers seeking to differentiate their offering and achieve optimal terms.
-        </p>
-      </div>
-    </div>
-    <div class="portfolio-grid">
-      <div class="portfolio-item">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="portfolio-overlay">
-          <div class="portfolio-title">Capital Raising</div>
-          <div class="portfolio-desc">Connect with premier <strong>private equity placement agents</strong> specializing in PE fundraising</div>
-        </div>
-      </div>
-      <div class="portfolio-item">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #4facfe 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="portfolio-overlay">
-          <div class="portfolio-title">Fund Marketing</div>
-          <div class="portfolio-desc">Access leading <strong>PE fundraising experts</strong> for top-tier administrative talent</div>
-        </div>
+  <!-- Portfolio Item - Career & Global - REMOVED for SEO optimization -->
+
+  <!-- By Region Section - H3 with keyword -->
+  <section class="region-links-section animated" style="padding: 60px 20px; background: linear-gradient(180deg, rgba(102, 126, 234, 0.05) 0%, rgba(0, 0, 0, 0.95) 100%);">
+    <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
+      <h3 style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; margin-bottom: 24px;">Top Private Equity Placement Agents by Region</h3>
+      <p style="font-size: 16px; color: rgba(255, 255, 255, 0.7); margin-bottom: 32px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        Explore our comprehensive directory of placement agents across global markets
+      </p>
+      <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
+        <a href="/top-private-equity-placement-agents-north-america" class="region-link" style="background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); padding: 16px 28px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 600; transition: all 0.3s;">North America</a>
+        <a href="/top-private-equity-placement-agents-europe" class="region-link" style="background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); padding: 16px 28px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 600; transition: all 0.3s;">Europe</a>
+        <a href="/top-private-equity-placement-agents-asia-pacific" class="region-link" style="background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); padding: 16px 28px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 600; transition: all 0.3s;">Asia Pacific</a>
+        <a href="/top-private-equity-placement-agents-uk" class="region-link" style="background: rgba(102, 126, 234, 0.15); border: 1px solid rgba(102, 126, 234, 0.3); padding: 16px 28px; border-radius: 12px; color: #fff; text-decoration: none; font-weight: 600; transition: all 0.3s;">United Kingdom</a>
       </div>
     </div>
   </section>
 
-  )}
-
-  <!-- How It Works Section -->
-  {sections.how_it_works && sections.how_it_works.content && sections.how_it_works.content.phases && (
-    <section class="content-section gradient animated">
-      <h2 class="section-title">{sections.how_it_works.title}</h2>
-      {sections.how_it_works.subtitle && <p class="section-subtitle">{sections.how_it_works.subtitle}</p>}
-
-      <div class="phases-list">
-        {sections.how_it_works.content.phases.map((phase: any) => (
-          <div class="phase-item">
-            <div class="phase-header">
-              <div class="phase-name">{phase.name}</div>
-              <div class="phase-duration">{phase.duration}</div>
-            </div>
-            <p class="phase-description">{phase.description}</p>
-          </div>
-        ))}
-      </div>
-
-      {sections.how_it_works.content.summary && (
-        <div class="summary-text">{sections.how_it_works.content.summary}</div>
-      )}
-    </section>
-  )}
-
-  <!-- Full-width Image Section (MOVED UP) -->
-  <section class="fullwidth-image-section">
-    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=50&auto=format" alt="Top private equity placement agents workspace" title="Leading private equity placement agents and PE fundraising experts" width="1920" height="1080" loading="lazy" decoding="async">
-    <div class="fullwidth-image-overlay">
-      <div class="fullwidth-image-content">
-        <h2>Capital Raising Agencies</h2>
-        <p>
-          Connecting exceptional talent with world-class organizations through<br>
-          specialized top placement agents and PE fundraising experts
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Fee Structures Section -->
-  {sections.fee_structures && sections.fee_structures.content && (
-    <section class="content-section dark has-background fee-structures animated" id="placement-agent-fees">
-      <h2 class="section-title">Private Equity Placement Agent Fees & Fee Structures</h2>
-      {sections.fee_structures.subtitle && <p class="section-subtitle">{sections.fee_structures.subtitle}</p>}
-
-      {sections.fee_structures.content.standard_fees && (
-        <div class="fee-section">
-          <h3>Standard Fees by Fund Size</h3>
-          <div class="fee-table">
-            {sections.fee_structures.content.standard_fees.map((fee: any) => (
-              <div class="fee-row">
-                <div class="fee-label">{fee.fund_type}</div>
-                <div class="fee-value">{fee.fee_range}</div>
-              </div>
-            ))}
-          </div>
+  <!-- Condensed FAQ Section - H4 with keyword -->
+  <section class="faq-condensed animated" style="padding: 60px 20px; background: rgba(0, 0, 0, 0.98);">
+    <div style="max-width: 900px; margin: 0 auto;">
+      <h4 style="font-size: clamp(22px, 3.5vw, 32px); font-weight: 800; margin-bottom: 32px; text-align: center;">Top Private Equity Placement Agents FAQ</h4>
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; padding: 20px 24px; border-radius: 8px;">
+          <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">What is a private equity placement agent?</div>
+          <div style="color: rgba(255, 255, 255, 0.75); line-height: 1.6;">A placement agent is an intermediary that helps private equity funds raise capital by connecting fund managers (GPs) with institutional investors (LPs).</div>
         </div>
-      )}
-
-      {sections.fee_structures.content.retainer_models && (
-        <div class="fee-section">
-          <h3>Common Retainer Arrangements</h3>
-          {sections.fee_structures.content.retainer_models.map((model: any, index: number) => (
-            <div class="item-card">
-              <div style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #667eea;">{model.type}</div>
-              {model.monthly_retainer && <p><strong>{index === 0 ? 'Monthly Fee:' : index === 1 ? 'Retainer Amount:' : 'Periodic Fee:'}</strong> {model.monthly_retainer}</p>}
-              {model.success_fee && <p><strong>{index === 0 ? 'Performance Fee:' : index === 1 ? 'Success-Based Fee:' : 'Completion Bonus:'}</strong> {model.success_fee}</p>}
-              {model.note && <p style="font-style: italic; color: rgba(255, 255, 255, 0.7);">{model.note}</p>}
-            </div>
-          ))}
+        <div style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; padding: 20px 24px; border-radius: 8px;">
+          <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">What fees do placement agents charge?</div>
+          <div style="color: rgba(255, 255, 255, 0.75); line-height: 1.6;">Typical fees range from 1-2% of capital raised, with retainer fees of $25,000-$100,000. Larger funds may negotiate lower rates.</div>
         </div>
-      )}
-
-      {sections.fee_structures.content.example && (
-        <div class="fee-section">
-          <h3>Example: {sections.fee_structures.content.example.fund_size} Fund</h3>
-          <div class="fee-table">
-            <div class="fee-row">
-              <div class="fee-label">Retainer</div>
-              <div class="fee-value">{sections.fee_structures.content.example.retainer}</div>
-            </div>
-            <div class="fee-row">
-              <div class="fee-label">Success Fee</div>
-              <div class="fee-value">{sections.fee_structures.content.example.success_fee}</div>
-            </div>
-            <div class="fee-row">
-              <div class="fee-label">Expenses</div>
-              <div class="fee-value">{sections.fee_structures.content.example.expenses}</div>
-            </div>
-            <div class="fee-row">
-              <div class="fee-label">Total</div>
-              <div class="fee-value">{sections.fee_structures.content.example.total}</div>
-            </div>
-          </div>
-        </div>
-      )}
-    </section>
-  )}
-
-  <!-- Selection Criteria Section -->
-  {sections.selection && sections.selection.content && sections.selection.content.criteria && (
-    <section class="content-section gradient-alt animated">
-      <h2 class="section-title">{sections.selection.title}</h2>
-      {sections.selection.subtitle && <p class="section-subtitle">{sections.selection.subtitle}</p>}
-
-      <div class="items-grid">
-        {sections.selection.content.criteria.map((criterion: any) => (
-          <div class="item-card">
-            <h3>{criterion.name}</h3>
-            <p>{criterion.description}</p>
-          </div>
-        ))}
-      </div>
-
-      {sections.selection.content.red_flags && sections.selection.content.red_flags.length > 0 && (
-        <div class="red-flags">
-          <h3>Red Flags to Watch For</h3>
-          <ul>
-            {sections.selection.content.red_flags.map((flag: string) => (
-              <li>{flag}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </section>
-  )}
-
-  <!-- Portfolio Item - Career & Global -->
-  <section class="portfolio-section">
-    <div style="max-width: 1400px; margin: 0 auto; padding: 80px 60px 40px;">
-      <h2 style="font-size: clamp(36px, 5vw, 56px); font-weight: 900; margin-bottom: 24px; text-align: center; line-height: 1.2;">
-        Global Reach & Career Advancement
-      </h2>
-      <div style="max-width: 900px; margin: 0 auto; text-align: center;">
-        <p style="font-size: 18px; line-height: 1.8; color: rgba(255, 255, 255, 0.85); margin-bottom: 20px;">
-          Leading private equity placement agents operate across global markets, connecting fund managers with institutional investors in North America, Europe, Asia-Pacific, and emerging regions.
-        </p>
-        <p style="font-size: 17px; line-height: 1.8; color: rgba(255, 255, 255, 0.75);">
-          These sophisticated networks enable placement agents to provide career development guidance, executive search services, and strategic talent advisory for professionals seeking to advance in the competitive PE fundraising landscape.
-        </p>
-      </div>
-    </div>
-    <div class="portfolio-grid">
-      <div class="portfolio-item">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #667eea 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="portfolio-overlay">
-          <div class="portfolio-title">Career Development</div>
-          <div class="portfolio-desc">Expert guidance from top placement agents to advance your executive career</div>
-        </div>
-      </div>
-      <div class="portfolio-item">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="portfolio-overlay">
-          <div class="portfolio-title">Global Network</div>
-          <div class="portfolio-desc">International PE fundraising experts connecting talent worldwide</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Trends Section -->
-  {sections.trends && sections.trends.content && sections.trends.content.trends && (
-    <section class="content-section dark has-background trends animated">
-      <h2 class="section-title">{sections.trends.title}</h2>
-      {sections.trends.subtitle && <p class="section-subtitle">{sections.trends.subtitle}</p>}
-
-      <div class="items-grid">
-        {sections.trends.content.trends.map((trend: any) => (
-          <div class="item-card">
-            <h3>{trend.name}</h3>
-            <p>{trend.description}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )}
-
-  <!-- Why Use Section -->
-  {sections.why_use && sections.why_use.content && sections.why_use.content.reasons && (
-    <section class="content-section gradient-alt has-background why-use animated">
-      <h2 class="section-title">{sections.why_use.title}</h2>
-      {sections.why_use.subtitle && <p class="section-subtitle">{sections.why_use.subtitle}</p>}
-
-      <div class="items-grid">
-        {sections.why_use.content.reasons.map((reason: any) => (
-          <div class="item-card">
-            <h3>{reason.title}</h3>
-            <p>{reason.description}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )}
-
-  <!-- FAQ Section -->
-  {sections.faq && sections.faq.content && sections.faq.content.questions && (
-    <section class="content-section dark has-background faq animated">
-      <h2 class="section-title">{sections.faq.title}</h2>
-      {sections.faq.subtitle && <p class="section-subtitle">{sections.faq.subtitle}</p>}
-
-      <div class="faq-list">
-        {sections.faq.content.questions.map((item: any) => (
-          <div class="faq-item">
-            <div class="faq-question">{item.question}</div>
-            <div class="faq-answer">{item.answer}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )}
-
-
-  <!-- References Section -->
-  {sections.references && sections.references.content && sections.references.content.sources && (
-    <section class="content-section gradient animated">
-      <h2 class="section-title">{sections.references.title}</h2>
-      {sections.references.subtitle && <p class="section-subtitle">{sections.references.subtitle}</p>}
-
-      <div class="references-list">
-        {sections.references.content.sources.map((source: any) => (
-          <div class="reference-item">
-            <div class="reference-title">
-              <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title} →</a>
-            </div>
-            <div class="reference-description">{source.description}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )}
-
-  <!-- Coverage Areas Grid -->
-  <section class="services-section animated">
-    <div class="section-header">
-      <h2>What We Cover</h2>
-      <p>In-depth news, analysis, and insights on the private equity placement agent industry and fundraising landscape</p>
-    </div>
-
-    <div class="services-grid">
-      <div class="service-card">
-        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=50&auto=format" alt="Private equity fundraising news" title="PE fundraising news and analysis" width="800" height="500" loading="lazy" decoding="async">
-        <div class="service-overlay">
-          <div class="service-title">Fundraising News</div>
-          <div class="service-desc">Breaking news on fund closes, LP commitments, and capital raising trends</div>
-        </div>
-      </div>
-
-      <div class="service-card">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="service-overlay">
-          <div class="service-title">Agent Rankings</div>
-          <div class="service-desc">Comprehensive directory and rankings of top placement agents worldwide</div>
-        </div>
-      </div>
-
-      <div class="service-card">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="service-overlay">
-          <div class="service-title">Industry Analysis</div>
-          <div class="service-desc">Expert commentary on market trends, fee structures, and best practices</div>
-        </div>
-      </div>
-
-      <div class="service-card">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="service-overlay">
-          <div class="service-title">Market Data</div>
-          <div class="service-desc">Statistics and benchmarks on fundraising volumes and placement activity</div>
-        </div>
-      </div>
-
-      <div class="service-card">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="service-overlay">
-          <div class="service-title">LP Insights</div>
-          <div class="service-desc">Coverage of institutional investor allocation trends and preferences</div>
-        </div>
-      </div>
-
-      <div class="service-card">
-        <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); position: absolute; top: 0; left: 0;"></div>
-        <div class="service-overlay">
-          <div class="service-title">Regional Focus</div>
-          <div class="service-desc">Specialized coverage across North America, Europe, Asia-Pacific, and more</div>
+        <div style="background: rgba(102, 126, 234, 0.1); border-left: 3px solid #667eea; padding: 20px 24px; border-radius: 8px;">
+          <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">How do I choose the right placement agent?</div>
+          <div style="color: rgba(255, 255, 255, 0.75); line-height: 1.6;">Consider their track record, LP network depth, strategy expertise, geographic reach, and regulatory compliance. Our <a href="/choosing-a-placement-agent" style="color: #667eea;">selection guide</a> provides detailed criteria.</div>
         </div>
       </div>
     </div>
@@ -2842,7 +2512,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
   <!-- CTA Section -->
   <section class="cta-section">
-    <h2>Stay Informed on<br>PE Fundraising</h2>
+    <h6 style="font-size: clamp(32px, 5vw, 48px); font-weight: 900; margin-bottom: 24px; line-height: 1.2;">Top Private Equity Placement Agents Contact</h6>
     <p>
       Explore our directory of top placement agents and stay up-to-date<br>
       with the latest news and insights from the private equity sector
@@ -2870,7 +2540,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <footer>
     <div class="footer-content">
       <div class="footer-section">
-        <h3>Placement</h3>
+        <div class="footer-title">Placement</div>
         <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
           Your definitive resource for <a href="/" style="color: #667eea; text-decoration: none;">top private equity placement agents</a> and capital raising intelligence.
         </p>
@@ -2880,7 +2550,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       </div>
 
       <div class="footer-section">
-        <h3>Resources</h3>
+        <div class="footer-title">Resources</div>
         <ul class="footer-links">
           <li><a href="/private-equity-placement-agent-news">PE Fundraising News</a></li>
           <li><a href="/private-equity-placement-agents-list">Full Agent Directory</a></li>
@@ -2890,7 +2560,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       </div>
 
       <div class="footer-section">
-        <h3>By Region</h3>
+        <div class="footer-title">By Region</div>
         <ul class="footer-links">
           <li><a href="/top-private-equity-placement-agents-north-america">North America</a></li>
           <li><a href="/top-private-equity-placement-agents-europe">Europe</a></li>
@@ -2900,7 +2570,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       </div>
 
       <div class="footer-section">
-        <h3>By Specialty</h3>
+        <div class="footer-title">By Specialty</div>
         <ul class="footer-links">
           <li><a href="/venture-capital-placement-agents">Venture Capital</a></li>
           <li><a href="/private-credit-placement-agents">Private Credit</a></li>
@@ -2910,7 +2580,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       </div>
 
       <div class="footer-section">
-        <h3>Company</h3>
+        <div class="footer-title">Company</div>
         <ul class="footer-links">
           <li><a href="/about">About Us</a></li>
           <li><a href="/contact">Contact</a></li>
