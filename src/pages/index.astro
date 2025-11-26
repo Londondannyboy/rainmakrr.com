@@ -307,7 +307,6 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
   <!-- Performance: Critical resource hints -->
   <link rel="preconnect" href="https://stream.mux.com" crossorigin>
-  <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
@@ -633,8 +632,8 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     .stats-bg {
       position: absolute;
       inset: 0;
-      background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=50&auto=format') center/cover;
-      opacity: 0.4;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.2) 50%, rgba(0, 0, 0, 0.8) 100%);
+      opacity: 0.6;
     }
 
     .stats-bg::after {
@@ -1055,8 +1054,8 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
       content: '';
       position: absolute;
       inset: 0;
-      background: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=50&auto=format') center/cover;
-      opacity: 0.08;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(240, 147, 251, 0.1) 100%);
+      opacity: 0.5;
       z-index: 0;
     }
 
@@ -1233,29 +1232,29 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     }
 
     .content-section.intro::before {
-      background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=50&auto=format');
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
     }
 
     .content-section.top-agents::before {
-      background-image: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&q=50&auto=format');
+      background: linear-gradient(135deg, rgba(240, 147, 251, 0.1) 0%, rgba(102, 126, 234, 0.15) 100%);
     }
 
     .content-section.fee-structures::before {
-      background-image: url('https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=1200&q=50&auto=format');
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.15) 0%, rgba(240, 147, 251, 0.1) 100%);
     }
 
     .content-section.trends::before {
-      background-image: url('https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=1200&q=50&auto=format');
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.15) 100%);
     }
 
     .content-section.why-use::before {
-      background-image: url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=50&auto=format');
-      opacity: 0.12;
+      background: linear-gradient(135deg, rgba(240, 147, 251, 0.15) 0%, rgba(102, 126, 234, 0.1) 100%);
+      opacity: 0.5;
     }
 
     .content-section.faq::before {
-      background-image: url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&q=50&auto=format');
-      opacity: 0.12;
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.1) 0%, rgba(240, 147, 251, 0.15) 100%);
+      opacity: 0.5;
     }
 
     .content-section.animated {
@@ -1997,6 +1996,14 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
     // Hamburger Menu Toggle
     document.addEventListener('DOMContentLoaded', function() {
+      // Delay cookie consent by 3 seconds so hero video loads first
+      const ccMain = document.getElementById('cc-main');
+      if (ccMain) {
+        ccMain.style.opacity = '0';
+        ccMain.style.transition = 'opacity 0.5s';
+        setTimeout(() => { ccMain.style.opacity = '1'; }, 3000);
+      }
+
       // Accessibility: Add aria-label to cookie consent dialog
       const cookieDialog = document.querySelector('#cc-main .cm[role="dialog"]');
       if (cookieDialog && !cookieDialog.getAttribute('aria-label')) {
