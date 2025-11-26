@@ -4,7 +4,7 @@ import { marked } from 'marked';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
 import PlacementAgentsComparisonTable from '../components/PlacementAgentsComparisonTable.astro';
-import OptimizedFonts from '../components/OptimizedFonts.astro';
+// Using system fonts - no Google Fonts needed
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -214,7 +214,6 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <Schema type="homepage" />
 
   <!-- Preconnect to critical origins -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://image.mux.com" crossorigin>
   <link rel="preconnect" href="https://stream.mux.com" crossorigin>
 
@@ -299,16 +298,13 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
-  <!-- Optimized Font Loading (astro-font) - reduces render-blocking -->
-  <OptimizedFonts />
-
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #000;
       color: #fff;
       line-height: 1.6;
@@ -2009,10 +2005,10 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
     });
   </script>
 </head>
-<body style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #000; color: #fff; line-height: 1.6;">
+<body style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, sans-serif; background: #000; color: #fff; line-height: 1.6;">
   <!-- Navigation -->
   <nav style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 24px 60px; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-    <a href="/" class="logo" style="font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #fff; text-decoration: none;">Placement Quest</a>
+    <a href="/" class="logo" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 20px; font-weight: 700; color: #fff; text-decoration: none;">Placement Quest</a>
     <button class="hamburger" id="hamburger-menu" aria-label="Toggle menu">
       <span></span>
       <span></span>
