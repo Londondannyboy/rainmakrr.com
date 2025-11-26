@@ -69,11 +69,11 @@ const articles = articlesRaw.map((article: any) => {
   const playbackId = article.video_playback_id;
   // Mux thumbnails with responsive sizes and quality compression
   const thumbnailUrl = playbackId
-    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve&quality=75`
+    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve&quality=60`
     : (article.featured_asset_url || article.hero_asset_url);
   // Srcset for responsive loading with compression
   const thumbnailSrcset = playbackId
-    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=200&fit_mode=preserve&quality=75 200w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve&quality=75 300w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=400&fit_mode=preserve&quality=75 400w`
+    ? `https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=200&fit_mode=preserve&quality=60 200w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=300&fit_mode=preserve&quality=60 300w, https://image.mux.com/${playbackId}/thumbnail.webp?time=1&width=400&fit_mode=preserve&quality=60 400w`
     : '';
   return {
     ...article,
@@ -224,7 +224,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
   <!-- Critical CSS inline - renders logo/nav immediately without waiting for external CSS -->
   <style>
-    .logo{font-size:20px;font-weight:900;background:linear-gradient(135deg,#667eea,#f093fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none}
+    .logo{font-size:20px;font-weight:700;color:#fff;text-decoration:none}
     nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:24px 60px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.1)}
     body{font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#000;color:#fff;margin:0}
   </style>
@@ -337,12 +337,8 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 
     .logo {
       font-size: 20px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #667eea, #f093fb);
-      background-clip: text;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
+      font-weight: 700;
+      color: #fff;
     }
 
     .nav-links {
