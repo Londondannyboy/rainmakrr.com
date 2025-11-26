@@ -146,9 +146,10 @@ const muxPlaybackId = heroCarouselItems[0].src;
 // Image optimization helpers for mobile performance
 function optimizeCloudinaryImage(url: string, width: number = 800) {
   if (!url || !url.includes('cloudinary.com')) return url;
-  // f_webp = force WebP, q_50 = 50% quality (more aggressive), w_X = max width, c_limit = don't upscale
-  const transformations = `f_webp,q_50,w_${width},c_limit`;
-  return url.replace('/upload/', `/upload/${transformations}/`);
+  // q_50 = 50% quality, w_X = max width, c_limit = don't upscale
+  const transformations = `q_50,w_${width},c_limit`;
+  // Add transformations and change extension to .webp for explicit WebP delivery
+  return url.replace('/upload/', `/upload/${transformations}/`).replace(/\.(jpg|jpeg|png)$/i, '.webp');
 }
 
 function generateSrcSet(url: string) {
@@ -2041,7 +2042,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
 <body>
   <!-- Navigation -->
   <nav>
-    <a href="/" class="logo">Placement Quest</a>
+    <a href="/" class="logo" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 20px; font-weight: 900; background: linear-gradient(135deg, #667eea, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none;">Placement Quest</a>
     <button class="hamburger" id="hamburger-menu" aria-label="Toggle menu">
       <span></span>
       <span></span>

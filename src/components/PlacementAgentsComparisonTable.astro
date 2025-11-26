@@ -30,9 +30,10 @@ const topAgents = await sql`
 // Image optimization for small logos (48x48px display)
 function optimizeCloudinaryLogo(url: string): string {
   if (!url || !url.includes('cloudinary.com')) return url;
-  // For 48x48px logos: WebP, 50% quality, 96px width (2x for retina)
-  const transformations = 'f_webp,q_50,w_96,h_96,c_fill';
-  return url.replace('/upload/', `/upload/${transformations}/`);
+  // For 48x48px logos: 50% quality, 96px width (2x for retina)
+  const transformations = 'q_50,w_96,h_96,c_fill';
+  // Change extension to .webp for explicit WebP delivery
+  return url.replace('/upload/', `/upload/${transformations}/`).replace(/\.(jpg|jpeg|png)$/i, '.webp');
 }
 
 // Industry estimates for top placement agents (based on Preqin 2025 and industry research)
