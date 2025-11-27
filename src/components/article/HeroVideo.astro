@@ -1,0 +1,42 @@
+---
+/**
+ * HeroVideo Component
+ * Full-width video hero with title overlay
+ *
+ * @prop playbackId - Mux playback ID
+ * @prop title - Article title
+ * @prop excerpt - Article excerpt/description
+ * @prop articleAngle - Article type badge (e.g., "news", "analysis")
+ */
+interface Props {
+  playbackId: string;
+  title: string;
+  excerpt?: string;
+  articleAngle?: string;
+}
+
+const { playbackId, title, excerpt, articleAngle } = Astro.props;
+---
+
+<header class="relative bg-gray-900">
+  <div class="max-w-6xl mx-auto">
+    <mux-player
+      playback-id={playbackId}
+      accent-color="#2563eb"
+      autoplay="muted"
+      loop
+      class="w-full aspect-video"
+    />
+  </div>
+  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
+    <div class="max-w-4xl mx-auto">
+      {articleAngle && (
+        <span class="text-blue-400 text-sm font-semibold uppercase tracking-wider">{articleAngle}</span>
+      )}
+      <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">{title}</h1>
+      {excerpt && (
+        <p class="text-xl text-gray-200">{excerpt}</p>
+      )}
+    </div>
+  </div>
+</header>

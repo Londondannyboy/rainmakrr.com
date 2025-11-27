@@ -1,0 +1,74 @@
+---
+/**
+ * Sources Component
+ * References and sources grid with optional thumbnails
+ *
+ * @prop sources - Array of source objects
+ * @prop playbackId - Optional Mux playback ID for thumbnails
+ */
+interface Source {
+  name: string;
+  url: string;
+  description?: string;
+}
+
+interface Props {
+  sources: Source[];
+  playbackId?: string;
+}
+
+const { sources, playbackId } = Astro.props;
+
+const actTimestamps = [1.5, 4.5, 7.5, 10.5];
+
+function getMuxThumbnail(time: number): string {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=400`;
+}
+
+function isValidUrl(url: string): boolean {
+  return url && url.startsWith('http');
+}
+---
+
+{sources.length > 0 && (
+  <section class="relative rounded-xl overflow-hidden mb-12">
+    {playbackId && (
+      <div class="absolute inset-0">
+        <img src={getMuxThumbnail(10.5)} alt="" class="w-full h-full object-cover opacity-10" loading="lazy" />
+        <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white/90 to-gray-50"></div>
+      </div>
+    )}
+    <div class="relative p-8">
+      <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <span>📚</span> Sources & References
+      </h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        {sources.map((source, i) => {
+          const thumbTime = actTimestamps[i % 4];
+          const href = isValidUrl(source.url) ? source.url : '#';
+          const target = isValidUrl(source.url) ? '_blank' : '_self';
+
+          return (
+            <a
+              href={href}
+              target={target}
+              rel="noopener"
+              class="flex items-center gap-3 p-3 bg-white/60 rounded-lg hover:bg-white transition border border-gray-100"
+            >
+              {playbackId && (
+                <img src={getMuxThumbnail(thumbTime)} alt="" class="w-12 h-12 object-cover rounded" loading="lazy" />
+              )}
+              <div>
+                <p class="text-sm font-medium text-gray-900">{source.name}</p>
+                {source.description && (
+                  <p class="text-xs text-gray-500">{source.description}</p>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}

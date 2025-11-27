@@ -1,0 +1,96 @@
+---
+/**
+ * TickerTape Component
+ * 4-act video grid showing chapter thumbnails
+ *
+ * @prop acts - Array of act objects
+ * @prop playbackId - Mux playback ID
+ */
+interface Act {
+  title?: string;
+  video_title?: string;
+  factoid?: string;
+}
+
+interface Props {
+  acts: Act[];
+  playbackId: string;
+}
+
+const { acts, playbackId } = Astro.props;
+
+const actTimestamps = [
+  { start: 0, end: 3, mid: 1.5 },
+  { start: 3, end: 6, mid: 4.5 },
+  { start: 6, end: 9, mid: 7.5 },
+  { start: 9, end: 12, mid: 10.5 }
+];
+
+// Finance-themed icons
+const financeIcons: Record<string, string> = {
+  'breakthrough': '🚀',
+  'regulatory': '⚖️',
+  'strategy': '📊',
+  'playbook': '📋',
+  'wealth': '💰',
+  'opportunity': '💎',
+  'future': '🔮',
+  'growth': '📈',
+  'investment': '💵',
+  'legal': '⚖️',
+  'default': '💼'
+};
+
+function getFinanceIcon(title: string): string {
+  const lower = title.toLowerCase();
+  for (const [keyword, icon] of Object.entries(financeIcons)) {
+    if (lower.includes(keyword)) return icon;
+  }
+  return financeIcons.default;
+}
+
+function getMuxThumbnail(time: number): string {
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=480`;
+}
+
+function getMuxStream(): string {
+  return `https://stream.mux.com/${playbackId}.m3u8`;
+}
+---
+
+<div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
+    {acts.slice(0, 4).map((act, i) => {
+      const actTime = actTimestamps[i];
+      const actTitle = act.video_title || act.title?.split(':')[0] || `Part ${i + 1}`;
+      const icon = getFinanceIcon(act.title || '');
+
+      return (
+        <button
+          onclick={`seekTo(${actTime.start})`}
+          class="bg-gray-800 rounded-lg overflow-hidden text-left hover:bg-gray-700 transition-colors group cursor-pointer"
+        >
+          <video
+            class="ticker-video w-full aspect-video object-cover"
+            muted
+            playsinline
+            loop
+            poster={getMuxThumbnail(actTime.mid)}
+            data-hls={getMuxStream()}
+            data-start={actTime.start}
+            data-end={actTime.end}
+          ></video>
+          <div class="p-3">
+            <h3 class="font-semibold text-white text-sm flex items-center gap-2">
+              <span>{icon}</span>
+              {actTitle}
+            </h3>
+            <p class="text-xs text-gray-400 mt-1 line-clamp-2">
+              {act.factoid || `${actTime.start}-${actTime.end}s`}
+            </p>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+</div>

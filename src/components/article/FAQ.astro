@@ -1,0 +1,53 @@
+---
+/**
+ * FAQ Component
+ * Grid of frequently asked questions with optional video thumbnails
+ *
+ * @prop items - Array of FAQ items with q and a properties
+ * @prop playbackId - Optional Mux playback ID for thumbnails
+ */
+interface FAQItem {
+  q: string;
+  a: string;
+}
+
+interface Props {
+  items: FAQItem[];
+  playbackId?: string;
+}
+
+const { items, playbackId } = Astro.props;
+
+const actTimestamps = [1.5, 4.5, 7.5, 10.5];
+
+function getMuxThumbnail(time: number): string {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=400`;
+}
+---
+
+{items.length > 0 && (
+  <section class="mb-16">
+    <h2 class="text-3xl font-bold text-gray-900 mb-8 flex items-center gap-2">
+      <span>❓</span> Frequently Asked Questions
+    </h2>
+    <div class="grid md:grid-cols-2 gap-6">
+      {items.map((item, i) => {
+        const thumbTime = actTimestamps[i % 4];
+        return (
+          <div class="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+            {playbackId && (
+              <img src={getMuxThumbnail(thumbTime)} alt="" class="w-full h-32 object-cover opacity-60" loading="lazy" />
+            )}
+            <div class={`p-6 ${playbackId ? '-mt-8' : ''} relative`}>
+              <div class="bg-white rounded-lg shadow-lg p-4">
+                <h3 class="font-bold text-gray-900 mb-2">{item.q}</h3>
+                <p class="text-gray-600 text-sm">{item.a}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </section>
+)}

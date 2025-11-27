@@ -1,0 +1,50 @@
+---
+/**
+ * InvestmentDisclaimer Component
+ * Required disclaimer for investment-related content
+ * Must be prominently displayed on investment guides and financial advice content
+ *
+ * @prop variant - "prominent" (top of article) or "footer" (end of article)
+ */
+interface Props {
+  variant?: 'prominent' | 'footer';
+}
+
+const { variant = 'footer' } = Astro.props;
+
+const isProminent = variant === 'prominent';
+---
+
+{isProminent ? (
+  <div class="bg-amber-50 border-l-4 border-amber-500 rounded-r-lg p-4 mb-8">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">⚠️</span>
+      <div>
+        <h4 class="font-bold text-amber-800 mb-1">Investment Disclaimer</h4>
+        <p class="text-sm text-amber-900 leading-relaxed">
+          <strong>This content is for informational purposes only and does not constitute investment advice.</strong>
+          The information presented should not be relied upon as a recommendation to buy, sell, or hold any investment.
+          Always consult with a qualified financial advisor before making investment decisions.
+          Past performance is not indicative of future results. Investments can go down as well as up.
+        </p>
+      </div>
+    </div>
+  </div>
+) : (
+  <div class="bg-gray-100 rounded-lg p-6 mt-8 mb-4">
+    <h4 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+      <span>📋</span> Important Disclaimer
+    </h4>
+    <p class="text-xs text-gray-600 leading-relaxed">
+      The information contained in this article is for general informational purposes only and does not constitute
+      investment advice, financial advice, trading advice, or any other sort of advice. Placement Quest does not
+      recommend that any investment, security, transaction, or investment strategy is suitable for any specific person.
+      You should not make any decision, financial, investment, trading or otherwise, based on any of the information
+      presented without undertaking independent due diligence and consultation with a professional advisor.
+      You understand that you are using any and all information available here at your own risk.
+    </p>
+    <p class="text-xs text-gray-500 mt-2 italic">
+      Placement Quest is not a registered investment advisor, broker-dealer, or financial planner.
+    </p>
+  </div>
+)}
