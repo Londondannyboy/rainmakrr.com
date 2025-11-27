@@ -1,221 +1,176 @@
 ---
 import { sql } from '../../lib/db';
 import SEO from '../../components/SEO.astro';
-import Schema from '../../components/Schema.astro';
 import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+
+// Enable hybrid rendering for this page
+export const prerender = false;
+
+// Get slug from URL
 const { slug } = Astro.params;
 
 if (!slug) {
-  console.error('[PLACEMENT] No slug provided');
-  return Astro.redirect('/');
+  return Astro.redirect('/private-equity-placement-agents-list');
 }
 
-console.log('[PLACEMENT] Looking for company with slug:', slug);
-
-// Fetch company with payload
+// Fetch company data from Neon
 const companies = await sql`
-  SELECT
-    id,
-    name,
-    COALESCE(display_name, name) as display_name,
-    slug,
-    logo_url,
-    featured_asset_url,
-    hero_asset_url,
-    payload,
-    updated_at,
-    primary_country,
-    primary_region
+  SELECT *
   FROM companies
   WHERE slug = ${slug}
-    AND company_type = 'placement_agent'
   LIMIT 1
 `;
 
-console.log('[PLACEMENT] Query returned:', companies?.length || 0, 'companies');
+const company = companies[0];
 
-const companyRow = companies[0];
-
-if (!companyRow) {
-  console.error('[PLACEMENT] No company found for slug:', slug);
-  return Astro.redirect('/');
+if (!company) {
+  return Astro.redirect('/private-equity-placement-agents-list');
 }
 
-console.log('[PLACEMENT] Company found:', companyRow.name);
+// Extract overview from profile sections for meta description
+const overviewSection = company.profile_sections?.overview || company.profile_sections?.about;
+const metaDescription = overviewSection
+  ? overviewSection.content.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').substring(0, 160) + '...'
+  : `${company.display_name} placement agent profile - services, team, deals, and market positioning.`;
 
-// Parse payload
-const payload = companyRow.payload || {};
-console.log('[PLACEMENT] Payload has profile_sections:', !!payload.profile_sections);
+// Parse tags from content for visual display
+const parseTagsFromContent = (sections: any) => {
+  const tags = {
+    industries: [] as string[],
+    services: [] as string[],
+    locations: [] as string[]
+  };
 
-// Build company object
-const company = {
-  id: companyRow.id,
-  name: companyRow.name,
-  display_name: companyRow.display_name,
-  slug: companyRow.slug,
-  logo_url: companyRow.logo_url || payload.logo_url,
-  featured_asset_url: companyRow.featured_asset_url || payload.featured_asset_url,
-  hero_asset_url: companyRow.hero_asset_url || payload.hero_asset_url,
-  website: payload.website,
-  industry: payload.industry,
-  headquarters_city: payload.headquarters_city,
-  headquarters_country: payload.headquarters_country,
-  founded_year: payload.founded_year,
-  employee_range: payload.employee_range,
-  profile_sections: payload.profile_sections || {},
-  updated_at: companyRow.updated_at,
-  primary_country: companyRow.primary_country,
-  primary_region: companyRow.primary_region,
-};
+  if (!sections) return tags;
 
-// Format last updated date
-const lastUpdated = company.updated_at ? new Date(company.updated_at).toLocaleDateString('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric'
-}) : null;
+  // Look for common industry keywords
+  const content = JSON.stringify(sections).toLowerCase();
 
-// Get overview for description
-const overviewSection = company.profile_sections.overview;
-const description = overviewSection?.content?.substring(0, 200) || `${company.display_name} - Leading placement agent`;
-const metaDescription = overviewSection?.content?.substring(0, 160) || description;
+  if (content.includes('private equity')) tags.industries.push('Private Equity');
+  if (content.includes('venture capital')) tags.industries.push('Venture Capital');
+  if (content.includes('private credit') || content.includes('private debt')) tags.industries.push('Private Credit');
+  if (content.includes('real estate') || content.includes('real assets')) tags.industries.push('Real Assets');
+  if (content.includes('infrastructure')) tags.industries.push('Infrastructure');
+  if (content.includes('secondaries')) tags.industries.push('Secondaries');
+  if (content.includes('fund of funds')) tags.industries.push('Fund of Funds');
+  if (content.includes('co-investment')) tags.services.push('Co-Investment');
+  if (content.includes('gp stakes')) tags.services.push('GP Stakes');
+  if (content.includes('fundraising')) tags.services.push('Fundraising');
+  if (content.includes('advisory')) tags.services.push('Advisory');
 
-// Extract tags from content
-function extractTags(content) {
-  if (!content) return { industries: [], services: [], locations: [] };
-
-  const industries = [];
-  const services = [];
-  const locations = [];
-
-  // Industry/vertical keywords
-  const industryKeywords = ['private equity', 'real estate', 'capital markets', 'private capital', 'venture capital', 'infrastructure', 'energy', 'healthcare', 'technology', 'financial services', 'consumer', 'industrials', 'natural resources'];
-  industryKeywords.forEach(keyword => {
-    if (content.toLowerCase().includes(keyword)) {
-      industries.push(keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
-    }
-  });
-
-  // Service keywords
-  const serviceKeywords = ['m&a advisory', 'capital raising', 'restructuring', 'fairness opinions', 'fund placement', 'strategic advisory', 'debt advisory', 'equity advisory', 'placement agent'];
-  serviceKeywords.forEach(keyword => {
-    if (content.toLowerCase().includes(keyword)) {
-      services.push(keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
-    }
-  });
+  // Location tags from headquarters
+  if (company.headquarters_city) tags.locations.push(company.headquarters_city);
+  if (company.headquarters_country && company.headquarters_country !== company.headquarters_city) {
+    tags.locations.push(company.headquarters_country);
+  }
 
   return {
-    industries: [...new Set(industries)].slice(0, 6),
-    services: [...new Set(services)].slice(0, 6),
-    locations: []
+    industries: [...new Set(tags.industries)].slice(0, 3),
+    services: [...new Set(tags.services)].slice(0, 2),
+    locations: [...new Set(tags.locations)].slice(0, 2)
   };
-}
+};
 
-// Extract tags from all content
-const allContent = Object.values(company.profile_sections).map(s => s.content).join(' ');
-const tags = extractTags(allContent);
+const tags = parseTagsFromContent(company.profile_sections);
 
-// Add geographic tags from company data
-if (company.headquarters_city) tags.locations.push(company.headquarters_city);
-if (company.headquarters_country && company.headquarters_country !== company.headquarters_city) {
-  tags.locations.push(company.headquarters_country);
-}
+// Get last updated timestamp
+const lastUpdated = company.updated_at
+  ? new Date(company.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : null;
 
-console.log('[PLACEMENT] Profile sections count:', Object.keys(company.profile_sections).length);
-console.log('[PLACEMENT] Extracted tags:', tags);
-
-// Generate geography and asset class internal links for SEO
-function generateInternalLinks() {
+// Internal linking helpers
+const getLocationBasedLinks = (city: string, country: string) => {
   const links = [];
 
-  // Geography-based links
-  const regionMap = {
-    'North America': { url: '/top-private-equity-placement-agents-north-america', text: 'North American placement agents' },
-    'Europe': { url: '/top-private-equity-placement-agents-europe', text: 'European placement agents' },
-    'Asia Pacific': { url: '/top-private-equity-placement-agents-asia-pacific', text: 'Asia Pacific placement agents' },
-    'Latin America': { url: '/top-private-equity-placement-agents-latin-america', text: 'Latin American placement agents' },
+  const citySlugMap: Record<string, string> = {
+    'New York': '/top-private-equity-placement-agents-us',
+    'London': '/top-private-equity-placement-agents-uk',
+    'Singapore': '/top-private-equity-placement-agents-singapore',
+    'Hong Kong': '/top-private-equity-placement-agents-asia-pacific',
+    'Tokyo': '/top-private-equity-placement-agents-asia-pacific',
+    'Sydney': '/top-private-equity-placement-agents-asia-pacific',
+    'San Francisco': '/top-private-equity-placement-agents-us',
+    'Boston': '/top-private-equity-placement-agents-us',
+    'Chicago': '/top-private-equity-placement-agents-us',
+    'Los Angeles': '/top-private-equity-placement-agents-us',
   };
 
-  const countryMap = {
-    'United States': { url: '/top-private-equity-placement-agents-us', text: 'US placement agents', cities: {
-      'San Antonio': '#san-antonio',
-      'New York': '#new-york',
-      'San Francisco': '#san-francisco',
-      'Boston': '#boston',
-      'Chicago': '#chicago'
-    }},
-    'United Kingdom': { url: '/top-private-equity-placement-agents-uk', text: 'UK placement agents', cities: {
-      'London': '#london'
-    }},
-    'Singapore': { url: '/top-private-equity-placement-agents-singapore', text: 'Singapore placement agents', cities: {} },
+  const countrySlugMap: Record<string, string> = {
+    'United States': '/top-private-equity-placement-agents-us',
+    'USA': '/top-private-equity-placement-agents-us',
+    'United Kingdom': '/top-private-equity-placement-agents-uk',
+    'UK': '/top-private-equity-placement-agents-uk',
+    'Singapore': '/top-private-equity-placement-agents-singapore',
   };
 
-  // Add region link
-  if (company.primary_region && regionMap[company.primary_region]) {
-    const region = regionMap[company.primary_region];
-    links.push({ url: region.url, text: region.text, type: 'region' });
+  const regionMap: Record<string, { url: string; region: string }> = {
+    'United States': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'USA': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'Canada': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'United Kingdom': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'UK': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'Germany': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'France': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'Singapore': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Hong Kong': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Japan': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Australia': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'China': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+  };
+
+  if (city && citySlugMap[city]) {
+    links.push({ url: citySlugMap[city], text: `${city} placement agents`, type: 'city' });
   }
 
-  // Add country link
-  if (company.primary_country && countryMap[company.primary_country]) {
-    const country = countryMap[company.primary_country];
-    links.push({ url: country.url, text: country.text, type: 'country' });
-
-    // Add city link if applicable
-    if (company.headquarters_city && country.cities[company.headquarters_city]) {
-      const cityAnchor = country.cities[company.headquarters_city];
-      links.push({
-        url: country.url + cityAnchor,
-        text: `${company.headquarters_city} placement agents`,
-        type: 'city'
-      });
-    }
+  if (country && countrySlugMap[country]) {
+    links.push({ url: countrySlugMap[country], text: `${country} placement agents`, type: 'country' });
   }
 
-  // Asset class links based on content analysis
-  const assetClassKeywords = {
-    'venture capital': { url: '/venture-capital-placement-agents', text: 'venture capital placement agents' },
-    'private credit': { url: '/private-credit-placement-agents', text: 'private credit placement agents' },
-    'real estate': { url: '/real-estate-private-equity-placement-agents', text: 'real estate PE placement agents' },
-  };
+  if (country && regionMap[country]) {
+    links.push({ url: regionMap[country].url, text: `${regionMap[country].region} placement agents`, type: 'region' });
+  }
 
-  const contentLower = allContent.toLowerCase();
-  Object.entries(assetClassKeywords).forEach(([keyword, link]) => {
-    if (contentLower.includes(keyword)) {
-      links.push({ url: link.url, text: link.text, type: 'asset-class' });
-    }
-  });
+  return links.slice(0, 3);
+};
 
-  return links;
-}
+const getAssetClassLinks = (sections: any) => {
+  const links = [];
+  const content = sections ? JSON.stringify(sections).toLowerCase() : '';
 
-const internalLinks = generateInternalLinks();
-console.log('[PLACEMENT] Generated internal links:', internalLinks);
+  if (content.includes('venture capital') || content.includes('vc ')) {
+    links.push({ url: '/venture-capital-placement-agents', text: 'Venture Capital Placement Agents', type: 'asset' });
+  }
+  if (content.includes('private credit') || content.includes('private debt') || content.includes('direct lending')) {
+    links.push({ url: '/private-credit-placement-agents', text: 'Private Credit Placement Agents', type: 'asset' });
+  }
+  if (content.includes('real estate') || content.includes('real assets')) {
+    links.push({ url: '/real-estate-private-equity-placement-agents', text: 'Real Estate PE Placement Agents', type: 'asset' });
+  }
 
-// Internal linking variations for SEO - all include "private equity placement agents" with prefix/suffix variations
+  return links.slice(0, 2);
+};
+
+const locationLinks = getLocationBasedLinks(company.headquarters_city, company.headquarters_country);
+const assetLinks = getAssetClassLinks(company.profile_sections);
+const internalLinks = [...locationLinks, ...assetLinks].slice(0, 4);
+
+// Rotating contextual links for variety
 const contextualLinks = [
-  "Explore our comprehensive guide to <strong>top private equity placement agents</strong>",
-  "Learn more about the <strong>best private equity placement agents</strong> in the industry",
-  "See our complete <strong>top private equity placement agents list</strong>",
-  "Discover the <strong>leading private equity placement agents</strong> in the market",
-  "View our <strong>best private equity placement agents list</strong>",
-  "Browse the <strong>premier private equity placement agents</strong> we cover",
-  "Compare <strong>top private equity placement agents</strong> side-by-side",
-  "Find <strong>elite private equity placement agents</strong> for your needs"
+  'Explore our comprehensive directory of private equity placement agents',
+  'Compare this firm with other leading placement agents',
+  'View our full ranking of top placement agents',
+  'Browse placement agents by region and specialty',
 ];
+const rotationIndex = company.display_name.length % contextualLinks.length;
 
+// Sidebar link rotation
 const sidebarLinks = [
-  "Top Private Equity Placement Agents",
-  "Best Private Equity Placement Agents",
-  "Top Private Equity Placement Agents List",
-  "Leading Private Equity Placement Agents",
-  "Best Private Equity Placement Agents List",
-  "Premier Private Equity Placement Agents"
+  'Complete Placement Agent Directory',
+  'Browse All Placement Agents',
+  'Full Agent Rankings & Profiles',
+  'Explore Top Placement Agents',
 ];
-
-// Create rotation index based on slug for consistent variation per agent
-const rotationIndex = company.slug.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % contextualLinks.length;
-const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % sidebarLinks.length;
+const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.length;
 ---
 
 <!DOCTYPE html>
@@ -224,10 +179,8 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
   <SEO
     title={`${company.display_name} - Placement Agent Profile | Placement`}
     description={metaDescription}
+    article={true}
   />
-  <Schema type="company" />
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
@@ -246,192 +199,109 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
       line-height: 1.6;
     }
     a { color: inherit; text-decoration: none; }
+
+    /* Container */
+    .container { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
+
     /* Navigation */
     .nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(24px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(24px);
       border-bottom: 1px solid rgba(51, 65, 85, 0.5);
     }
     .nav-inner {
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 0 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 4rem;
+      max-width: 80rem; margin: 0 auto; padding: 0 1rem;
+      display: flex; justify-content: space-between; align-items: center; height: 4rem;
     }
     .nav-logo {
-      font-size: 1.25rem;
-      font-weight: 700;
+      font-size: 1.25rem; font-weight: 700;
       background: linear-gradient(to right, #60a5fa, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .nav-links { display: flex; align-items: center; gap: 2rem; }
-    .nav-links a { color: #cbd5e1; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
-    .nav-links a:hover { color: #fff; }
-    .nav-links a.active { color: #60a5fa; }
-    .nav-dropdown { position: relative; }
-    .nav-dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 0.5rem;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-      border-radius: 0.5rem;
-      padding: 0.5rem 0;
-      min-width: 280px;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-0.5rem);
-      transition: all 0.3s;
-    }
-    .nav-dropdown:hover .nav-dropdown-menu {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-    }
-    .nav-dropdown-menu a {
-      display: block;
-      padding: 0.5rem 1rem;
-      color: #cbd5e1;
-      font-size: 0.875rem;
-    }
-    .nav-dropdown-menu a:hover { background: rgba(51, 65, 85, 0.5); color: #fff; }
-    .nav-dropdown-divider { height: 1px; background: rgba(51, 65, 85, 0.5); margin: 0.5rem 0; }
+    .nav-link { color: #cbd5e1; font-size: 0.875rem; font-weight: 500; }
+    .nav-link:hover { color: #fff; }
+    .nav-link-active { color: #60a5fa; }
+
     /* Hero */
-    .hero { position: relative; padding: 6rem 0 4rem; overflow: hidden; }
+    .hero { position: relative; padding: 6rem 0 3rem; }
     .hero-bg {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
+      position: absolute; inset: 0; z-index: 0; overflow: hidden;
     }
-    .hero-bg img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.1;
-      filter: blur(4px);
-    }
-    .hero-bg-overlay {
-      position: absolute;
-      inset: 0;
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.1; filter: blur(4px); }
+    .hero-overlay {
+      position: absolute; inset: 0;
       background: linear-gradient(to bottom, rgba(2,6,23,0.5), rgba(15,23,42,0.8), #020617);
     }
-    .hero-content {
-      position: relative;
-      z-index: 10;
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-    .hero-full-image {
-      width: 100%;
-      height: 24rem;
-      overflow: hidden;
-    }
-    .hero-full-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .hero-content { position: relative; z-index: 10; }
+    .hero-full-img { width: 100%; height: 24rem; overflow: hidden; margin-bottom: 2rem; }
+    .hero-full-img img { width: 100%; height: 100%; object-fit: cover; }
+
     .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border-radius: 9999px;
-      margin-bottom: 1rem;
+      display: inline-block; padding: 0.25rem 0.75rem;
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; margin-bottom: 1rem;
     }
-    .company-title {
-      font-size: 2.5rem;
-      font-weight: 900;
-      margin-bottom: 1rem;
+    .title {
+      font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem;
       background: linear-gradient(to right, #fff, #bfdbfe, #ddd6fe);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       line-height: 1.1;
     }
-    @media (min-width: 1024px) { .company-title { font-size: 3.75rem; } }
-    .company-overview {
-      font-size: 1.25rem;
-      color: #cbd5e1;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-      max-width: 48rem;
-    }
+    @media (min-width: 1024px) { .title { font-size: 3.75rem; } }
+
+    .overview { font-size: 1.25rem; color: #cbd5e1; line-height: 1.6; max-width: 48rem; margin-bottom: 1rem; }
+
+    /* Tags */
     .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
     .tag {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border: 1px solid;
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid;
     }
+    .tag svg { width: 0.75rem; height: 0.75rem; margin-right: 0.375rem; }
     .tag-purple { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.3); }
     .tag-blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
     .tag-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
-    .tag svg { width: 0.75rem; height: 0.75rem; margin-right: 0.375rem; }
+
+    /* Meta */
     .meta { display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.875rem; margin-top: 1.5rem; }
     .meta-item { display: flex; align-items: center; gap: 0.5rem; }
     .meta-label { color: #64748b; }
     .meta-value { color: #fff; font-weight: 600; }
-    .meta-link { color: #60a5fa; transition: color 0.2s; }
+    .meta-link { color: #60a5fa; display: flex; align-items: center; gap: 0.5rem; }
     .meta-link:hover { color: #93c5fd; }
     .meta-link svg { width: 1rem; height: 1rem; }
-    /* Content */
-    .content { max-width: 80rem; margin: 0 auto; padding: 0 1rem 5rem; }
-    .content-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+
+    /* Grid Layout */
+    .content-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; padding-bottom: 4rem; }
     @media (min-width: 1024px) { .content-grid { grid-template-columns: 2fr 1fr; } }
     .main-content { display: flex; flex-direction: column; gap: 1.5rem; }
     .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+
     /* Cards */
     .card {
       background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.5), rgba(30, 41, 59, 0.3));
-      backdrop-filter: blur(8px);
-      border-radius: 1rem;
-      padding: 2rem;
+      backdrop-filter: blur(8px); border-radius: 1rem; padding: 2rem;
       border: 1px solid rgba(51, 65, 85, 0.5);
-      transition: all 0.3s;
     }
-    .card:hover { border-color: rgba(59, 130, 246, 0.3); box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.1); }
+    .card:hover { border-color: rgba(59, 130, 246, 0.3); }
     .card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
     .card-icon {
-      flex-shrink: 0;
-      width: 3rem;
-      height: 3rem;
-      border-radius: 0.75rem;
+      flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 0.75rem;
       background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 700;
-      font-size: 1.125rem;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 1.125rem;
     }
     .card-icon-green { background: linear-gradient(to bottom right, #10b981, #059669); }
     .card-title { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
-    .card-title-bar { height: 0.25rem; width: 5rem; background: linear-gradient(to right, #3b82f6, #8b5cf6); border-radius: 9999px; }
-    .card-title-bar-green { background: linear-gradient(to right, #10b981, #059669); }
+    .card-bar { height: 0.25rem; width: 5rem; background: linear-gradient(to right, #3b82f6, #8b5cf6); border-radius: 9999px; }
+    .card-bar-green { background: linear-gradient(to right, #10b981, #059669); }
+
     /* Prose */
     .prose { color: #cbd5e1; line-height: 1.75; }
     .prose p { margin-bottom: 1.5rem; }
     .prose strong { color: #fff; font-weight: 600; }
-    .prose a { color: #60a5fa; border-bottom: 1px solid rgba(96, 165, 250, 0.3); transition: border-color 0.2s; }
+    .prose a { color: #60a5fa; border-bottom: 1px solid rgba(96, 165, 250, 0.3); }
     .prose a:hover { border-color: #60a5fa; }
     .prose ul, .prose ol { margin: 1.25rem 0; padding-left: 1.5rem; }
     .prose ul { list-style-type: disc; }
@@ -439,66 +309,41 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
     .prose li { margin: 0.5rem 0; }
     .prose h2 { color: #fff; font-weight: 700; font-size: 1.5rem; margin: 2rem 0 1rem; }
     .prose h3 { color: #fff; font-weight: 600; font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+
     /* Timeline */
     .timeline { position: relative; padding-left: 2rem; }
     .timeline-line {
-      position: absolute;
-      left: 0.5rem;
-      top: 0;
-      bottom: 0;
-      width: 2px;
+      position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px;
       background: linear-gradient(to bottom, #10b981, #059669, transparent);
     }
     .timeline-item { position: relative; margin-bottom: 1.5rem; }
     .timeline-dot {
-      position: absolute;
-      left: -1.75rem;
-      top: 0.5rem;
-      width: 1rem;
-      height: 1rem;
-      border-radius: 9999px;
-      background: linear-gradient(to bottom right, #34d399, #10b981);
-      border: 2px solid #0f172a;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+      position: absolute; left: -1.75rem; top: 0.5rem; width: 1rem; height: 1rem;
+      border-radius: 9999px; background: linear-gradient(to bottom right, #34d399, #10b981);
+      border: 2px solid #0f172a; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
     }
     .timeline-card {
       background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4));
-      border-radius: 0.75rem;
-      padding: 1.25rem;
-      border: 1px solid rgba(51, 65, 85, 0.3);
-      transition: all 0.3s;
+      border-radius: 0.75rem; padding: 1.25rem; border: 1px solid rgba(51, 65, 85, 0.3);
     }
-    .timeline-card:hover { border-color: rgba(16, 185, 129, 0.3); box-shadow: 0 10px 40px -10px rgba(16, 185, 129, 0.1); }
+    .timeline-card:hover { border-color: rgba(16, 185, 129, 0.3); }
     .timeline-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
     .timeline-date {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.75rem;
-      background: rgba(16, 185, 129, 0.2);
-      color: #6ee7b7;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border-radius: 9999px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      background: rgba(16, 185, 129, 0.2); color: #6ee7b7;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3);
     }
     .timeline-date svg { width: 0.75rem; height: 0.75rem; margin-right: 0.375rem; }
     .timeline-value {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.75rem;
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      font-size: 0.75rem;
-      font-weight: 700;
-      border-radius: 9999px;
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd;
+      font-size: 0.75rem; font-weight: 700; border-radius: 9999px; border: 1px solid rgba(59, 130, 246, 0.3);
     }
+
     /* Sidebar Cards */
     .sidebar-card {
       background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.5));
-      backdrop-filter: blur(8px);
-      border-radius: 1rem;
-      padding: 1.5rem;
+      backdrop-filter: blur(8px); border-radius: 1rem; padding: 1.5rem;
       border: 1px solid rgba(51, 65, 85, 0.5);
     }
     .sidebar-card-blue {
@@ -510,185 +355,148 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
       border-color: rgba(16, 185, 129, 0.3);
     }
     .sidebar-title {
-      font-size: 1.125rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
     }
-    .sidebar-title-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
-    .sidebar-title-dot-blue { background: #3b82f6; }
-    .sidebar-title-dot-purple { background: #8b5cf6; }
-    .sidebar-title-dot-green { background: #10b981; }
+    .sidebar-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
+    .sidebar-dot-blue { background: #3b82f6; }
+    .sidebar-dot-purple { background: #8b5cf6; }
+    .sidebar-dot-green { background: #10b981; }
     .info-item { margin-bottom: 1rem; }
     .info-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
     .info-value { color: #fff; font-weight: 500; }
     .data-freshness { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(51, 65, 85, 0.3); }
     .data-freshness-inner { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
     .data-freshness-inner svg { width: 1rem; height: 1rem; color: #34d399; }
-    .data-freshness-inner span { color: #94a3b8; }
-    .data-freshness-inner strong { color: #34d399; font-weight: 600; }
+    .data-freshness-text { color: #94a3b8; }
+    .data-freshness-date { color: #34d399; font-weight: 600; }
     .data-freshness-note { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+
     /* Resource Links */
     .resource-link {
-      display: block;
-      padding: 1rem;
+      display: block; padding: 1rem;
       background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.3), rgba(15, 23, 42, 0.3));
-      border-radius: 0.5rem;
-      border: 1px solid rgba(51, 65, 85, 0.2);
-      transition: all 0.3s;
-      margin-bottom: 0.75rem;
+      border-radius: 0.5rem; border: 1px solid rgba(51, 65, 85, 0.2); margin-bottom: 0.75rem;
     }
-    .resource-link:hover { border-color: rgba(59, 130, 246, 0.4); box-shadow: 0 10px 40px -10px rgba(59, 130, 246, 0.1); }
+    .resource-link:hover { border-color: rgba(59, 130, 246, 0.4); }
     .resource-link-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
     .resource-link-header svg { width: 1.25rem; height: 1.25rem; color: #60a5fa; }
     .resource-link-title { color: #fff; font-weight: 600; font-size: 0.875rem; }
     .resource-link-desc { font-size: 0.75rem; color: #94a3b8; }
     .resource-link-small { padding: 0.75rem; margin-bottom: 0.5rem; }
     .resource-link-small .resource-link-header { margin-bottom: 0; }
-    .resource-link-small .resource-link-header svg { width: 1rem; height: 1rem; }
-    .resource-link-small .resource-link-title { font-size: 0.875rem; color: #cbd5e1; }
+    .resource-link-small .resource-link-title { color: #cbd5e1; }
+
     /* Internal Link Box */
     .internal-link-box {
       background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.1), rgba(88, 28, 135, 0.1));
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 0.75rem; padding: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.2);
     }
     .internal-link-box-inner { display: flex; align-items: flex-start; gap: 1rem; }
     .internal-link-box svg { flex-shrink: 0; width: 1.25rem; height: 1.25rem; color: #60a5fa; margin-top: 0.125rem; }
     .internal-link-box p { color: #cbd5e1; line-height: 1.6; }
-    .internal-link-box a { color: #60a5fa; transition: color 0.2s; }
+    .internal-link-box a { color: #60a5fa; }
     .internal-link-box a:hover { color: #93c5fd; }
+
     /* Full Width Sections */
     .full-section {
       margin-top: 3rem;
       background: linear-gradient(to bottom right, rgba(6, 78, 59, 0.2), rgba(17, 94, 89, 0.2));
-      border-radius: 1rem;
-      padding: 2rem;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 1rem; padding: 2rem; border: 1px solid rgba(16, 185, 129, 0.3);
     }
     .full-section-blue {
       background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.2), rgba(88, 28, 135, 0.2));
       border-color: rgba(59, 130, 246, 0.3);
     }
-    .full-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .full-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .full-section-title { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #fff; }
     .full-section-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.75rem;
+      width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
       background: linear-gradient(to bottom right, #10b981, #14b8a6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
     .full-section-icon-blue { background: linear-gradient(to bottom right, #3b82f6, #8b5cf6); }
     .full-section-icon svg { width: 1.5rem; height: 1.5rem; color: #fff; }
     .full-section-badge {
-      padding: 0.25rem 0.75rem;
-      background: rgba(16, 185, 129, 0.2);
-      color: #6ee7b7;
-      font-size: 0.75rem;
-      font-weight: 600;
-      border-radius: 9999px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.25rem 0.75rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3);
     }
     .full-section-badge-blue {
-      background: rgba(59, 130, 246, 0.2);
-      color: #93c5fd;
-      border-color: rgba(59, 130, 246, 0.3);
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3);
     }
+    .full-section-text { color: #cbd5e1; margin-bottom: 1.5rem; }
+
     /* Article Grid */
     .article-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
     @media (min-width: 768px) { .article-grid { grid-template-columns: 1fr 1fr; } }
     .article-card {
       background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5));
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      border: 1px solid rgba(51, 65, 85, 0.3);
-      transition: all 0.3s;
+      border-radius: 0.75rem; padding: 1.5rem; border: 1px solid rgba(51, 65, 85, 0.3);
     }
-    .article-card:hover { border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.1); }
+    .article-card:hover { border-color: rgba(59, 130, 246, 0.5); }
     .article-card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
     .article-card-icon {
-      flex-shrink: 0;
-      width: 3rem;
-      height: 3rem;
-      border-radius: 0.5rem;
+      flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 0.5rem;
       background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 700;
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;
     }
-    .article-card-title { font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; transition: color 0.2s; line-height: 1.4; }
+    .article-card-title { font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; line-height: 1.4; }
     .article-card:hover .article-card-title { color: #93c5fd; }
     .article-card-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; }
     .article-card-excerpt { color: #cbd5e1; font-size: 0.875rem; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .article-card-link { display: flex; align-items: center; color: #60a5fa; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
+    .article-card-link { display: flex; align-items: center; color: #60a5fa; font-size: 0.875rem; font-weight: 500; }
     .article-card:hover .article-card-link { color: #93c5fd; }
     .article-card-placeholder {
       background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.3), rgba(15, 23, 42, 0.3));
-      border-style: dashed;
-      border-color: rgba(51, 65, 85, 0.2);
+      border-style: dashed; border-color: rgba(51, 65, 85, 0.2);
     }
     .article-card-placeholder-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem 0; }
     .article-card-placeholder-icon {
-      width: 4rem;
-      height: 4rem;
-      border-radius: 9999px;
+      width: 4rem; height: 4rem; border-radius: 9999px;
       background: rgba(30, 41, 59, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1rem;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
     }
     .article-card-placeholder-icon svg { width: 2rem; height: 2rem; color: #64748b; }
     .article-card-placeholder h4 { color: #94a3b8; font-weight: 600; margin-bottom: 0.5rem; }
     .article-card-placeholder p { color: #64748b; font-size: 0.875rem; }
+
     /* CTA */
     .cta { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(51, 65, 85, 0.3); text-align: center; }
     .cta p { color: #94a3b8; font-size: 0.875rem; }
-    .cta a { color: #60a5fa; font-weight: 500; margin-left: 0.25rem; transition: color 0.2s; }
+    .cta a { color: #60a5fa; font-weight: 500; margin-left: 0.25rem; }
     .cta a:hover { color: #93c5fd; }
+
     /* Resources */
     .resources-section {
       margin-top: 3rem;
       background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.3), rgba(30, 41, 59, 0.2));
-      border-radius: 1rem;
-      padding: 2rem;
-      border: 1px solid rgba(51, 65, 85, 0.3);
+      border-radius: 1rem; padding: 2rem; border: 1px solid rgba(51, 65, 85, 0.3);
     }
     .resources-title { font-size: 1.25rem; font-weight: 700; color: #cbd5e1; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
     .resources-title svg { width: 1.25rem; height: 1.25rem; }
+
     /* Navigation Bottom */
     .nav-bottom { margin-top: 3rem; display: flex; justify-content: space-between; align-items: center; }
     .nav-back {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: rgba(30, 41, 59, 0.5);
-      color: #fff;
-      border-radius: 0.75rem;
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem;
+      background: rgba(30, 41, 59, 0.5); color: #fff; border-radius: 0.75rem;
       border: 1px solid rgba(51, 65, 85, 0.5);
-      transition: all 0.3s;
     }
     .nav-back:hover { background: rgba(51, 65, 85, 0.5); border-color: rgba(59, 130, 246, 0.3); }
     .nav-back svg { width: 1.25rem; height: 1.25rem; }
+
     /* Footer */
     .footer {
       border-top: 1px solid rgba(51, 65, 85, 0.5);
-      background: rgba(2, 6, 23, 0.5);
-      backdrop-filter: blur(8px);
-      padding: 3rem 0;
+      background: rgba(2, 6, 23, 0.5); backdrop-filter: blur(8px); padding: 3rem 0;
     }
     .footer-inner { max-width: 80rem; margin: 0 auto; padding: 0 1rem; text-align: center; }
     .footer p { color: #64748b; font-size: 0.875rem; }
+
+    /* Small SVG icon helper */
+    .icon-sm { width: 0.75rem; height: 0.75rem; }
+    .icon-md { width: 1rem; height: 1rem; }
+    .icon-lg { width: 1.5rem; height: 1.5rem; }
   </style>
 </head>
 
@@ -697,214 +505,153 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
   <nav class="nav">
     <div class="nav-inner">
       <a href="/" class="nav-logo">Placement</a>
-        <div class="nav-links">
-          <a href="/private-equity-placement-agent-news">News</a>
-          <div class="nav-dropdown">
-            <a href="/private-equity-placement-agents-list" class="active">Agents</a>
-            <div class="absolute top-full left-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-800/50 rounded-lg py-2 min-w-[280px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 -translate-y-2">
-              <a href="/private-equity-placement-agents-list" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">All Regions & Countries</a>
-              <div class="h-px bg-slate-800/50 my-2"></div>
-              <a href="/top-private-equity-placement-agents-north-america" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">North America</a>
-              <a href="/top-private-equity-placement-agents-europe" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Europe</a>
-              <a href="/top-private-equity-placement-agents-asia-pacific" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Asia Pacific</a>
-              <a href="/top-private-equity-placement-agents-latin-america" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Latin America</a>
-              <a href="/top-private-equity-placement-agents-africa" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Africa</a>
-              <a href="/top-private-equity-placement-agents-middle-east" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Middle East</a>
-              <div class="h-px bg-slate-800/50 my-2"></div>
-              <a href="/top-private-equity-placement-agents-us" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">United States</a>
-              <a href="/top-private-equity-placement-agents-uk" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">United Kingdom</a>
-              <a href="/top-private-equity-placement-agents-singapore" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Singapore</a>
-              <div class="h-px bg-slate-800/50 my-2"></div>
-              <a href="/venture-capital-placement-agents" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Venture Capital Placement Agents</a>
-              <a href="/private-credit-placement-agents" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Private Credit Placement Agents</a>
-              <a href="/real-estate-private-equity-placement-agents" class="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 text-sm">Real Estate PE Placement Agents</a>
-            </div>
-          </div>
-        </div>
+      <div class="nav-links">
+        <a href="/private-equity-placement-agent-news" class="nav-link">News</a>
+        <a href="/private-equity-placement-agents-list" class="nav-link nav-link-active">Agents</a>
       </div>
     </div>
   </nav>
 
   <!-- Full-Width Hero Image -->
   {company.hero_asset_url && (
-    <div class="w-full h-96 overflow-hidden">
-      <img
-        src={company.hero_asset_url}
-        alt={company.display_name}
-        class="w-full h-full object-cover"
-      />
+    <div class="hero-full-img" style="margin-top: 4rem;">
+      <img src={company.hero_asset_url} alt={company.display_name} />
     </div>
   )}
 
   <!-- Hero Section -->
-  <div class="relative pt-24 pb-16 overflow-hidden">
+  <div class="hero" style={company.hero_asset_url ? 'padding-top: 2rem;' : ''}>
     {company.featured_asset_url && !company.hero_asset_url && (
-      <div class="absolute inset-0 z-0">
-        <img
-          src={company.featured_asset_url}
-          alt={company.display_name}
-          class="w-full h-full object-cover opacity-10 blur-sm"
-        />
-        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/80 to-slate-950"></div>
+      <div class="hero-bg">
+        <img src={company.featured_asset_url} alt={company.display_name} />
+        <div class="hero-overlay"></div>
       </div>
     )}
 
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col lg:flex-row items-start gap-8">
-        <!-- Company Info -->
-        <div class="flex-1">
-          <span class="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-semibold rounded-full mb-4">
-            Placement Agent
-          </span>
+    <div class="hero-content container">
+      <span class="badge">Placement Agent</span>
 
-          <h1 class="text-4xl lg:text-6xl font-black mb-4 bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent leading-tight">
-            {company.display_name}
-          </h1>
+      <h1 class="title">{company.display_name}</h1>
 
-          {overviewSection && (
-            <div class="mb-6 max-w-3xl">
-              <p class="text-xl text-slate-300 leading-relaxed mb-4">
-                {overviewSection.content.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').split('.')[0]}.
-              </p>
+      {overviewSection && (
+        <div>
+          <p class="overview">
+            {overviewSection.content.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').split('.')[0]}.
+          </p>
 
-              {/* Visual tags for industries, services, locations */}
-              <div class="flex flex-wrap gap-2 mt-4">
-                {tags.industries.map(tag => (
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                    </svg>
-                    {tag}
-                  </span>
-                ))}
-                {tags.services.map(tag => (
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                    </svg>
-                    {tag}
-                  </span>
-                ))}
-                {tags.locations.map(tag => (
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <!-- Meta Info -->
-          <div class="flex flex-wrap gap-6 text-sm">
-            {company.founded_year && (
-              <div class="flex items-center gap-2">
-                <span class="text-slate-500">Founded</span>
-                <span class="font-semibold text-white">{company.founded_year}</span>
-              </div>
-            )}
-            {company.employee_range && (
-              <div class="flex items-center gap-2">
-                <span class="text-slate-500">Employees</span>
-                <span class="font-semibold text-white">{company.employee_range}</span>
-              </div>
-            )}
-            {company.headquarters_city && (
-              <div class="flex items-center gap-2">
-                <span class="text-slate-500">Location</span>
-                <span class="font-semibold text-white">{company.headquarters_city}, {company.headquarters_country}</span>
-              </div>
-            )}
-            {company.website && (
-              <a href={company.website} target="_blank" rel="noopener noreferrer"
-                 class="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors">
-                <span>Visit Website</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          <div class="tags">
+            {tags.industries.map(tag => (
+              <span class="tag tag-purple">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                 </svg>
-              </a>
-            )}
+                {tag}
+              </span>
+            ))}
+            {tags.services.map(tag => (
+              <span class="tag tag-blue">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                {tag}
+              </span>
+            ))}
+            {tags.locations.map(tag => (
+              <span class="tag tag-green">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                {tag}
+              </span>
+            ))}
           </div>
         </div>
+      )}
+
+      <!-- Meta Info -->
+      <div class="meta">
+        {company.founded_year && (
+          <div class="meta-item">
+            <span class="meta-label">Founded</span>
+            <span class="meta-value">{company.founded_year}</span>
+          </div>
+        )}
+        {company.employee_range && (
+          <div class="meta-item">
+            <span class="meta-label">Employees</span>
+            <span class="meta-value">{company.employee_range}</span>
+          </div>
+        )}
+        {company.headquarters_city && (
+          <div class="meta-item">
+            <span class="meta-label">Location</span>
+            <span class="meta-value">{company.headquarters_city}, {company.headquarters_country}</span>
+          </div>
+        )}
+        {company.website && (
+          <a href={company.website} target="_blank" rel="noopener noreferrer" class="meta-link">
+            <span>Visit Website</span>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        )}
       </div>
     </div>
   </div>
 
   <!-- Content Sections -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="container">
+    <div class="content-grid">
       <!-- Main Content (2/3) -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="main-content">
         {Object.entries(company.profile_sections)
           .filter(([key]) => key !== 'resources')
           .map(([key, section]: [string, any]) => {
             // Special handling for deals section - display as timeline cards
             if (key === 'deals' || key === 'transactions' || key === 'announcements') {
-              // Parse deals from content (each line starting with -)
               const dealLines = section.content
                 .split('\n')
-                .filter(line => line.trim().startsWith('-'))
-                .map(line => line.trim().substring(1).trim());
+                .filter((line: string) => line.trim().startsWith('-'))
+                .map((line: string) => line.trim().substring(1).trim());
 
               return (
-                <div id={key} class="group bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50">
-                  <div class="flex items-start gap-4 mb-8">
-                    <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-lg">
-                      {section.title.charAt(0)}
-                    </div>
-                    <div class="flex-1">
-                      <h2 class="text-2xl font-bold text-white mb-1">{section.title}</h2>
-                      <div class="h-1 w-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
+                <div id={key} class="card">
+                  <div class="card-header">
+                    <div class="card-icon card-icon-green">{section.title.charAt(0)}</div>
+                    <div>
+                      <h2 class="card-title">{section.title}</h2>
+                      <div class="card-bar card-bar-green"></div>
                     </div>
                   </div>
 
-                  {/* Timeline of deals */}
-                  <div class="relative pl-8 space-y-6">
-                    {/* Vertical timeline line */}
-                    <div class="absolute left-2 top-0 bottom-0 w-px bg-gradient-to-b from-green-500 via-emerald-500 to-transparent"></div>
-
-                    {dealLines.map((deal, index) => {
-                      // Extract year/date from deal (look for patterns like "2025", "Q1 2024", "November 2024")
+                  <div class="timeline">
+                    <div class="timeline-line"></div>
+                    {dealLines.map((deal: string, index: number) => {
                       const dateMatch = deal.match(/(Q[1-4]\s+\d{4}|\w+\s+\d{4}|\d{4})/);
                       const date = dateMatch ? dateMatch[0] : 'Recent';
-
-                      // Extract value if present (look for patterns like "$29.1B", "$500M")
                       const valueMatch = deal.match(/\$[\d.]+\s*[BM](?:illion)?/i);
                       const value = valueMatch ? valueMatch[0] : null;
 
                       return (
-                        <div class="relative">
-                          {/* Timeline dot */}
-                          <div class="absolute -left-7 top-2 w-4 h-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-400 border-2 border-slate-900 shadow-lg shadow-green-500/50"></div>
-
-                          {/* Deal card */}
-                          <div class="bg-gradient-to-br from-slate-800/40 to-slate-900/40 rounded-xl p-5 border border-slate-700/30 hover:border-green-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
-                            {/* Date badge */}
-                            <div class="flex items-start justify-between gap-4 mb-3">
-                              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/30">
-                                <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="timeline-item">
+                          <div class="timeline-dot"></div>
+                          <div class="timeline-card">
+                            <div class="timeline-header">
+                              <span class="timeline-date">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
                                 {date}
                               </span>
-                              {value && (
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                  {value}
-                                </span>
-                              )}
+                              {value && <span class="timeline-value">{value}</span>}
                             </div>
-
-                            {/* Deal description */}
-                            <div class="text-slate-200 leading-relaxed prose prose-invert prose-sm max-w-none prose-a:text-green-400 prose-a:no-underline prose-a:font-medium hover:prose-a:text-green-300 prose-a:transition-colors">
-                              <div set:html={
-                                deal
-                                  .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1 →</a>')
-                                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                              }></div>
-                            </div>
+                            <div class="prose" set:html={
+                              deal
+                                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                            }></div>
                           </div>
                         </div>
                       );
@@ -914,339 +661,281 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
               );
             }
 
-            // Regular section display for non-deals sections
+            // Regular section display
             return (
-              <div id={key} class="group bg-gradient-to-br from-slate-900/50 to-slate-800/30 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/50 hover:border-blue-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-                <div class="flex items-start gap-4 mb-6">
-                  <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                    {section.title.charAt(0)}
-                  </div>
-                  <div class="flex-1">
-                    <h2 class="text-2xl font-bold text-white mb-1">{section.title}</h2>
-                    <div class="h-1 w-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+              <div id={key} class="card">
+                <div class="card-header">
+                  <div class="card-icon">{section.title.charAt(0)}</div>
+                  <div>
+                    <h2 class="card-title">{section.title}</h2>
+                    <div class="card-bar"></div>
                   </div>
                 </div>
 
-                <div class="prose prose-invert prose-lg max-w-none
-                            prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-6
-                            prose-strong:text-white prose-strong:font-semibold
-                            prose-a:text-blue-400 prose-a:no-underline prose-a:border-b prose-a:border-blue-400/30 hover:prose-a:border-blue-400 prose-a:transition-colors
-                            prose-ul:space-y-3 prose-li:text-slate-300
-                            prose-headings:text-white">
-                  <div set:html={
-                    section.content
-                      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-                      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/([.!?])(\s+)(?!(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|Inc|Ltd|Corp|Co|U\.S|U\.K|U\.N|E\.U|vs)\b)([A-Z])/g, '$1</p><p>$3')
-                      .replace(/\n\n/g, '</p><p>')
-                      .replace(/^(.+)$/m, '<p>$1</p>')
-                      .replace(/^- (.+)/gm, '<li>$1</li>')
-                      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-                  }></div>
-                </div>
+                <div class="prose" set:html={
+                  section.content
+                    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/([.!?])(\s+)(?!(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|Inc|Ltd|Corp|Co|U\.S|U\.K|U\.N|E\.U|vs)\b)([A-Z])/g, '$1</p><p>$3')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/^(.+)$/m, '<p>$1</p>')
+                    .replace(/^- (.+)/gm, '<li>$1</li>')
+                    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                }></div>
               </div>
             );
           })}
 
         <!-- Internal Link Section -->
-        <div class="bg-gradient-to-br from-blue-900/10 to-purple-900/10 backdrop-blur-sm rounded-xl p-6 border border-blue-700/20">
-          <div class="flex items-start gap-4">
-            <div class="flex-shrink-0 mt-1">
-              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-            <div class="flex-1">
-              <p class="text-slate-300 leading-relaxed">
-                <a href="/" class="text-blue-400 hover:text-blue-300 transition-colors border-b border-blue-400/30 hover:border-blue-400">
-                  <span set:html={contextualLinks[rotationIndex]}></span>
-                </a> to compare services, expertise, and market positioning across the industry.
-              </p>
-            </div>
+        <div class="internal-link-box">
+          <div class="internal-link-box-inner">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>
+              <a href="/">
+                <span set:html={contextualLinks[rotationIndex]}></span>
+              </a> to compare services, expertise, and market positioning across the industry.
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Sidebar (1/3) -->
-      <div class="space-y-6">
+      <div class="sidebar">
         <!-- Quick Info Card -->
         {(company.industry || company.founded_year || company.employee_range || company.headquarters_city) && (
-          <div class="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
-            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-blue"></div>
               Company Info
             </h3>
-            <div class="space-y-4">
+            <div>
               {company.industry && (
-                <div>
-                  <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Industry</div>
-                  <div class="text-white font-medium">{company.industry}</div>
+                <div class="info-item">
+                  <div class="info-label">Industry</div>
+                  <div class="info-value">{company.industry}</div>
                 </div>
               )}
               {company.founded_year && (
-                <div>
-                  <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Founded</div>
-                  <div class="text-white font-medium">{company.founded_year}</div>
+                <div class="info-item">
+                  <div class="info-label">Founded</div>
+                  <div class="info-value">{company.founded_year}</div>
                 </div>
               )}
               {company.employee_range && (
-                <div>
-                  <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Team Size</div>
-                  <div class="text-white font-medium">{company.employee_range}</div>
+                <div class="info-item">
+                  <div class="info-label">Team Size</div>
+                  <div class="info-value">{company.employee_range}</div>
                 </div>
               )}
               {company.headquarters_city && (
-                <div>
-                  <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Headquarters</div>
-                  <div class="text-white font-medium">{company.headquarters_city}, {company.headquarters_country}</div>
+                <div class="info-item">
+                  <div class="info-label">Headquarters</div>
+                  <div class="info-value">{company.headquarters_city}, {company.headquarters_country}</div>
                 </div>
               )}
             </div>
 
-            {/* Data Freshness Indicator */}
             {lastUpdated && (
-              <div class="mt-6 pt-4 border-t border-slate-700/30">
-                <div class="flex items-center gap-2 text-xs">
-                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="data-freshness">
+                <div class="data-freshness-inner">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  <span class="text-slate-400">
-                    Updated <span class="text-emerald-400 font-semibold">{lastUpdated}</span>
-                  </span>
+                  <span class="data-freshness-text">Updated <span class="data-freshness-date">{lastUpdated}</span></span>
                 </div>
-                <div class="text-xs text-slate-500 mt-1">
-                  Live data from our knowledge graph
-                </div>
+                <div class="data-freshness-note">Live data from our knowledge graph</div>
               </div>
             )}
           </div>
         )}
 
         <!-- Related Resources Card -->
-        <div class="bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-700/30">
-          <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+        <div class="sidebar-card sidebar-card-blue">
+          <h3 class="sidebar-title">
+            <div class="sidebar-dot sidebar-dot-blue"></div>
             More Resources
           </h3>
-          <div class="space-y-3">
-            {/* Main directory link */}
-            <a href="/" class="group block p-4 bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-lg border border-slate-700/20 hover:border-blue-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-              <div class="flex items-center gap-3 mb-2">
-                <svg class="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div>
+            <a href="/" class="resource-link">
+              <div class="resource-link-header">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span class="text-white font-semibold text-sm group-hover:text-blue-300 transition-colors">
-                  {sidebarLinks[sidebarRotationIndex]}
-                </span>
+                <span class="resource-link-title">{sidebarLinks[sidebarRotationIndex]}</span>
               </div>
-              <p class="text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
-                Compare private equity placement agents
-              </p>
+              <p class="resource-link-desc">Compare private equity placement agents</p>
             </a>
 
-            {/* Geography and asset class internal links */}
             {internalLinks.map((link) => (
-              <a href={link.url} class="group block p-3 bg-gradient-to-br from-slate-800/20 to-slate-900/20 rounded-lg border border-slate-700/10 hover:border-blue-500/30 transition-all duration-300">
-                <div class="flex items-center gap-2">
+              <a href={link.url} class="resource-link resource-link-small">
+                <div class="resource-link-header">
                   {link.type === 'city' || link.type === 'country' || link.type === 'region' ? (
-                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #34d399;">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                   ) : (
-                    <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #a78bfa;">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
                   )}
-                  <span class="text-slate-300 text-sm group-hover:text-white transition-colors capitalize">
-                    {link.text}
-                  </span>
+                  <span class="resource-link-title">{link.text}</span>
                 </div>
               </a>
             ))}
           </div>
         </div>
 
-        <!-- Knowledge Graph Card (Sidebar) -->
-        <div class="bg-gradient-to-br from-emerald-900/20 to-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-emerald-700/30">
-          <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <!-- Knowledge Graph Card -->
+        <div class="sidebar-card sidebar-card-green">
+          <h3 class="sidebar-title">
+            <div class="sidebar-dot sidebar-dot-green"></div>
             Knowledge Graph
           </h3>
-          <div class="mb-4">
+          <div style="margin-bottom: 1rem;">
             <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
           </div>
-          <a href="#knowledge-graph" class="inline-block text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
-            View full network →
-          </a>
+          <a href="#knowledge-graph" style="font-size: 0.75rem; color: #34d399;">View full network →</a>
         </div>
 
         <!-- Team Highlights Card -->
         {(company.profile_sections.team || company.profile_sections.leadership) && (
-          <div class="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
-            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-purple"></div>
               Leadership
             </h3>
-            <div class="text-sm text-slate-300 leading-relaxed prose prose-invert prose-sm max-w-none">
-              <div set:html={
-                ((company.profile_sections.team || company.profile_sections.leadership).content)
-                  .split(/\n\n/)[0]
-                  .substring(0, 300) + '...'
-              }></div>
-            </div>
-            <a href="#team" class="inline-block mt-4 text-xs text-blue-400 hover:text-blue-300 transition-colors">
-              View full team →
-            </a>
+            <div class="prose" style="font-size: 0.875rem;" set:html={
+              ((company.profile_sections.team || company.profile_sections.leadership).content)
+                .split(/\n\n/)[0]
+                .substring(0, 300) + '...'
+            }></div>
+            <a href="#team" style="display: inline-block; margin-top: 1rem; font-size: 0.75rem; color: #60a5fa;">View full team →</a>
           </div>
         )}
 
         <!-- Key Deals Card -->
         {company.profile_sections.deals && (
-          <div class="bg-gradient-to-br from-slate-900/80 to-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50">
-            <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <div class="w-2 h-2 rounded-full bg-green-500"></div>
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-green"></div>
               Recent Deals
             </h3>
-            <div class="text-sm text-slate-300 leading-relaxed prose prose-invert prose-sm max-w-none prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300">
-              <div set:html={
-                company.profile_sections.deals.content
-                  .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-                  .split(/\n\n/)[0]
-                  .substring(0, 300) + '...'
-              }></div>
-            </div>
-            <a href="#deals" class="inline-block mt-4 text-xs text-blue-400 hover:text-blue-300 transition-colors">
-              View all deals →
-            </a>
+            <div class="prose" style="font-size: 0.875rem;" set:html={
+              company.profile_sections.deals.content
+                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                .split(/\n\n/)[0]
+                .substring(0, 300) + '...'
+            }></div>
+            <a href="#deals" style="display: inline-block; margin-top: 1rem; font-size: 0.75rem; color: #60a5fa;">View all deals →</a>
           </div>
         )}
       </div>
     </div>
 
     <!-- Related in Our Network - Zep Knowledge Graph -->
-    <div class="mt-12 bg-gradient-to-br from-emerald-900/20 to-teal-900/20 backdrop-blur-sm rounded-2xl p-8 border border-emerald-700/30">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="full-section">
+      <div class="full-section-header">
+        <h2 class="full-section-title">
+          <div class="full-section-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
           <span>Related in Our Network</span>
         </h2>
-        <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-semibold rounded-full border border-emerald-500/30">
-          Knowledge Graph
-        </span>
+        <span class="full-section-badge">Knowledge Graph</span>
       </div>
 
-      <p class="text-slate-300 mb-6">
+      <p class="full-section-text">
         Connections and relationships discovered through our knowledge graph showing how {company.display_name} relates to other entities in our coverage.
       </p>
 
-      <!-- Zep Knowledge Graph Visualization -->
       <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
     </div>
 
-    <!-- Our Coverage Section - Articles we've written about this company -->
-    <div class="mt-12 bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm rounded-2xl p-8 border border-blue-700/30">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Our Coverage Section -->
+    <div class="full-section full-section-blue">
+      <div class="full-section-header">
+        <h2 class="full-section-title">
+          <div class="full-section-icon full-section-icon-blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
             </svg>
           </div>
           <span>Our Coverage</span>
         </h2>
-        <span class="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs font-semibold rounded-full border border-blue-500/30">
-          Open Access • No Paywall
-        </span>
+        <span class="full-section-badge full-section-badge-blue">Open Access • No Paywall</span>
       </div>
 
-      <p class="text-slate-300 mb-6">
+      <p class="full-section-text">
         Unlike PE News and other paywalled sources, all our coverage is freely accessible. Here's what we've written about {company.display_name}:
       </p>
 
-      <!-- Article Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Example Article 1: The company profile itself -->
-        <a href={`/${company.slug}`} class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl p-6 border border-slate-700/30 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-          <div class="flex items-start gap-4 mb-4">
-            <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-              {company.display_name.charAt(0)}
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="text-lg font-bold text-white mb-1 group-hover:text-blue-300 transition-colors line-clamp-2">
-                {company.display_name} - Placement Agent Profile
-              </h3>
-              <div class="flex items-center gap-2 text-xs text-slate-400">
+      <div class="article-grid">
+        <a href={`/${company.slug}`} class="article-card">
+          <div class="article-card-header">
+            <div class="article-card-icon">{company.display_name.charAt(0)}</div>
+            <div>
+              <h3 class="article-card-title">{company.display_name} - Placement Agent Profile</h3>
+              <div class="article-card-meta">
                 <span>Company Profile</span>
                 <span>•</span>
                 <span>{new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
               </div>
             </div>
           </div>
-          <p class="text-slate-300 text-sm line-clamp-3 mb-4">
+          <p class="article-card-excerpt">
             Comprehensive profile covering {company.display_name}'s services, team, recent deals, and market position in the private equity placement agent industry.
           </p>
-          <div class="flex items-center text-blue-400 text-sm font-medium group-hover:text-blue-300 transition-colors">
-            Read Full Profile →
-          </div>
+          <div class="article-card-link">Read Full Profile →</div>
         </a>
 
-        <!-- Placeholder for future articles -->
-        <div class="bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-xl p-6 border border-slate-700/20 border-dashed">
-          <div class="flex flex-col items-center justify-center text-center py-8">
-            <div class="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
-              <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="article-card article-card-placeholder">
+          <div class="article-card-placeholder-inner">
+            <div class="article-card-placeholder-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
               </svg>
             </div>
-            <h4 class="text-slate-400 font-semibold mb-2">More Coverage Coming</h4>
-            <p class="text-slate-500 text-sm">
-              Stay tuned for in-depth articles, deal analysis, and industry insights about {company.display_name}.
-            </p>
+            <h4>More Coverage Coming</h4>
+            <p>Stay tuned for in-depth articles, deal analysis, and industry insights about {company.display_name}.</p>
           </div>
         </div>
       </div>
 
-      <!-- CTA -->
-      <div class="mt-6 pt-6 border-t border-slate-700/30 text-center">
-        <p class="text-slate-400 text-sm">
+      <div class="cta">
+        <p>
           Want to stay updated on {company.display_name}?
-          <a href="/private-equity-placement-agent-news" class="text-blue-400 hover:text-blue-300 transition-colors font-medium ml-1">
-            Browse all articles →
-          </a>
+          <a href="/private-equity-placement-agent-news">Browse all articles →</a>
         </p>
       </div>
     </div>
 
-    <!-- Resources Section - Full Width at Bottom -->
+    <!-- Resources Section -->
     {company.profile_sections.resources && (
-      <div class="mt-12 bg-gradient-to-br from-slate-900/30 to-slate-800/20 backdrop-blur-sm rounded-2xl p-8 border border-slate-700/30">
-        <h2 class="text-xl font-bold text-slate-300 mb-4 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="resources-section">
+        <h2 class="resources-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           {company.profile_sections.resources.title}
         </h2>
-        <div class="prose prose-invert prose-sm max-w-none prose-a:text-blue-400 prose-a:no-underline hover:prose-a:text-blue-300 prose-li:text-slate-400">
-          <div set:html={
-            company.profile_sections.resources.content
-              .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-              .replace(/^- (.+)/gm, '<li>$1</li>')
-              .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-          }></div>
-        </div>
+        <div class="prose" set:html={
+          company.profile_sections.resources.content
+            .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+            .replace(/^- (.+)/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        }></div>
       </div>
     )}
 
     <!-- Navigation -->
-    <div class="mt-12 flex justify-between items-center">
-      <a href="/private-equity-placement-agents-list"
-         class="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-white rounded-xl transition-all duration-300 border border-slate-700/50 hover:border-blue-500/30">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="nav-bottom">
+      <a href="/private-equity-placement-agents-list" class="nav-back">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>
         All Placement Agents
@@ -1255,60 +944,10 @@ const sidebarRotationIndex = company.slug.split('').reduce((acc, char) => acc + 
   </div>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-800/50 bg-slate-950/50 backdrop-blur-sm py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-slate-500 text-sm">© 2025 Placement. All rights reserved.</p>
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>© 2025 Placement. All rights reserved.</p>
     </div>
   </footer>
-
-  <!-- Lightweight custom prose styles (replaces 91KB @tailwindcss/typography) -->
-  <style>
-    .prose {
-      color: #d1d5db;
-      max-width: 65ch;
-      font-size: 1rem;
-      line-height: 1.75;
-    }
-    .prose-sm { font-size: 0.875rem; line-height: 1.7142857; }
-    .prose-lg { font-size: 1.125rem; line-height: 1.7777778; }
-    .prose-invert { color: #d1d5db; }
-    .prose-blue a { color: #2563eb; }
-    .prose p { margin: 1.25em 0; }
-    .prose strong { color: #fff; font-weight: 600; }
-    .prose a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid rgba(96,165,250,0.3); transition: border-color 0.3s; }
-    .prose a:hover { border-color: #60a5fa; }
-    .prose ul, .prose ol { margin: 1.25em 0; padding-left: 1.625em; }
-    .prose ul { list-style-type: disc; }
-    .prose ol { list-style-type: decimal; }
-    .prose li { margin: 0.5em 0; }
-    .prose h1 { color: #fff; font-weight: 800; font-size: 2.25em; margin: 0 0 0.8888889em; line-height: 1.1111111; }
-    .prose h2 { color: #fff; font-weight: 700; font-size: 1.5em; margin: 2em 0 1em; line-height: 1.3333333; }
-    .prose h3 { color: #fff; font-weight: 600; font-size: 1.25em; margin: 1.6em 0 0.6em; line-height: 1.6; }
-    .prose h4 { color: #fff; font-weight: 600; margin: 1.5em 0 0.5em; line-height: 1.5; }
-    .prose blockquote { color: #f3f4f6; font-style: italic; border-left: 0.25rem solid #374151; padding-left: 1em; margin: 1.6em 0; }
-    .prose code { color: #fff; background: #1f2937; padding: 0.1875em 0.375em; border-radius: 0.3125rem; font-size: 0.875em; }
-    .prose pre { background: #1f2937; color: #e5e7eb; overflow-x: auto; padding: 1em; border-radius: 0.375rem; margin: 1.7142857em 0; }
-    .prose pre code { background: transparent; padding: 0; }
-    .prose img { margin: 2em 0; }
-    .prose-headings\:font-bold h1, .prose-headings\:font-bold h2, .prose-headings\:font-bold h3, .prose-headings\:font-bold h4 { font-weight: 700; }
-    .prose-headings\:text-gray-900 h1, .prose-headings\:text-gray-900 h2, .prose-headings\:text-gray-900 h3, .prose-headings\:text-gray-900 h4 { color: #111827; }
-    .prose-headings\:text-white h1, .prose-headings\:text-white h2, .prose-headings\:text-white h3, .prose-headings\:text-white h4 { color: #fff; }
-    .prose-p\:text-slate-300 p { color: #cbd5e1; }
-    .prose-p\:text-gray-700 p { color: #374151; }
-    .prose-p\:leading-relaxed p { line-height: 1.625; }
-    .prose-p\:mb-6 p { margin-bottom: 1.5rem; }
-    .prose-p\:mb-8 p { margin-bottom: 2rem; }
-    .prose-strong\:text-white strong { color: #fff; }
-    .prose-strong\:text-gray-900 strong { color: #111827; }
-    .prose-strong\:font-semibold strong { font-weight: 600; }
-    .prose-a\:text-blue-400 a { color: #60a5fa; }
-    .prose-a\:no-underline a { text-decoration: none; }
-    .prose-a\:border-b a { border-bottom-width: 1px; }
-    .prose-a\:border-blue-400\/30 a { border-color: rgba(96,165,250,0.3); }
-    .prose-li\:text-slate-300 li { color: #cbd5e1; }
-    .prose-li\:text-gray-700 li { color: #374151; }
-    .prose-ul\:space-y-3 ul { margin-top: 0.75rem; margin-bottom: 0.75rem; }
-    .prose-ul\:space-y-3 li { margin-top: 0.75rem; margin-bottom: 0.75rem; }
-  </style>
 </body>
 </html>
