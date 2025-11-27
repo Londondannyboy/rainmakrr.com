@@ -1,7 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
-// Removed: tailwind (performance) and cookieconsent (32KB render-blocking CSS)
+import tailwind from '@astrojs/tailwind';
 // Cookie consent is now a simple inline component
 
 // https://astro.build/config
@@ -45,7 +45,10 @@ export default defineConfig({
     }
   },
   integrations: [
-    // Empty - using inline styles and simple cookie component
+    tailwind({
+      // Disable base styles injection - we only want utility classes for company pages
+      applyBaseStyles: false,
+    }),
   ],
   server: {
     host: true // Listen on all network interfaces (0.0.0.0)

@@ -1,11 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-	content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+	// Scoped to company pages only - homepage uses custom inline CSS for performance
+	content: [
+		'./src/pages/private-equity-placement-agents-list/**/*.astro',
+	],
 	theme: {
 		extend: {},
 	},
-	plugins: [
-		// Removed @tailwindcss/typography to reduce bundle size from 91KB to ~10KB
-		// Custom prose styles added inline in slug pages where needed
-	],
+	plugins: [],
 }
