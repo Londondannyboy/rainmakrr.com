@@ -2166,7 +2166,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                         src={article.thumbnail_url}
                         srcset={article.thumbnail_srcset}
                         sizes="(max-width: 640px) 200px, 300px"
-                        alt={article.title}
+                        alt={`${article.title} - Private equity placement agent news`}
                         width="300"
                         height="340"
                         class="news-thumbnail"
@@ -2226,7 +2226,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                         src={article.thumbnail_url}
                         srcset={article.thumbnail_srcset}
                         sizes="(max-width: 640px) 200px, 300px"
-                        alt={article.title}
+                        alt={`${article.title} - Private equity placement agent news`}
                         width="300"
                         height="200"
                         class="news-thumbnail"
@@ -2535,7 +2535,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                       src={optimizeCloudinaryImage(company.featured_asset_url, 800)}
                       srcset={generateSrcSet(company.featured_asset_url)}
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
-                      alt={company.display_name}
+                      alt={`${company.display_name} - Private equity placement agent`}
                       loading={index < 4 ? 'eager' : 'lazy'}
                       decoding="async"
                       width="800"
@@ -2567,7 +2567,7 @@ function generateVariedDescription(company: any, context: 'primary' | 'secondary
                   </div>
                 )}
                 <div style="margin-top: 16px; color: #667eea; font-weight: 600; font-size: 14px;">
-                  View Profile →
+                  View {company.display_name} →
                 </div>
               </div>
             </a>
