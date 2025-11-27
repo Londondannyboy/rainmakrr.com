@@ -15,17 +15,30 @@ if (!slug) {
 
 // Fetch company data from Neon
 const companies = await sql`
-  SELECT *
+  SELECT
+    *,
+    payload->>'profile_sections' as profile_sections_json,
+    payload->>'website' as website,
+    payload->>'industry' as industry,
+    payload->>'employee_range' as employee_range,
+    payload->>'headquarters_city' as headquarters_city,
+    payload->>'headquarters_country' as headquarters_country
   FROM companies
   WHERE slug = ${slug}
   LIMIT 1
 `;
 
-const company = companies[0];
+const companyRaw = companies[0];
 
-if (!company) {
+if (!companyRaw) {
   return Astro.redirect('/private-equity-placement-agents-list');
 }
+
+// Parse profile_sections from JSON string
+const company = {
+  ...companyRaw,
+  profile_sections: companyRaw.profile_sections_json ? JSON.parse(companyRaw.profile_sections_json) : {}
+};
 
 // Extract overview from profile sections for meta description
 const overviewSection = company.profile_sections?.overview || company.profile_sections?.about;
