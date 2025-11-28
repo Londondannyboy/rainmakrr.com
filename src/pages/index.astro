@@ -68,10 +68,44 @@ const topAgents = allAgents.slice(0, 8);
 function getThumbnail(article: any, animated: boolean = false): string | null {
   if (article.video_playback_id) {
     return animated
-      ? `https://image.mux.com/${article.video_playback_id}/animated.webp?width=320&fps=10`
+      ? `https://image.mux.com/${article.video_playback_id}/animated.gif?width=320&fps=15&end=3`
       : `https://image.mux.com/${article.video_playback_id}/thumbnail.webp?time=1&width=400`;
   }
   return article.featured_asset_url || null;
+}
+
+// Helper: check if article has video
+function hasVideo(article: any): boolean {
+  return !!article.video_playback_id;
+}
+
+// Helper: get company image (logo, featured image, or placeholder)
+function getCompanyImage(company: any): { url: string | null; type: 'logo' | 'image' | 'placeholder' } {
+  if (company.logo_url) return { url: company.logo_url, type: 'logo' };
+  if (company.featured_asset_url) return { url: company.featured_asset_url, type: 'image' };
+  return { url: null, type: 'placeholder' };
+}
+
+// Helper: get section content (handles various content structures)
+function getSectionContent(section: any): string {
+  if (!section?.content) return '';
+  // Direct text content
+  if (typeof section.content === 'string') return section.content;
+  // Content object with text property
+  if (section.content.text) return section.content.text;
+  // Content object with body property
+  if (section.content.body) return section.content.body;
+  // Content object with html property
+  if (section.content.html) return section.content.html;
+  // Stringified JSON
+  if (typeof section.content === 'object') {
+    try {
+      return JSON.stringify(section.content);
+    } catch (e) {
+      return '';
+    }
+  }
+  return '';
 }
 
 // Helper: format date
@@ -206,24 +240,28 @@ function renderMarkdown(content: string): string {
       <aside>
         <h2 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 4px solid #6366f1; display: inline-block;">Top Placement Agents</h2>
         <div style="display: flex; flex-direction: column; gap: 16px;">
-          {topAgents.map((agent: any) => (
-            <a href={`/companies/${agent.slug}`} class="agent-sidebar-card" style="display: flex; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 10px; transition: background 0.2s;">
-              {agent.logo_url ? (
-                <img src={agent.logo_url} alt={agent.name} style="width: 48px; height: 48px; object-fit: contain; border-radius: 6px; flex-shrink: 0;" />
-              ) : agent.featured_asset_url ? (
-                <img src={agent.featured_asset_url} alt={agent.name} style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0;" />
-              ) : (
-                <div style="width: 48px; height: 48px; background: #e0e7ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  <span style="color: #4f46e5; font-weight: 700;">{agent.name?.charAt(0)}</span>
+          {topAgents.map((agent: any) => {
+            const img = getCompanyImage(agent);
+            return (
+              <a href={`/companies/${agent.slug}`} class="agent-sidebar-card" style="display: flex; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 10px; transition: background 0.2s; overflow: hidden;">
+                {/* Always show image - logo, featured, or gradient placeholder */}
+                <div style="width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0; overflow: hidden; background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">
+                  {img.url ? (
+                    <img src={img.url} alt={agent.name} style={`width: 100%; height: 100%; object-fit: ${img.type === 'logo' ? 'contain' : 'cover'};`} />
+                  ) : (
+                    <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                      <span style="color: #4f46e5; font-weight: 700; font-size: 18px;">{agent.name?.charAt(0)}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              <div style="flex: 1; min-width: 0;">
-                <h3 style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px;">{agent.name}</h3>
-                {agent.headquarters && <p style="font-size: 12px; color: #9ca3af; margin-bottom: 4px;">{agent.headquarters}</p>}
-                {agent.description && <p style="font-size: 12px; color: #6b7280; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{agent.description.slice(0, 100)}...</p>}
-              </div>
-            </a>
-          ))}
+                <div style="flex: 1; min-width: 0;">
+                  <h3 style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px;">{agent.name}</h3>
+                  {agent.headquarters && <p style="font-size: 12px; color: #9ca3af; margin-bottom: 4px;">{agent.headquarters}</p>}
+                  {agent.description && <p style="font-size: 12px; color: #6b7280; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{agent.description.slice(0, 100)}...</p>}
+                </div>
+              </a>
+            );
+          })}
         </div>
         <a href="/private-equity-placement-agents-list" style="display: block; margin-top: 16px; text-align: center; color: #2563eb; font-size: 14px; font-weight: 500;">View all agents →</a>
 
@@ -245,7 +283,7 @@ function renderMarkdown(content: string): string {
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.intro.title}</h2>
         {sections.intro.subtitle && <p style="font-size: 20px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.intro.subtitle}</p>}
-        {sections.intro.content?.text && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(sections.intro.content.text)} />}
+        {getSectionContent(sections.intro) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.intro))} />}
       </div>
     </section>
   )}
@@ -278,17 +316,27 @@ function renderMarkdown(content: string): string {
         The world's leading fundraising advisors connecting private equity fund managers with institutional investors
       </p>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;">
-        {allAgents.map((agent: any) => (
-          <a href={`/companies/${agent.slug}`} style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; transition: transform 0.3s, border-color 0.3s; display: block;">
-            <div style="display: flex; gap: 16px; align-items: start;">
-              {agent.logo_url ? (
-                <img src={agent.logo_url} alt={agent.name} style="width: 56px; height: 56px; object-fit: contain; border-radius: 8px; flex-shrink: 0;" />
-              ) : (
-                <div style="width: 56px; height: 56px; background: rgba(99,102,241,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  <span style="color: #818cf8; font-weight: 700; font-size: 20px;">{agent.name?.charAt(0)}</span>
-                </div>
-              )}
-              <div style="flex: 1; min-width: 0;">
+        {allAgents.map((agent: any) => {
+          const img = getCompanyImage(agent);
+          return (
+            <a href={`/companies/${agent.slug}`} style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; transition: transform 0.3s, border-color 0.3s; display: block;">
+              {/* Company Image Banner */}
+              <div style="height: 120px; background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.3)); position: relative; overflow: hidden;">
+                {img.url && img.type === 'image' ? (
+                  <img src={img.url} alt={agent.name} style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" />
+                ) : (
+                  <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 48px; font-weight: 900; color: rgba(255,255,255,0.2);">{agent.name?.charAt(0)}</span>
+                  </div>
+                )}
+                {/* Logo overlay if available */}
+                {img.type === 'logo' && img.url && (
+                  <div style="position: absolute; bottom: -20px; left: 20px; width: 56px; height: 56px; background: #fff; border-radius: 8px; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <img src={img.url} alt={agent.name} style="width: 100%; height: 100%; object-fit: contain;" />
+                  </div>
+                )}
+              </div>
+              <div style="padding: 24px; padding-top: {img.type === 'logo' ? '32px' : '20px'};">
                 <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #fff;">{agent.name}</h3>
                 {agent.headquarters && <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 8px;">{agent.headquarters}</p>}
                 {agent.description && <p style="font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.7); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{agent.description}</p>}
@@ -300,9 +348,9 @@ function renderMarkdown(content: string): string {
                   </div>
                 )}
               </div>
-            </div>
-          </a>
-        ))}
+            </a>
+          );
+        })}
       </div>
     </div>
   </section>
@@ -333,7 +381,8 @@ function renderMarkdown(content: string): string {
     <section class="dark-section" style="padding: 100px 20px;">
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.fee_structures.title}</h2>
-        {sections.fee_structures.content?.text && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(sections.fee_structures.content.text)} />}
+        {sections.fee_structures.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.fee_structures.subtitle}</p>}
+        {getSectionContent(sections.fee_structures) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.fee_structures))} />}
       </div>
     </section>
   )}
@@ -343,7 +392,8 @@ function renderMarkdown(content: string): string {
     <section class="gradient-section" style="padding: 100px 20px;">
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.selection.title}</h2>
-        {sections.selection.content?.text && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(sections.selection.content.text)} />}
+        {sections.selection.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.selection.subtitle}</p>}
+        {getSectionContent(sections.selection) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.selection))} />}
       </div>
     </section>
   )}
@@ -353,7 +403,8 @@ function renderMarkdown(content: string): string {
     <section class="dark-section" style="padding: 100px 20px;">
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.trends.title}</h2>
-        {sections.trends.content?.text && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(sections.trends.content.text)} />}
+        {sections.trends.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.trends.subtitle}</p>}
+        {getSectionContent(sections.trends) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.trends))} />}
       </div>
     </section>
   )}
@@ -363,7 +414,8 @@ function renderMarkdown(content: string): string {
     <section class="gradient-section" style="padding: 100px 20px;">
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.why_use.title}</h2>
-        {sections.why_use.content?.text && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(sections.why_use.content.text)} />}
+        {sections.why_use.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.why_use.subtitle}</p>}
+        {getSectionContent(sections.why_use) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.why_use))} />}
       </div>
     </section>
   )}
