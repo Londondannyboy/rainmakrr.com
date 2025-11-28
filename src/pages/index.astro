@@ -66,20 +66,33 @@ const allAgents = await sql`
 
 const topAgents = allAgents.slice(0, 8);
 
-// Helper: get animated thumbnail for videos, static for images
-function getThumbnail(article: any, animated: boolean = false): string | null {
+// Helper: get static thumbnail
+function getThumbnail(article: any): string | null {
   if (article.video_playback_id) {
-    return animated
-      ? `https://image.mux.com/${article.video_playback_id}/animated.gif?width=320&fps=15&end=3`
-      : `https://image.mux.com/${article.video_playback_id}/thumbnail.webp?time=1&width=400`;
+    return `https://image.mux.com/${article.video_playback_id}/thumbnail.webp?time=1&width=400`;
   }
   return article.featured_asset_url || null;
+}
+
+// Helper: get HLS video URL for Mux
+function getVideoUrl(article: any): string | null {
+  if (article.video_playback_id) {
+    return `https://stream.mux.com/${article.video_playback_id}.m3u8`;
+  }
+  return null;
 }
 
 // Helper: check if article has video
 function hasVideo(article: any): boolean {
   return !!article.video_playback_id;
 }
+
+// Collect all video playback IDs for client-side HLS initialization
+const allVideoIds = [
+  ...(featuredArticle1?.video_playback_id ? [featuredArticle1.video_playback_id] : []),
+  ...(featuredArticle2?.video_playback_id ? [featuredArticle2.video_playback_id] : []),
+  ...articles.filter((a: any) => a.video_playback_id).map((a: any) => a.video_playback_id)
+];
 
 // Helper: get company image (logo, featured image, or placeholder)
 function getCompanyImage(company: any): { url: string | null; type: 'logo' | 'image' | 'placeholder' } {
@@ -88,25 +101,19 @@ function getCompanyImage(company: any): { url: string | null; type: 'logo' | 'im
   return { url: null, type: 'placeholder' };
 }
 
-// Helper: get section content (handles various content structures)
-function getSectionContent(section: any): string {
+// Helper: check if section has structured content (arrays)
+function hasStructuredContent(section: any): boolean {
+  if (!section?.content) return false;
+  const c = section.content;
+  return c.items || c.steps || c.criteria || c.trends || c.reasons || c.questions || c.standard_fees || c.retainer_models;
+}
+
+// Helper: get text content from section
+function getTextContent(section: any): string {
   if (!section?.content) return '';
-  // Direct text content
   if (typeof section.content === 'string') return section.content;
-  // Content object with text property
   if (section.content.text) return section.content.text;
-  // Content object with body property
   if (section.content.body) return section.content.body;
-  // Content object with html property
-  if (section.content.html) return section.content.html;
-  // Stringified JSON
-  if (typeof section.content === 'object') {
-    try {
-      return JSON.stringify(section.content);
-    } catch (e) {
-      return '';
-    }
-  }
   return '';
 }
 
@@ -187,18 +194,12 @@ function renderMarkdown(content: string): string {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="featured-grid">
           {featuredArticle1 && (
             <a href={`/${featuredArticle1.slug}`} class="news-item" style="display: block;">
-              <div style="position: relative; overflow: hidden; margin-bottom: 12px;">
-                {getThumbnail(featuredArticle1) ? (
-                  <>
-                    <img src={getThumbnail(featuredArticle1, false)} alt={featuredArticle1.title} style="width: 100%; height: 200px; object-fit: cover;" class="static-thumb" />
-                    {featuredArticle1.video_playback_id && (
-                      <img src={getThumbnail(featuredArticle1, true)} alt="" style="width: 100%; height: 200px; object-fit: cover;" class="animated-thumb" />
-                    )}
-                  </>
-                ) : (
-                  <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 48px; color: rgba(79,70,229,0.3);">📰</span>
-                  </div>
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px; height: 200px; background: #f3f4f6;">
+                {getThumbnail(featuredArticle1) && (
+                  <img src={getThumbnail(featuredArticle1)} alt={featuredArticle1.title} style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
+                )}
+                {featuredArticle1.video_playback_id && (
+                  <video class="thumb-video" data-playback-id={featuredArticle1.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"></video>
                 )}
               </div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
@@ -211,18 +212,12 @@ function renderMarkdown(content: string): string {
           )}
           {featuredArticle2 && (
             <a href={`/${featuredArticle2.slug}`} class="news-item" style="display: block;">
-              <div style="position: relative; overflow: hidden; margin-bottom: 12px;">
-                {getThumbnail(featuredArticle2) ? (
-                  <>
-                    <img src={getThumbnail(featuredArticle2, false)} alt={featuredArticle2.title} style="width: 100%; height: 200px; object-fit: cover;" class="static-thumb" />
-                    {featuredArticle2.video_playback_id && (
-                      <img src={getThumbnail(featuredArticle2, true)} alt="" style="width: 100%; height: 200px; object-fit: cover;" class="animated-thumb" />
-                    )}
-                  </>
-                ) : (
-                  <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); display: flex; align-items: center; justify-content: center;">
-                    <span style="font-size: 48px; color: rgba(79,70,229,0.3);">📰</span>
-                  </div>
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px; height: 200px; background: #f3f4f6;">
+                {getThumbnail(featuredArticle2) && (
+                  <img src={getThumbnail(featuredArticle2)} alt={featuredArticle2.title} style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
+                )}
+                {featuredArticle2.video_playback_id && (
+                  <video class="thumb-video" data-playback-id={featuredArticle2.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"></video>
                 )}
               </div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
@@ -246,16 +241,14 @@ function renderMarkdown(content: string): string {
             <a href={`/${article.slug}`} class="news-item" style="display: flex; gap: 16px;">
               <div style="width: 160px; height: 100px; flex-shrink: 0; position: relative; overflow: hidden; background: #f3f4f6;">
                 {getThumbnail(article) ? (
-                  <>
-                    <img src={getThumbnail(article, false)} alt="" style="width: 100%; height: 100%; object-fit: cover;" class="static-thumb" />
-                    {article.video_playback_id && (
-                      <img src={getThumbnail(article, true)} alt="" style="width: 100%; height: 100%; object-fit: cover;" class="animated-thumb" />
-                    )}
-                  </>
+                  <img src={getThumbnail(article)} alt="" style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
                 ) : (
                   <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                     <svg style="width: 32px; height: 32px; color: #d1d5db;" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/></svg>
                   </div>
+                )}
+                {article.video_playback_id && (
+                  <video class="thumb-video" data-playback-id={article.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"></video>
                 )}
               </div>
               <div style="flex: 1; min-width: 0;">
@@ -414,10 +407,54 @@ function renderMarkdown(content: string): string {
   <!-- Fee Structures -->
   {sections.fee_structures && (
     <section class="dark-section" style="padding: 100px 20px;">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.fee_structures.title}</h2>
-        {sections.fee_structures.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.fee_structures.subtitle}</p>}
-        {getSectionContent(sections.fee_structures) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.fee_structures))} />}
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.fee_structures.title}</h2>
+        {sections.fee_structures.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.fee_structures.subtitle}</p>}
+
+        {/* Standard Fees Table */}
+        {sections.fee_structures.content?.standard_fees && (
+          <div style="margin-bottom: 48px;">
+            <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Standard Fee Ranges</h3>
+            <div style="display: grid; gap: 12px;">
+              {sections.fee_structures.content.standard_fees.map((fee: any) => (
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 16px 20px;">
+                  <span style="color: rgba(255,255,255,0.9);">{fee.fund_type}</span>
+                  <span style="font-weight: 700; color: #818cf8;">{fee.fee_range}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Retainer Models */}
+        {sections.fee_structures.content?.retainer_models && (
+          <div style="margin-bottom: 48px;">
+            <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Retainer Models</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+              {sections.fee_structures.content.retainer_models.map((model: any) => (
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                  <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #818cf8;">{model.type}</h4>
+                  <div style="font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.8;">
+                    {model.monthly_retainer && <p><strong>Monthly Retainer:</strong> {model.monthly_retainer}</p>}
+                    {model.success_fee && <p><strong>Success Fee:</strong> {model.success_fee}</p>}
+                    {model.retainer_period && <p><strong>Period:</strong> {model.retainer_period}</p>}
+                    {model.note && <p style="margin-top: 12px; font-style: italic; color: rgba(255,255,255,0.6);">{model.note}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Example Calculation */}
+        {sections.fee_structures.content?.example && (
+          <div style="background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2)); border-radius: 12px; padding: 32px; text-align: center;">
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">Example: {sections.fee_structures.content.example.fund_size} Fund</h3>
+            <div style="display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;">
+              <div><span style="display: block; font-size: 24px; font-weight: 800; color: #818cf8;">{sections.fee_structures.content.example.total}</span><span style="font-size: 13px; color: rgba(255,255,255,0.6);">Total Cost</span></div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )}
@@ -425,10 +462,34 @@ function renderMarkdown(content: string): string {
   <!-- Selection Criteria -->
   {sections.selection && (
     <section class="gradient-section" style="padding: 100px 20px;">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.selection.title}</h2>
-        {sections.selection.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.selection.subtitle}</p>}
-        {getSectionContent(sections.selection) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.selection))} />}
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.selection.title}</h2>
+        {sections.selection.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.selection.subtitle}</p>}
+
+        {sections.selection.content?.criteria && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            {sections.selection.content.criteria.map((item: any, i: number) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <span style="width: 32px; height: 32px; background: rgba(99,102,241,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #818cf8; font-size: 14px;">{i + 1}</span>
+                  <h3 style="font-size: 17px; font-weight: 700;">{item.name}</h3>
+                </div>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sections.selection.content?.red_flags && (
+          <div style="margin-top: 48px; background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 18px; font-weight: 700; color: #fca5a5; margin-bottom: 16px;">Red Flags to Watch</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+              {sections.selection.content.red_flags.map((flag: string) => (
+                <span style="background: rgba(220,38,38,0.2); color: #fca5a5; padding: 6px 14px; border-radius: 100px; font-size: 13px; font-weight: 500;">{flag}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )}
@@ -436,10 +497,23 @@ function renderMarkdown(content: string): string {
   <!-- Trends -->
   {sections.trends && (
     <section class="dark-section" style="padding: 100px 20px;">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.trends.title}</h2>
-        {sections.trends.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.trends.subtitle}</p>}
-        {getSectionContent(sections.trends) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.trends))} />}
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.trends.title}</h2>
+        {sections.trends.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.trends.subtitle}</p>}
+
+        {sections.trends.content?.trends && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            {sections.trends.content.trends.map((trend: any, i: number) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <span style="font-size: 24px; font-weight: 900; color: rgba(99,102,241,0.5);">{String(i + 1).padStart(2, '0')}</span>
+                  <h3 style="font-size: 17px; font-weight: 700;">{trend.name}</h3>
+                </div>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{trend.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )}
@@ -447,25 +521,38 @@ function renderMarkdown(content: string): string {
   <!-- Why Use a Placement Agent -->
   {sections.why_use && (
     <section class="gradient-section" style="padding: 100px 20px;">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 24px;">{sections.why_use.title}</h2>
-        {sections.why_use.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 32px;">{sections.why_use.subtitle}</p>}
-        {getSectionContent(sections.why_use) && <div style="font-size: 17px; line-height: 1.8; color: rgba(255,255,255,0.9);" set:html={renderMarkdown(getSectionContent(sections.why_use))} />}
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.why_use.title}</h2>
+        {sections.why_use.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.why_use.subtitle}</p>}
+
+        {sections.why_use.content?.reasons && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            {sections.why_use.content.reasons.map((reason: any) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #a5b4fc;">{reason.title}</h3>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{reason.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )}
 
   <!-- FAQ -->
-  {sections.faq && sections.faq.content?.questions && (
+  {sections.faq && (
     <section class="dark-section" style="padding: 100px 20px;">
       <div style="max-width: 900px; margin: 0 auto;">
         <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 48px; text-align: center;">{sections.faq.title || 'Frequently Asked Questions'}</h2>
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          {sections.faq.content.questions.map((faq: any) => (
-            <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
-              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #fff;">{faq.question}</h3>
-              <p style="font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.8);">{faq.answer}</p>
-            </div>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          {sections.faq.content?.questions?.map((faq: any) => (
+            <details style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px 24px;">
+              <summary style="font-size: 17px; font-weight: 600; cursor: pointer; color: #fff; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                {faq.question}
+                <span style="color: #818cf8;">+</span>
+              </summary>
+              <p style="font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.8); margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">{faq.answer}</p>
+            </details>
           ))}
         </div>
       </div>
@@ -534,27 +621,74 @@ function renderMarkdown(content: string): string {
     }
   </style>
 
-  <!-- HLS.js for Mux video -->
+  <!-- HLS.js for Mux videos -->
   <script define:vars={{ heroPlaybackId }}>
     document.addEventListener('DOMContentLoaded', function() {
-      const heroVideo = document.getElementById('hero-video');
-      const videoSrc = `https://stream.mux.com/${heroPlaybackId}.m3u8`;
-      if (!heroVideo) return;
-      if (heroVideo.canPlayType('application/vnd.apple.mpegurl')) {
-        heroVideo.src = videoSrc;
-        heroVideo.play().catch(() => {});
-      } else {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-        script.onload = function() {
-          if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-            const hls = new Hls({ maxBufferLength: 10 });
-            hls.loadSource(videoSrc);
-            hls.attachMedia(heroVideo);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => heroVideo.play().catch(() => {}));
-          }
-        };
-        document.head.appendChild(script);
+      // Load HLS.js first
+      const hlsScript = document.createElement('script');
+      hlsScript.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+      hlsScript.onload = initializeVideos;
+      document.head.appendChild(hlsScript);
+
+      function initializeVideos() {
+        // Hero video
+        const heroVideo = document.getElementById('hero-video');
+        if (heroVideo) {
+          loadHlsVideo(heroVideo, heroPlaybackId);
+        }
+
+        // Thumbnail videos - play on hover
+        const newsItems = document.querySelectorAll('.news-item');
+        newsItems.forEach(item => {
+          const video = item.querySelector('.thumb-video');
+          const img = item.querySelector('.thumb-img');
+          if (!video) return;
+
+          const playbackId = video.dataset.playbackId;
+          let hlsInstance = null;
+          let loaded = false;
+
+          item.addEventListener('mouseenter', () => {
+            if (!loaded && playbackId) {
+              loaded = true;
+              loadHlsVideo(video, playbackId, () => {
+                video.style.opacity = '1';
+                if (img) img.style.opacity = '0';
+                video.play().catch(() => {});
+              });
+            } else if (loaded) {
+              video.style.opacity = '1';
+              if (img) img.style.opacity = '0';
+              video.play().catch(() => {});
+            }
+          });
+
+          item.addEventListener('mouseleave', () => {
+            video.style.opacity = '0';
+            if (img) img.style.opacity = '1';
+            video.pause();
+          });
+        });
+      }
+
+      function loadHlsVideo(video, playbackId, onReady) {
+        const src = `https://stream.mux.com/${playbackId}.m3u8`;
+
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = src;
+          video.addEventListener('loadeddata', () => {
+            if (onReady) onReady();
+            else video.play().catch(() => {});
+          }, { once: true });
+        } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+          const hls = new Hls({ maxBufferLength: 5 });
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (onReady) onReady();
+            else video.play().catch(() => {});
+          });
+        }
       }
     });
   </script>
