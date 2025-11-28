@@ -606,7 +606,7 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
     <div class="content-grid">
       <!-- Main Content (2/3) -->
       <div class="main-content">
-        {Object.entries(company.profile_sections)
+        {company.profile_sections && Object.entries(company.profile_sections)
           .filter(([key]) => key !== 'resources')
           .map(([key, section]: [string, any]) => {
             // Special handling for deals section - display as timeline cards
@@ -801,7 +801,7 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
         </div>
 
         <!-- Team Highlights Card -->
-        {(company.profile_sections.team || company.profile_sections.leadership) && (
+        {company.profile_sections && (company.profile_sections.team || company.profile_sections.leadership) && (
           <div class="sidebar-card">
             <h3 class="sidebar-title">
               <div class="sidebar-dot sidebar-dot-purple"></div>
@@ -817,7 +817,7 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
         )}
 
         <!-- Key Deals Card -->
-        {company.profile_sections.deals && (
+        {company.profile_sections?.deals && (
           <div class="sidebar-card">
             <h3 class="sidebar-title">
               <div class="sidebar-dot sidebar-dot-green"></div>
@@ -915,7 +915,7 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
     </div>
 
     <!-- Resources Section -->
-    {company.profile_sections.resources && (
+    {company.profile_sections?.resources && (
       <div class="resources-section">
         <h2 class="resources-title">
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
