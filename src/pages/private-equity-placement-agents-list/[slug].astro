@@ -21,11 +21,19 @@ const companies = await sql`
   LIMIT 1
 `;
 
-const company = companies[0];
+const companyRaw = companies[0];
 
-if (!company) {
+if (!companyRaw) {
   return Astro.redirect('/private-equity-placement-agents-list');
 }
+
+// Merge payload data into company object for easier access
+const company = {
+  ...companyRaw,
+  ...(companyRaw.payload || {}),
+  // Keep original top-level fields that might exist
+  display_name: companyRaw.display_name || companyRaw.payload?.display_name || companyRaw.name,
+};
 
 // Extract overview from profile sections for meta description
 const overviewSection = company.profile_sections?.overview || company.profile_sections?.about;
