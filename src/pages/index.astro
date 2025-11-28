@@ -114,6 +114,10 @@ function getTextContent(section: any): string {
   if (typeof section.content === 'string') return section.content;
   if (section.content.text) return section.content.text;
   if (section.content.body) return section.content.body;
+  // Handle paragraphs array structure
+  if (section.content.paragraphs && Array.isArray(section.content.paragraphs)) {
+    return section.content.paragraphs.map((p: any) => p.text || '').join('\n\n');
+  }
   return '';
 }
 
