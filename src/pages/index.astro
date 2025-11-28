@@ -33,24 +33,26 @@ const sections = {
   faq: homepageContent.find((s: any) => s.section_type === 'faq'),
 };
 
-// Fetch featured article
+// Fetch top 2 featured articles for 2-panel hero
 const featuredArticles = await sql`
   SELECT id, title, excerpt, slug, published_at, created_at,
     article_angle, featured_asset_url, video_playback_id
   FROM articles
   WHERE app = 'placement' AND status = 'published' AND is_featured = true
-  ORDER BY published_at DESC NULLS LAST
-  LIMIT 1
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 2
 `;
-const featuredArticle = featuredArticles[0] || null;
+const featuredArticle1 = featuredArticles[0] || null;
+const featuredArticle2 = featuredArticles[1] || null;
 
-// Fetch all articles (newest first)
+// Fetch all articles (newest first - strict chronological by published_at then created_at)
 const articles = await sql`
   SELECT id, title, excerpt, slug, published_at, created_at,
     article_angle, featured_asset_url, video_playback_id
   FROM articles
-  WHERE app = 'placement' AND status = 'published' AND is_featured = false
-  ORDER BY published_at DESC NULLS LAST, created_at DESC
+  WHERE app = 'placement' AND status = 'published'
+    AND (is_featured = false OR is_featured IS NULL)
+  ORDER BY COALESCE(published_at, created_at) DESC
   LIMIT 15
 `;
 
@@ -178,27 +180,60 @@ function renderMarkdown(content: string): string {
   <!-- NEWS SECTION - White Background -->
   <main style="max-width: 1200px; margin: 0 auto; padding: 32px 20px;">
 
-    <!-- Featured Article -->
-    {featuredArticle && (
+    <!-- Featured Articles - 2 Panel Grid -->
+    {(featuredArticle1 || featuredArticle2) && (
       <section style="margin-bottom: 40px; padding-bottom: 40px; border-bottom: 1px solid #e5e7eb;">
-        <a href={`/${featuredArticle.slug}`} style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start;" class="featured-link">
-          {getThumbnail(featuredArticle) && (
-            <div style="position: relative; overflow: hidden;">
-              <img src={getThumbnail(featuredArticle, false)} alt={featuredArticle.title} style="width: 100%; height: 300px; object-fit: cover;" class="static-thumb" />
-              {featuredArticle.video_playback_id && (
-                <img src={getThumbnail(featuredArticle, true)} alt="" style="width: 100%; height: 300px; object-fit: cover;" class="animated-thumb" />
-              )}
-            </div>
+        <h2 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 4px solid #dc2626; display: inline-block;">Featured</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="featured-grid">
+          {featuredArticle1 && (
+            <a href={`/${featuredArticle1.slug}`} class="news-item" style="display: block;">
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px;">
+                {getThumbnail(featuredArticle1) ? (
+                  <>
+                    <img src={getThumbnail(featuredArticle1, false)} alt={featuredArticle1.title} style="width: 100%; height: 200px; object-fit: cover;" class="static-thumb" />
+                    {featuredArticle1.video_playback_id && (
+                      <img src={getThumbnail(featuredArticle1, true)} alt="" style="width: 100%; height: 200px; object-fit: cover;" class="animated-thumb" />
+                    )}
+                  </>
+                ) : (
+                  <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 48px; color: rgba(79,70,229,0.3);">📰</span>
+                  </div>
+                )}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                {featuredArticle1.article_angle && <span class="category-badge">{formatCategory(featuredArticle1.article_angle)}</span>}
+                <span style="font-size: 12px; color: #9ca3af;">{formatDate(featuredArticle1.published_at || featuredArticle1.created_at)}</span>
+              </div>
+              <h3 class="news-title" style="font-size: 18px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px;">{featuredArticle1.title}</h3>
+              {featuredArticle1.excerpt && <p style="font-size: 14px; color: #6b7280; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{featuredArticle1.excerpt}</p>}
+            </a>
           )}
-          <div style="padding-top: 8px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              {featuredArticle.article_angle && <span class="category-badge">{formatCategory(featuredArticle.article_angle)}</span>}
-              <span style="font-size: 13px; color: #6b7280;">{formatDate(featuredArticle.published_at || featuredArticle.created_at)}</span>
-            </div>
-            <h2 style="font-size: 28px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 16px;">{featuredArticle.title}</h2>
-            {featuredArticle.excerpt && <p style="font-size: 16px; color: #6b7280; line-height: 1.7;">{featuredArticle.excerpt}</p>}
-          </div>
-        </a>
+          {featuredArticle2 && (
+            <a href={`/${featuredArticle2.slug}`} class="news-item" style="display: block;">
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px;">
+                {getThumbnail(featuredArticle2) ? (
+                  <>
+                    <img src={getThumbnail(featuredArticle2, false)} alt={featuredArticle2.title} style="width: 100%; height: 200px; object-fit: cover;" class="static-thumb" />
+                    {featuredArticle2.video_playback_id && (
+                      <img src={getThumbnail(featuredArticle2, true)} alt="" style="width: 100%; height: 200px; object-fit: cover;" class="animated-thumb" />
+                    )}
+                  </>
+                ) : (
+                  <div style="width: 100%; height: 200px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 48px; color: rgba(79,70,229,0.3);">📰</span>
+                  </div>
+                )}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                {featuredArticle2.article_angle && <span class="category-badge">{formatCategory(featuredArticle2.article_angle)}</span>}
+                <span style="font-size: 12px; color: #9ca3af;">{formatDate(featuredArticle2.published_at || featuredArticle2.created_at)}</span>
+              </div>
+              <h3 class="news-title" style="font-size: 18px; font-weight: 700; color: #1a1a1a; line-height: 1.3; margin-bottom: 8px;">{featuredArticle2.title}</h3>
+              {featuredArticle2.excerpt && <p style="font-size: 14px; color: #6b7280; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{featuredArticle2.excerpt}</p>}
+            </a>
+          )}
+        </div>
       </section>
     )}
 
@@ -243,7 +278,7 @@ function renderMarkdown(content: string): string {
           {topAgents.map((agent: any) => {
             const img = getCompanyImage(agent);
             return (
-              <a href={`/companies/${agent.slug}`} class="agent-sidebar-card" style="display: flex; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 10px; transition: background 0.2s; overflow: hidden;">
+              <a href={`/private-equity-placement-agents-list/${agent.slug}`} class="agent-sidebar-card" style="display: flex; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 10px; transition: background 0.2s; overflow: hidden;">
                 {/* Always show image - logo, featured, or gradient placeholder */}
                 <div style="width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0; overflow: hidden; background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">
                   {img.url ? (
@@ -319,7 +354,7 @@ function renderMarkdown(content: string): string {
         {allAgents.map((agent: any) => {
           const img = getCompanyImage(agent);
           return (
-            <a href={`/companies/${agent.slug}`} style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; transition: transform 0.3s, border-color 0.3s; display: block;">
+            <a href={`/private-equity-placement-agents-list/${agent.slug}`} style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; transition: transform 0.3s, border-color 0.3s; display: block;">
               {/* Company Image Banner */}
               <div style="height: 120px; background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.3)); position: relative; overflow: hidden;">
                 {img.url && img.type === 'image' ? (
@@ -489,9 +524,7 @@ function renderMarkdown(content: string): string {
       aside { order: -1; }
     }
     @media (max-width: 768px) {
-      .featured-link { display: block !important; }
-      .featured-link > div:first-child { margin-bottom: 16px; }
-      .featured-link img { height: 200px !important; }
+      .featured-grid { grid-template-columns: 1fr !important; }
       footer > div { grid-template-columns: 1fr 1fr !important; }
     }
     @media (max-width: 480px) {
