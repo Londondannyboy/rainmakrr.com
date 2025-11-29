@@ -1,0 +1,680 @@
+---
+/**
+ * Ecosystem Sector Pages
+ *
+ * Dynamic visualization pages for UK, US, Private Credit, Real Estate sectors
+ */
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Navigation from '../../components/Navigation.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { sector: 'uk' } },
+    { params: { sector: 'us' } },
+    { params: { sector: 'private-credit' } },
+    { params: { sector: 'real-estate' } }
+  ];
+}
+
+const { sector } = Astro.params;
+
+// Sector configuration
+const sectorConfig: Record<string, any> = {
+  'uk': {
+    title: 'UK Private Equity Ecosystem',
+    subtitle: 'British placement agents, PE firms, and market activity',
+    description: 'Explore the UK private equity landscape. Interactive 3D visualization of British placement agents, PE firms, and deal activity across London and the UK.',
+    color: '#3b82f6',
+    regionLabel: 'UK Market'
+  },
+  'us': {
+    title: 'US Private Equity Ecosystem',
+    subtitle: 'American placement agents, PE firms, and market activity',
+    description: 'Explore the US private equity landscape. Interactive 3D visualization of American placement agents, PE firms, and deal activity across New York, Boston, and the US.',
+    color: '#8b5cf6',
+    regionLabel: 'US Market'
+  },
+  'private-credit': {
+    title: 'Private Credit Ecosystem',
+    subtitle: 'Credit funds, direct lending, and debt specialists',
+    description: 'Explore the private credit landscape. Visualization of placement agents, credit funds, and direct lending activity in the private debt market.',
+    color: '#f59e0b',
+    regionLabel: 'Private Credit'
+  },
+  'real-estate': {
+    title: 'Real Estate PE Ecosystem',
+    subtitle: 'Property funds, REITs, and real assets specialists',
+    description: 'Explore the real estate private equity landscape. Visualization of placement agents and PE firms focused on property and real assets.',
+    color: '#10b981',
+    regionLabel: 'Real Estate PE'
+  }
+};
+
+const config = sectorConfig[sector] || sectorConfig['uk'];
+
+// Fetch companies based on sector
+let allCompanies: any[] = [];
+
+if (sector === 'uk') {
+  allCompanies = await sql`
+    SELECT
+      id, name, slug, company_type,
+      COALESCE(display_name, name) as display_name,
+      headquarters, global_rank,
+      payload->>'industry' as industry
+    FROM companies
+    WHERE status = 'published'
+      AND (headquarters ILIKE '%UK%' OR headquarters ILIKE '%London%' OR headquarters ILIKE '%Edinburgh%' OR headquarters ILIKE '%Manchester%' OR headquarters ILIKE '%United Kingdom%')
+    ORDER BY global_rank ASC NULLS LAST
+    LIMIT 80
+  `;
+} else if (sector === 'us') {
+  allCompanies = await sql`
+    SELECT
+      id, name, slug, company_type,
+      COALESCE(display_name, name) as display_name,
+      headquarters, global_rank,
+      payload->>'industry' as industry
+    FROM companies
+    WHERE status = 'published'
+      AND (headquarters ILIKE '%US%' OR headquarters ILIKE '%USA%' OR headquarters ILIKE '%New York%' OR headquarters ILIKE '%Boston%' OR headquarters ILIKE '%Chicago%' OR headquarters ILIKE '%United States%')
+    ORDER BY global_rank ASC NULLS LAST
+    LIMIT 80
+  `;
+} else if (sector === 'private-credit') {
+  allCompanies = await sql`
+    SELECT
+      id, name, slug, company_type,
+      COALESCE(display_name, name) as display_name,
+      headquarters, global_rank,
+      payload->>'industry' as industry
+    FROM companies
+    WHERE status = 'published'
+      AND (payload->>'industry' ILIKE '%credit%' OR payload->>'industry' ILIKE '%debt%' OR name ILIKE '%credit%')
+    ORDER BY global_rank ASC NULLS LAST
+    LIMIT 80
+  `;
+} else if (sector === 'real-estate') {
+  allCompanies = await sql`
+    SELECT
+      id, name, slug, company_type,
+      COALESCE(display_name, name) as display_name,
+      headquarters, global_rank,
+      payload->>'industry' as industry
+    FROM companies
+    WHERE status = 'published'
+      AND (payload->>'industry' ILIKE '%real estate%' OR payload->>'industry' ILIKE '%property%' OR name ILIKE '%real estate%')
+    ORDER BY global_rank ASC NULLS LAST
+    LIMIT 80
+  `;
+}
+
+// Fallback to all companies if no sector-specific results
+if (allCompanies.length < 10) {
+  allCompanies = await sql`
+    SELECT
+      id, name, slug, company_type,
+      COALESCE(display_name, name) as display_name,
+      headquarters, global_rank,
+      payload->>'industry' as industry
+    FROM companies
+    WHERE status = 'published'
+    ORDER BY global_rank ASC NULLS LAST
+    LIMIT 100
+  `;
+}
+
+// Fetch related articles
+const articles = await sql`
+  SELECT id, title, slug, article_angle
+  FROM articles
+  WHERE app = 'placement' AND status = 'published'
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 30
+`;
+
+const placementAgents = allCompanies.filter((c: any) => c.company_type === 'placement_agent');
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title={config.title}
+    description={config.description}
+  />
+
+  <script src="https://unpkg.com/3d-force-graph@1.79.0"></script>
+
+  <style is:inline define:vars={{ accentColor: config.color }}>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      color: #f1f5f9;
+    }
+
+    .graph-container {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #sector-graph {
+      width: 100%;
+      height: 100%;
+    }
+
+    .overlay {
+      position: fixed;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .overlay > * {
+      pointer-events: auto;
+    }
+
+    /* Header */
+    .header-overlay {
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(var(--accent-color), 0.2);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(var(--accent-color), 0.2));
+      border: 1px solid var(--accentColor);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      color: #a5b4fc;
+      margin-bottom: 12px;
+    }
+
+    .header-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #fff, var(--accentColor));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .header-subtitle {
+      font-size: 1rem;
+      color: #64748b;
+    }
+
+    /* Stats Panel */
+    .stats-panel {
+      bottom: 30px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 24px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accentColor);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+
+    /* Nav Panel */
+    .nav-panel {
+      top: 100px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #cbd5e1;
+      font-size: 12px;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn:hover {
+      border-color: var(--accentColor);
+      color: #fff;
+    }
+
+    .nav-btn.active {
+      border-color: var(--accentColor);
+      background: rgba(99, 102, 241, 0.2);
+      color: #fff;
+    }
+
+    .nav-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Controls */
+    .controls-panel {
+      bottom: 30px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #cbd5e1;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      border-color: var(--accentColor);
+      color: #fff;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accentColor);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      max-width: 280px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 200;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-subtitle {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .tooltip-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--accentColor);
+    }
+
+    /* Legend */
+    .legend-panel {
+      top: 100px;
+      left: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 180px;
+    }
+
+    .legend-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.5s;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: var(--accentColor);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .header-title { font-size: 1.5rem; }
+      .legend-panel { display: none; }
+      .nav-panel { top: auto; bottom: 100px; right: 10px; left: 10px; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <Navigation currentPage="visualizations" />
+
+  <div class="loading-overlay" id="loading">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="graph-container">
+    <div id="sector-graph"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="overlay header-overlay">
+    <div class="header-badge">
+      <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+      </svg>
+      {config.regionLabel} Ecosystem
+    </div>
+    <h1 class="header-title">{config.title}</h1>
+    <p class="header-subtitle">{config.subtitle}</p>
+  </div>
+
+  <!-- Legend -->
+  <div class="overlay legend-panel">
+    <div class="legend-title">Node Types</div>
+    <div class="legend-item">
+      <div class="legend-dot" style={`background: ${config.color};`}></div>
+      <span>Placement Agents</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #10b981;"></div>
+      <span>PE Firms</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #f59e0b;"></div>
+      <span>Deals</span>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="overlay nav-panel">
+    <a href="/ecosystem" class="nav-btn">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+      </svg>
+      Full Universe
+    </a>
+    <a href="/ecosystem/uk" class={`nav-btn ${sector === 'uk' ? 'active' : ''}`}>UK Market</a>
+    <a href="/ecosystem/us" class={`nav-btn ${sector === 'us' ? 'active' : ''}`}>US Market</a>
+    <a href="/ecosystem/private-credit" class={`nav-btn ${sector === 'private-credit' ? 'active' : ''}`}>Private Credit</a>
+    <a href="/ecosystem/real-estate" class={`nav-btn ${sector === 'real-estate' ? 'active' : ''}`}>Real Estate</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="overlay stats-panel">
+    <div class="stat-item">
+      <div class="stat-value" id="node-count">0</div>
+      <div class="stat-label">Entities</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="edge-count">0</div>
+      <div class="stat-label">Connections</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="agent-count">{placementAgents.length}</div>
+      <div class="stat-label">Agents</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="overlay controls-panel">
+    <button class="control-btn" id="reset-camera">Reset View</button>
+    <a href="/visualizations/geo-map" class="control-btn">Geo Map</a>
+    <a href="/visualizations/capital-flow" class="control-btn">Capital Flow</a>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-subtitle" id="tooltip-subtitle"></div>
+    <div class="tooltip-link">Click to explore</div>
+  </div>
+
+  <script define:vars={{ allCompanies, articles, config }}>
+    let initAttempts = 0;
+
+    const initGraph = () => {
+      initAttempts++;
+      const graphEl = document.getElementById('sector-graph');
+      const loadingEl = document.getElementById('loading');
+      const tooltipEl = document.getElementById('tooltip');
+
+      if (!graphEl || typeof ForceGraph3D === 'undefined') {
+        if (initAttempts < 50) {
+          setTimeout(initGraph, 100);
+        } else {
+          loadingEl.innerHTML = '<div style="text-align: center; color: #94a3b8;"><p>Loading...</p></div>';
+        }
+        return;
+      }
+
+      const nodes = [];
+      const links = [];
+      const accentColor = config.color;
+
+      // Add companies
+      allCompanies.forEach((company, i) => {
+        const angle = (i / allCompanies.length) * Math.PI * 2;
+        const radius = 40 + Math.random() * 25;
+        const height = (Math.random() - 0.5) * 30;
+
+        let color = company.company_type === 'placement_agent' ? accentColor : '#10b981';
+
+        nodes.push({
+          id: `company-${company.id}`,
+          label: company.display_name || company.name,
+          group: company.company_type,
+          type: 'company',
+          slug: company.slug,
+          headquarters: company.headquarters,
+          rank: company.global_rank,
+          val: company.global_rank ? 18 - Math.min(company.global_rank, 12) : 7,
+          color,
+          fx: Math.cos(angle) * radius,
+          fy: height,
+          fz: Math.sin(angle) * radius
+        });
+      });
+
+      // Add articles
+      articles.forEach((article, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 60 + Math.random() * 15;
+        const height = (Math.random() - 0.5) * 40;
+
+        nodes.push({
+          id: `article-${article.id}`,
+          label: article.title?.substring(0, 35) + '...',
+          group: 'deal',
+          type: 'article',
+          slug: article.slug,
+          val: 4,
+          color: '#f59e0b',
+          fx: Math.cos(angle) * radius,
+          fy: height,
+          fz: Math.sin(angle) * radius
+        });
+      });
+
+      // Create connections
+      nodes.forEach((node, i) => {
+        if (node.type === 'company') {
+          nodes.forEach((other, j) => {
+            if (i !== j && other.type === 'article') {
+              const dist = Math.sqrt(
+                Math.pow(node.fx - other.fx, 2) +
+                Math.pow(node.fy - other.fy, 2) +
+                Math.pow(node.fz - other.fz, 2)
+              );
+              if (dist < 35) {
+                links.push({ source: node.id, target: other.id, value: 0.3 });
+              }
+            }
+          });
+        }
+
+        if (node.type === 'company' && node.group === 'placement_agent') {
+          nodes.forEach((other, j) => {
+            if (i < j && other.type === 'company' && other.group === 'placement_agent') {
+              const dist = Math.sqrt(
+                Math.pow(node.fx - other.fx, 2) +
+                Math.pow(node.fz - other.fz, 2)
+              );
+              if (dist < 25) {
+                links.push({ source: node.id, target: other.id, value: 0.5 });
+              }
+            }
+          });
+        }
+      });
+
+      // Update stats
+      document.getElementById('node-count').textContent = nodes.length;
+      document.getElementById('edge-count').textContent = links.length;
+
+      // Create graph
+      const Graph = ForceGraph3D()(graphEl)
+        .graphData({ nodes, links })
+        .backgroundColor('#000')
+        .nodeColor(node => node.color)
+        .nodeVal(node => node.val)
+        .nodeOpacity(0.9)
+        .nodeRelSize(4)
+        .linkColor(() => `${accentColor}30`)
+        .linkWidth(0.4)
+        .linkDirectionalParticles(link => link.value > 0.4 ? 1 : 0)
+        .linkDirectionalParticleSpeed(0.002)
+        .enableNodeDrag(false)
+        .onNodeHover(node => {
+          graphEl.style.cursor = node ? 'pointer' : 'default';
+          if (node) {
+            const screen = Graph.graph2ScreenCoords(node.x, node.y, node.z);
+            tooltipEl.style.left = (screen.x + 15) + 'px';
+            tooltipEl.style.top = (screen.y - 15) + 'px';
+            document.getElementById('tooltip-title').textContent = node.label;
+            document.getElementById('tooltip-subtitle').textContent =
+              node.type === 'company' ? (node.headquarters || node.group) : 'Deal/News';
+            tooltipEl.classList.add('visible');
+          } else {
+            tooltipEl.classList.remove('visible');
+          }
+        })
+        .onNodeClick(node => {
+          if (node?.slug) {
+            const url = node.type === 'company'
+              ? `/private-equity-placement-agents-list/${node.slug}`
+              : `/${node.slug}`;
+            window.location.href = url;
+          }
+        });
+
+      Graph.cameraPosition({ x: 120, y: 60, z: 120 }, { x: 0, y: 0, z: 0 }, 2000);
+
+      let angle = 0;
+      let rotating = true;
+      const animate = () => {
+        if (rotating) {
+          angle += 0.0015;
+          Graph.cameraPosition({
+            x: Math.sin(angle) * 120,
+            y: 50,
+            z: Math.cos(angle) * 120
+          });
+        }
+        requestAnimationFrame(animate);
+      };
+      setTimeout(animate, 2500);
+
+      graphEl.addEventListener('mousedown', () => { rotating = false; });
+      graphEl.addEventListener('wheel', () => { rotating = false; });
+
+      document.getElementById('reset-camera')?.addEventListener('click', () => {
+        rotating = true;
+        angle = 0;
+        Graph.cameraPosition({ x: 120, y: 60, z: 120 }, { x: 0, y: 0, z: 0 }, 1500);
+      });
+
+      setTimeout(() => {
+        loadingEl.classList.add('hidden');
+      }, 1500);
+    };
+
+    if (document.readyState === 'complete') {
+      initGraph();
+    } else {
+      window.addEventListener('load', initGraph);
+    }
+  </script>
+</body>
+</html>

@@ -146,9 +146,9 @@ const regionStats = {
     description="Visualize global private equity deal flows. Interactive 3D map showing placement agent locations, capital movement, and regional market activity."
   />
 
-  <!-- Deck.gl and dependencies -->
-  <script src="https://unpkg.com/deck.gl@8.9/dist.min.js" defer></script>
-  <script src="https://unpkg.com/maplibre-gl@3/dist/maplibre-gl.js" defer></script>
+  <!-- Deck.gl and dependencies - load synchronously for reliability -->
+  <script src="https://unpkg.com/maplibre-gl@3/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/deck.gl@8.9/dist.min.js"></script>
   <link href="https://unpkg.com/maplibre-gl@3/dist/maplibre-gl.css" rel="stylesheet" />
 
   <style is:inline>
@@ -568,9 +568,22 @@ const regionStats = {
   </div>
 
   <script define:vars={{ agentPoints, flowArcs, cityCoords }}>
+    let initAttempts = 0;
+    const maxAttempts = 50; // 5 seconds max
+
     const initMap = () => {
+      initAttempts++;
+
       if (typeof deck === 'undefined') {
-        setTimeout(initMap, 100);
+        if (initAttempts < maxAttempts) {
+          setTimeout(initMap, 100);
+        } else {
+          // Show error after timeout
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.innerHTML = '<div style="text-align: center; color: #94a3b8;"><p>Loading visualization...</p><p style="font-size: 12px; margin-top: 8px;">If this persists, please refresh the page</p></div>';
+          }
+        }
         return;
       }
 
