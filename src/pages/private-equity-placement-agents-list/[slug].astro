@@ -2,6 +2,7 @@
 import { sql } from '../../lib/db';
 import SEO from '../../components/SEO.astro';
 import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+import ZepGraph3D from '../../components/ZepGraph3D.astro';
 
 // Enable hybrid rendering for this page
 export const prerender = false;
@@ -196,8 +197,11 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
 
-  <!-- Load vis-network library for deal graphs -->
+  <!-- Load vis-network library for 2D deal graphs -->
   <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <!-- Load 3d-force-graph for 3D WebGL visualization -->
+  <script src="https://unpkg.com/3d-force-graph" defer></script>
 
   <style is:inline>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -864,7 +868,18 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
         Connections and relationships discovered through our knowledge graph showing how {company.display_name} relates to other entities in our coverage.
       </p>
 
-      <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+      <!-- 3D Interactive Knowledge Graph -->
+      <ZepGraph3D companyId={company.slug} companyName={company.name} height="500px" />
+
+      <!-- 2D Graph fallback (shown below for accessibility) -->
+      <details style="margin-top: 1.5rem;">
+        <summary style="cursor: pointer; color: #a5b4fc; font-size: 0.875rem; padding: 0.5rem 0;">
+          📊 View 2D Graph (better for accessibility)
+        </summary>
+        <div style="margin-top: 1rem;">
+          <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+        </div>
+      </details>
     </div>
 
     <!-- Our Coverage Section -->

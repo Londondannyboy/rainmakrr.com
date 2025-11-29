@@ -1,0 +1,230 @@
+---
+/**
+ * Zep 3D Force Graph Visualization Component
+ *
+ * Renders an interactive 3D WebGL force-directed graph showing company relationships
+ * using 3d-force-graph library (Three.js based)
+ */
+
+interface Props {
+  companyId: string;
+  companyName: string;
+  height?: string;
+}
+
+const { companyId, companyName, height = '500px' } = Astro.props;
+const uniqueId = `graph3d-${companyId}-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<div class="graph3d-container" style={`width: 100%; height: ${height};`}>
+  <div id={uniqueId} style="width: 100%; height: 100%; background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1a 100%); border-radius: 0.75rem; position: relative; overflow: hidden;">
+    <!-- Loading state -->
+    <div id={`${uniqueId}-loading`} style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10;">
+      <div style="text-align: center;">
+        <div style="width: 3rem; height: 3rem; border: 4px solid rgba(99, 102, 241, 0.3); border-top-color: #6366f1; border-radius: 9999px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+        <p style="color: #a5b4fc; font-size: 0.875rem;">Loading 3D graph...</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id={`${uniqueId}-error`} style="position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+      <svg style="width: 3rem; height: 3rem; color: #6366f1; margin-bottom: 1rem; opacity: 0.5;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9c0-1.657-4.03-3-9-3s-9 1.343-9 3m18 0a9 9 0 01-9 9m-9-9a9 9 0 019-9"></path>
+      </svg>
+      <p style="color: #a5b4fc; font-size: 0.875rem;">3D visualization coming soon</p>
+    </div>
+
+    <!-- Graph container -->
+    <div id={`${uniqueId}-graph`} style="width: 100%; height: 100%;"></div>
+
+    <!-- Controls hint -->
+    <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 8px; font-size: 11px; color: #94a3b8; z-index: 5;">
+      <span style="margin-right: 12px;">🖱️ Drag to rotate</span>
+      <span style="margin-right: 12px;">🔍 Scroll to zoom</span>
+      <span>👆 Click node to explore</span>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ companyId, companyName, uniqueId }}>
+  // Initialize 3D graph when container is visible
+  const initGraph3D = async () => {
+    const loadingEl = document.getElementById(`${uniqueId}-loading`);
+    const errorEl = document.getElementById(`${uniqueId}-error`);
+    const graphEl = document.getElementById(`${uniqueId}-graph`);
+    const containerEl = document.getElementById(uniqueId);
+
+    // Wait for ForceGraph3D to load
+    if (typeof ForceGraph3D === 'undefined') {
+      const loaded = await new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        const check = setInterval(() => {
+          attempts++;
+          if (typeof ForceGraph3D !== 'undefined') {
+            clearInterval(check);
+            resolve(true);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(check);
+            resolve(false);
+          }
+        }, 100);
+      });
+
+      if (!loaded) {
+        console.warn('3d-force-graph library failed to load');
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'flex';
+        return;
+      }
+    }
+
+    try {
+      // Fetch graph data
+      const response = await fetch(`/api/zep-graph/${companyId}`);
+      if (!response.ok) throw new Error('Failed to fetch graph data');
+
+      const graphData = await response.json();
+
+      if (!graphData.nodes || graphData.nodes.length === 0) {
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'flex';
+        return;
+      }
+
+      // Transform data for 3d-force-graph
+      const nodes = graphData.nodes.map(node => ({
+        id: node.id,
+        name: node.label,
+        group: node.group || 'default',
+        val: node.label === companyName ? 30 : 15,
+        url: node.url,
+        hasArticle: node.hasArticle || node.url || node.group === 'company'
+      }));
+
+      const links = graphData.edges.map(edge => ({
+        source: edge.from,
+        target: edge.to,
+        label: edge.label || ''
+      }));
+
+      // Hide loading
+      loadingEl.style.display = 'none';
+
+      // Color scheme for node groups
+      const groupColors = {
+        company: '#3b82f6',   // Blue
+        deal: '#a855f7',      // Purple
+        person: '#10b981',    // Green
+        article: '#f59e0b',   // Amber
+        entity: '#64748b',    // Gray
+        default: '#6366f1'    // Indigo
+      };
+
+      // Create 3D force graph
+      const Graph = ForceGraph3D()
+        (graphEl)
+        .graphData({ nodes, links })
+        .backgroundColor('rgba(0,0,0,0)')
+        .nodeLabel(node => `<div style="background: rgba(15,23,42,0.95); padding: 8px 12px; border-radius: 6px; color: #e2e8f0; font-size: 12px; border: 1px solid rgba(99,102,241,0.3);">
+          <strong>${node.name}</strong>
+          ${node.hasArticle ? '<br><span style="color: #a5b4fc; font-size: 10px;">Click to explore</span>' : ''}
+        </div>`)
+        .nodeColor(node => groupColors[node.group] || groupColors.default)
+        .nodeVal(node => node.val)
+        .nodeOpacity(0.9)
+        .linkColor(() => 'rgba(99, 102, 241, 0.4)')
+        .linkWidth(1.5)
+        .linkOpacity(0.6)
+        .linkDirectionalArrowLength(4)
+        .linkDirectionalArrowColor(() => 'rgba(99, 102, 241, 0.6)')
+        .linkLabel(link => link.label)
+        .enableNodeDrag(true)
+        .enableNavigationControls(true)
+        .showNavInfo(false)
+        .width(containerEl.offsetWidth)
+        .height(containerEl.offsetHeight);
+
+      // Add particle effects on links
+      Graph.linkDirectionalParticles(2)
+        .linkDirectionalParticleSpeed(0.005)
+        .linkDirectionalParticleColor(() => 'rgba(165, 180, 252, 0.8)')
+        .linkDirectionalParticleWidth(2);
+
+      // Click handler - navigate to company page
+      Graph.onNodeClick(node => {
+        if (node.hasArticle || node.url) {
+          if (node.url) {
+            window.location.href = node.url;
+          } else if (node.group === 'company') {
+            const slug = node.name.toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            window.location.href = `/private-equity-placement-agents-list/${slug}`;
+          }
+        }
+      });
+
+      // Hover effects
+      Graph.onNodeHover(node => {
+        graphEl.style.cursor = node && (node.hasArticle || node.url) ? 'pointer' : 'grab';
+      });
+
+      // Auto-rotate slowly
+      let angle = 0;
+      const rotateGraph = () => {
+        angle += 0.002;
+        Graph.cameraPosition({
+          x: 200 * Math.sin(angle),
+          z: 200 * Math.cos(angle)
+        });
+        requestAnimationFrame(rotateGraph);
+      };
+      // Start rotation after stabilization
+      setTimeout(() => {
+        requestAnimationFrame(rotateGraph);
+      }, 3000);
+
+      // Handle resize
+      const resizeObserver = new ResizeObserver(() => {
+        Graph.width(containerEl.offsetWidth);
+        Graph.height(containerEl.offsetHeight);
+      });
+      resizeObserver.observe(containerEl);
+
+    } catch (error) {
+      console.error('Error loading 3D graph:', error);
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'flex';
+    }
+  };
+
+  // Lazy load with IntersectionObserver
+  const container = document.getElementById(`${uniqueId}-loading`);
+  if (container) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          initGraph3D();
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '100px' });
+    observer.observe(container);
+  }
+</script>
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .graph3d-container {
+    position: relative;
+  }
+
+  /* Override three.js canvas styling */
+  .graph3d-container :global(canvas) {
+    border-radius: 0.75rem;
+  }
+</style>
