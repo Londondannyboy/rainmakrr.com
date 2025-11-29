@@ -1,5 +1,13 @@
 ---
-// Shared Navigation component with hamburger menu for mobile
+/**
+ * Navigation Component - Consistent Light Theme
+ * Shared across all pages
+ */
+interface Props {
+  currentPage?: string;
+}
+
+const { currentPage } = Astro.props;
 ---
 
 <nav>
@@ -12,53 +20,38 @@
   <ul class="nav-links" id="nav-menu">
     <li><a href="/private-equity-placement-agent-news">News</a></li>
     <li class="nav-item">
-      <a href="/deal-visualizations" style="display: flex; align-items: center; gap: 0.375rem;">
+      <a href="/ecosystem" style="display: flex; align-items: center; gap: 0.375rem;">
         <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
         </svg>
         Visualizations
-        <span style="background: linear-gradient(135deg, #f59e0b, #ef4444); font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Beta</span>
+        <span class="beta-badge">Beta</span>
       </a>
       <div class="dropdown">
+        <a href="/ecosystem">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #4f46e5;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Agent Universe
+          </span>
+        </a>
         <a href="/visualizations/capital-flow">
-          <span style="display: flex; align-items: center; gap: 8px;">
-            <svg style="width: 14px; height: 14px; color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #ef4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             Capital Flow
-            <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 600;">NEW</span>
-          </span>
-        </a>
-        <a href="/visualizations/geo-map">
-          <span style="display: flex; align-items: center; gap: 8px;">
-            <svg style="width: 14px; height: 14px; color: #3b82f6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
-            </svg>
-            Global Deal Map
-            <span style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 600;">NEW</span>
           </span>
         </a>
         <a href="/deal-visualizations">
-          <span style="display: flex; align-items: center; gap: 8px;">
-            <svg style="width: 14px; height: 14px; color: #6366f1;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #f59e0b;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
-            Deal Timeline 3D
+            Deal Timeline
           </span>
         </a>
-        <a href="/ecosystem">
-          <span style="display: flex; align-items: center; gap: 8px;">
-            <svg style="width: 14px; height: 14px; color: #10b981;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
-            </svg>
-            Placement Universe
-          </span>
-        </a>
-        <div class="dropdown-divider"></div>
-        <a href="/ecosystem/uk">UK Market</a>
-        <a href="/ecosystem/us">US Market</a>
-        <a href="/ecosystem/private-credit">Private Credit</a>
-        <a href="/ecosystem/real-estate">Real Estate PE</a>
       </div>
     </li>
     <li class="nav-item">
@@ -92,40 +85,54 @@
     left: 0;
     right: 0;
     z-index: 1000;
-    padding: 24px 60px;
+    padding: 16px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
   .logo {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 20px;
-    font-weight: 700;
-    color: #fff;
+    font-weight: 800;
+    color: #1a1a1a;
     text-decoration: none;
+    letter-spacing: -0.02em;
   }
 
   .nav-links {
     display: flex;
-    gap: 40px;
+    gap: 32px;
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
   .nav-links a {
-    color: #fff;
+    color: #374151;
     text-decoration: none;
     font-weight: 600;
     font-size: 14px;
-    transition: opacity 0.3s;
+    transition: color 0.2s;
   }
 
-  .nav-links a:hover { opacity: 0.6; }
+  .nav-links a:hover {
+    color: #4f46e5;
+  }
+
+  .beta-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+  }
 
   .nav-item {
     position: relative;
@@ -136,36 +143,46 @@
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
-    padding: 12px 0;
+    padding: 8px 0;
     min-width: 220px;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     margin-top: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 
   .dropdown a {
     display: block;
-    padding: 10px 20px;
-    color: rgba(255, 255, 255, 0.8);
+    padding: 10px 16px;
+    color: #4b5563;
     font-size: 13px;
-    transition: all 0.2s;
+    font-weight: 500;
+    transition: all 0.15s;
   }
 
   .dropdown a:hover {
-    background: rgba(102, 126, 234, 0.15);
-    color: #fff;
-    opacity: 1;
+    background: #f5f3ff;
+    color: #4f46e5;
+  }
+
+  .dropdown-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dropdown-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .dropdown-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #e5e7eb;
     margin: 8px 0;
   }
 
@@ -175,7 +192,7 @@
     margin-top: 8px;
   }
 
-  /* Hamburger menu - hidden by default on desktop */
+  /* Hamburger menu */
   .hamburger {
     display: none;
     flex-direction: column;
@@ -190,7 +207,7 @@
   .hamburger span {
     width: 24px;
     height: 2px;
-    background: #fff;
+    background: #374151;
     transition: all 0.3s;
   }
 
@@ -220,15 +237,14 @@
       position: absolute;
       top: 100%;
       right: 16px;
-      width: 240px;
-      background: rgba(0, 0, 0, 0.98);
-      backdrop-filter: blur(20px);
+      width: 260px;
+      background: #fff;
       flex-direction: column;
       padding: 8px 0;
       gap: 0;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
       opacity: 0;
       visibility: hidden;
       transform: translateY(-10px);
@@ -244,7 +260,7 @@
     .nav-links > li > a {
       display: block;
       padding: 14px 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid #f3f4f6;
       font-size: 15px;
     }
 
@@ -262,7 +278,7 @@
       transition: max-height 0.3s ease, visibility 0.3s;
       margin-top: 0;
       padding: 0;
-      background: rgba(255, 255, 255, 0.03);
+      background: #f9fafb;
       border: none;
       border-radius: 0;
       box-shadow: none;
@@ -281,17 +297,16 @@
     .dropdown a {
       padding: 10px 24px;
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.7);
+      color: #6b7280;
     }
 
     .dropdown a:hover {
-      color: #fff;
+      color: #4f46e5;
     }
   }
 </style>
 
 <script>
-  // Hamburger Menu Toggle
   document.addEventListener('DOMContentLoaded', function() {
     const hamburger = document.getElementById('hamburger-menu');
     const navMenu = document.getElementById('nav-menu');
@@ -303,11 +318,9 @@
         navMenu.classList.toggle('active');
       });
 
-      // Close menu when link is clicked
       const navLinks = navMenu.querySelectorAll('a');
       navLinks.forEach(link => {
         link.addEventListener('click', function() {
-          // Don't close if clicking on Agents dropdown toggle
           if (!this.parentElement?.classList.contains('nav-item')) {
             hamburger.classList.remove('active');
             navMenu.classList.remove('active');
@@ -315,7 +328,6 @@
         });
       });
 
-      // Toggle dropdown on mobile
       navItems?.forEach(item => {
         const link = item.querySelector('a');
         link?.addEventListener('click', function(e) {

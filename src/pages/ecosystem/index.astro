@@ -1,9 +1,9 @@
 ---
 /**
- * PE Ecosystem Universe
+ * Placement Universe - Light Theme
  *
- * Full 3D visualization of the private equity ecosystem
- * Shows all companies, deals, relationships across sectors
+ * Interactive network visualization of placement agents
+ * Modern white/light design consistent with homepage
  */
 import { sql } from '../../lib/db';
 import SEO from '../../components/SEO.astro';
@@ -42,6 +42,22 @@ const sectors = {
   pe_firms: companies.filter((c: any) => c.company_type === 'pe_firm'),
   other: companies.filter((c: any) => !['placement_agent', 'pe_firm'].includes(c.company_type))
 };
+
+// Regional breakdown
+const regionCounts = {
+  'North America': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('us') || hq.includes('new york') || hq.includes('boston') || hq.includes('chicago') || hq.includes('canada');
+  }).length,
+  'Europe': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('uk') || hq.includes('london') || hq.includes('paris') || hq.includes('frankfurt') || hq.includes('zurich');
+  }).length,
+  'Asia Pacific': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('hong kong') || hq.includes('singapore') || hq.includes('tokyo') || hq.includes('sydney');
+  }).length
+};
 ---
 
 <!DOCTYPE html>
@@ -51,63 +67,47 @@ const sectors = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <SEO
-    title="Placement Universe | Interactive 3D Placement Agent Network"
-    description="Explore the placement agent universe in interactive 3D. Visualize placement agents, PE firms, deals, and relationships across UK, US, and global markets."
+    title="Placement Universe | Interactive Agent Network"
+    description="Explore the placement agent network. Interactive visualization showing placement agents, PE firms, deals, and relationships."
   />
 
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <script src="https://unpkg.com/3d-force-graph@1.79.0" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
 
-  <style is:inline>
+  <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #000;
-      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.6;
     }
 
-    .universe-container {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-    }
-
-    #universe-graph {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Overlay UI */
-    .overlay {
-      position: fixed;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    .overlay > * {
-      pointer-events: auto;
+    .page-container {
+      min-height: 100vh;
+      padding-top: 80px;
     }
 
     /* Header */
-    .header-overlay {
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%);
+    .header-section {
+      padding: 48px 20px 32px;
       text-align: center;
+      border-bottom: 1px solid #e5e7eb;
     }
 
     .header-badge {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(99, 102, 241, 0.2);
-      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: #e0e7ff;
+      border: 1px solid #c7d2fe;
       padding: 8px 16px;
       border-radius: 100px;
       font-size: 12px;
-      color: #a5b4fc;
-      margin-bottom: 12px;
+      color: #4f46e5;
+      margin-bottom: 16px;
     }
 
     .header-badge .beta {
@@ -116,115 +116,32 @@ const sectors = {
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .header-title {
-      font-size: 2.5rem;
-      font-weight: 800;
-      background: linear-gradient(to right, #fff, #a5b4fc, #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-
-    .header-subtitle {
-      font-size: 1rem;
-      color: #64748b;
-    }
-
-    /* Legend Panel */
-    .legend-panel {
-      top: 100px;
-      left: 20px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-      border-radius: 12px;
-      padding: 16px;
-      max-width: 200px;
-    }
-
-    .legend-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #94a3b8;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 8px 0;
-      font-size: 13px;
-      color: #cbd5e1;
-    }
-
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .legend-divider {
-      height: 1px;
-      background: rgba(51, 65, 85, 0.5);
-      margin: 12px 0;
-    }
-
-    /* Sector Buttons */
-    .sector-panel {
-      top: 100px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .sector-btn {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #cbd5e1;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: left;
-    }
-
-    .sector-btn:hover {
-      border-color: rgba(99, 102, 241, 0.5);
-      background: rgba(99, 102, 241, 0.1);
-    }
-
-    .sector-btn.active {
-      border-color: #6366f1;
-      background: rgba(99, 102, 241, 0.2);
       color: #fff;
     }
 
-    .sector-btn small {
-      display: block;
-      font-size: 11px;
-      color: #64748b;
-      margin-top: 2px;
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
     }
 
-    /* Stats Panel */
-    .stats-panel {
-      bottom: 30px;
-      left: 20px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-      border-radius: 12px;
-      padding: 16px;
+    .subtitle {
+      color: #6b7280;
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
       display: flex;
-      gap: 24px;
+      justify-content: center;
+      gap: 48px;
+      padding: 24px 20px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
     }
 
     .stat-item {
@@ -232,37 +149,157 @@ const sectors = {
     }
 
     .stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #fff;
-    }
-
-    .stat-value.highlight {
-      color: #6366f1;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #4f46e5;
     }
 
     .stat-label {
-      font-size: 11px;
-      color: #64748b;
+      font-size: 12px;
+      color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    /* Main Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: calc(100vh - 300px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      padding: 24px;
+      border-right: 1px solid #e5e7eb;
+      background: #fafafa;
+    }
+
+    .sidebar-section {
+      margin-bottom: 32px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .filter-group {
+      margin-bottom: 20px;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4b5563;
+      margin-bottom: 8px;
+    }
+
+    .filter-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      margin: 4px 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #374151;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      border-color: #4f46e5;
+      background: #f5f3ff;
+    }
+
+    .filter-btn.active {
+      border-color: #4f46e5;
+      background: #4f46e5;
+      color: #fff;
+    }
+
+    .filter-btn small {
+      display: block;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .filter-btn.active small {
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Graph Container */
+    .graph-section {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .graph-container {
+      flex: 1;
+      min-height: 600px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #network-graph {
+      width: 100%;
+      height: 100%;
+      min-height: 600px;
     }
 
     /* Controls */
-    .controls-panel {
-      bottom: 30px;
-      right: 20px;
+    .graph-controls {
+      display: flex;
+      gap: 12px;
+      padding: 16px 0;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group {
       display: flex;
       gap: 8px;
     }
 
     .control-btn {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.5);
+      background: #fff;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
-      padding: 10px 14px;
-      color: #cbd5e1;
-      font-size: 12px;
+      padding: 10px 16px;
+      color: #374151;
+      font-size: 13px;
+      font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -271,8 +308,8 @@ const sectors = {
     }
 
     .control-btn:hover {
-      border-color: rgba(99, 102, 241, 0.5);
-      color: #fff;
+      border-color: #4f46e5;
+      color: #4f46e5;
     }
 
     .control-btn svg {
@@ -280,34 +317,51 @@ const sectors = {
       height: 16px;
     }
 
+    .export-btn {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: #6b7280;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .export-btn:hover {
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+
     /* Tooltip */
-    .tooltip {
+    .graph-tooltip {
       position: fixed;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(99, 102, 241, 0.5);
+      background: #fff;
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
       padding: 12px 16px;
       font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       max-width: 280px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
-      z-index: 200;
+      z-index: 1000;
     }
 
-    .tooltip.visible {
+    .graph-tooltip.visible {
       opacity: 1;
     }
 
     .tooltip-title {
-      font-weight: 600;
-      color: #fff;
+      font-weight: 700;
+      color: #1a1a1a;
       margin-bottom: 4px;
     }
 
     .tooltip-subtitle {
       font-size: 11px;
-      color: #64748b;
+      color: #6b7280;
     }
 
     .tooltip-link {
@@ -316,31 +370,29 @@ const sectors = {
       gap: 4px;
       margin-top: 8px;
       font-size: 12px;
-      color: #6366f1;
+      color: #4f46e5;
     }
 
     /* Loading */
-    .loading-overlay {
-      position: fixed;
+    .loading {
+      position: absolute;
       inset: 0;
-      background: #000;
+      background: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
-      transition: opacity 0.5s;
+      z-index: 100;
     }
 
-    .loading-overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
+    .loading.hidden {
+      display: none;
     }
 
-    .loading-spinner {
-      width: 60px;
-      height: 60px;
-      border: 3px solid rgba(99, 102, 241, 0.2);
-      border-top-color: #6366f1;
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #4f46e5;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -349,145 +401,183 @@ const sectors = {
       to { transform: rotate(360deg); }
     }
 
+    /* Provenance */
+    .provenance {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: #9ca3af;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .provenance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
     /* Mobile */
-    @media (max-width: 768px) {
-      .header-title { font-size: 1.75rem; }
-      .legend-panel { display: none; }
-      .sector-panel { top: auto; bottom: 100px; right: 10px; left: 10px; flex-direction: row; flex-wrap: wrap; justify-content: center; }
-      .sector-btn { padding: 8px 12px; font-size: 12px; }
-      .stats-panel { left: 10px; right: 10px; justify-content: center; }
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        display: none;
+      }
+      h1 { font-size: 1.75rem; }
+      .stats-bar { gap: 24px; flex-wrap: wrap; }
     }
   </style>
 </head>
 <body>
-  <Navigation currentPage="visualizations" />
+  <Navigation />
 
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loading">
-    <div class="loading-spinner"></div>
+  <div class="page-container">
+    <!-- Header -->
+    <div class="header-section">
+      <div class="header-badge">
+        <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Network Visualization
+        <span class="beta">BETA</span>
+      </div>
+      <h1>Placement Agent Universe</h1>
+      <p class="subtitle">Explore the interconnected network of placement agents, PE firms, and market activity</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">{sectors.placement_agents?.length || 0}</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{companies.length}</div>
+        <div class="stat-label">Entities</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{articles.length}</div>
+        <div class="stat-label">News Items</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="connection-count">--</div>
+        <div class="stat-label">Connections</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Legend</div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #4f46e5;"></div>
+            <span>Placement Agents</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #10b981;"></div>
+            <span>PE Firms</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #f59e0b;"></div>
+            <span>Deals/Events</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #ef4444;"></div>
+            <span>News</span>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Filter by Region</div>
+          <div class="filter-group">
+            <button class="filter-btn active" data-region="all">
+              All Regions
+              <small>{companies.length} entities</small>
+            </button>
+            <button class="filter-btn" data-region="north-america">
+              North America
+              <small>{regionCounts['North America']} entities</small>
+            </button>
+            <button class="filter-btn" data-region="europe">
+              Europe & UK
+              <small>{regionCounts['Europe']} entities</small>
+            </button>
+            <button class="filter-btn" data-region="asia">
+              Asia Pacific
+              <small>{regionCounts['Asia Pacific']} entities</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Quick Links</div>
+          <a href="/private-equity-placement-agents-list" class="filter-btn">
+            Agent Directory
+            <small>Full listing</small>
+          </a>
+          <a href="/visualizations/capital-flow" class="filter-btn">
+            Capital Flow
+            <small>Sankey diagram</small>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Graph -->
+      <div class="graph-section">
+        <div class="graph-controls">
+          <div class="control-group">
+            <button class="control-btn" id="reset-view">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Reset View
+            </button>
+            <button class="control-btn" id="toggle-physics">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Toggle Physics
+            </button>
+          </div>
+          <div class="control-group">
+            <button class="export-btn" id="export-png">Export PNG</button>
+            <button class="export-btn" id="export-csv">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="graph-container">
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+          </div>
+          <div id="network-graph"></div>
+        </div>
+
+        <div class="provenance">
+          Data from Placement Quest Directory
+          <span class="provenance-badge">
+            <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Updated {new Date().toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- 3D Universe -->
-  <div class="universe-container">
-    <div id="universe-graph"></div>
-  </div>
-
-  <!-- Header -->
-  <div class="overlay header-overlay">
-    <div class="header-badge">
-      <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
-      </svg>
-      Placement Universe
-      <span class="beta">Beta</span>
-    </div>
-    <h1 class="header-title">Placement Agent Universe</h1>
-    <p class="header-subtitle">Explore the interconnected world of placement agents, PE firms, and deals</p>
-  </div>
-
-  <!-- Legend -->
-  <div class="overlay legend-panel">
-    <div class="legend-title">Node Types</div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #6366f1;"></div>
-      <span>Placement Agents</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #10b981;"></div>
-      <span>PE Firms</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #f59e0b;"></div>
-      <span>Deals/Events</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #ef4444;"></div>
-      <span>News</span>
-    </div>
-
-    <div class="legend-divider"></div>
-
-    <div class="legend-title">Regions</div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #3b82f6;"></div>
-      <span>UK Market</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #8b5cf6;"></div>
-      <span>US Market</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #06b6d4;"></div>
-      <span>Europe</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-dot" style="background: #ec4899;"></div>
-      <span>Asia Pacific</span>
-    </div>
-  </div>
-
-  <!-- Sector Filter -->
-  <div class="overlay sector-panel" id="sector-panel">
-    <button class="sector-btn active" data-sector="all">
-      All Sectors
-      <small>Full ecosystem view</small>
-    </button>
-    <a href="/ecosystem/uk" class="sector-btn">
-      UK Market
-      <small>British PE landscape</small>
-    </a>
-    <a href="/ecosystem/us" class="sector-btn">
-      US Market
-      <small>American PE landscape</small>
-    </a>
-    <a href="/ecosystem/private-credit" class="sector-btn">
-      Private Credit
-      <small>Debt & lending</small>
-    </a>
-    <a href="/ecosystem/real-estate" class="sector-btn">
-      Real Estate PE
-      <small>Property investments</small>
-    </a>
-  </div>
-
-  <!-- Stats -->
-  <div class="overlay stats-panel" id="stats-panel">
-    <div class="stat-item">
-      <div class="stat-value highlight" id="node-count">0</div>
-      <div class="stat-label">Entities</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" id="edge-count">0</div>
-      <div class="stat-label">Connections</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value" id="agent-count">0</div>
-      <div class="stat-label">Agents</div>
-    </div>
-  </div>
-
-  <!-- Controls -->
-  <div class="overlay controls-panel">
-    <button class="control-btn" id="reset-camera">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-      </svg>
-      Reset View
-    </button>
-    <a href="/deal-visualizations" class="control-btn">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-      </svg>
-      Deal View
-    </a>
-  </div>
-
-  <!-- Tooltip -->
-  <div class="tooltip" id="tooltip">
+  <div class="graph-tooltip" id="tooltip">
     <div class="tooltip-title" id="tooltip-title"></div>
     <div class="tooltip-subtitle" id="tooltip-subtitle"></div>
-    <div class="tooltip-link" id="tooltip-link">
-      Click to explore
+    <div class="tooltip-link">
+      Click to view profile
       <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
       </svg>
@@ -495,219 +585,227 @@ const sectors = {
   </div>
 
   <script define:vars={{ companies, articles, sectors }}>
-    const initUniverse = () => {
-      const graphEl = document.getElementById('universe-graph');
-      const loadingEl = document.getElementById('loading');
-      const tooltipEl = document.getElementById('tooltip');
-      const nodeCountEl = document.getElementById('node-count');
-      const edgeCountEl = document.getElementById('edge-count');
-      const agentCountEl = document.getElementById('agent-count');
-
-      if (!graphEl || typeof ForceGraph3D === 'undefined') {
-        setTimeout(initUniverse, 100);
+    const initNetwork = () => {
+      if (typeof vis === 'undefined') {
+        setTimeout(initNetwork, 100);
         return;
       }
 
-      // Build universe data
+      const container = document.getElementById('network-graph');
+      const loading = document.getElementById('loading');
+      const tooltip = document.getElementById('tooltip');
+      const connectionCount = document.getElementById('connection-count');
+
+      // Build nodes
       const nodes = [];
-      const links = [];
+      const edges = [];
 
-      // Region colors
-      const regionColors = {
-        'UK': '#3b82f6',
-        'United Kingdom': '#3b82f6',
-        'US': '#8b5cf6',
-        'USA': '#8b5cf6',
-        'United States': '#8b5cf6',
-        'Europe': '#06b6d4',
-        'Asia': '#ec4899',
-        'Asia Pacific': '#ec4899'
-      };
-
-      // Type colors
-      const typeColors = {
-        'placement_agent': '#6366f1',
-        'pe_firm': '#10b981',
-        'deal': '#f59e0b',
-        'news': '#ef4444'
+      // Colors
+      const colors = {
+        placement_agent: '#4f46e5',
+        pe_firm: '#10b981',
+        deal: '#f59e0b',
+        news: '#ef4444'
       };
 
       // Add companies as nodes
       companies.forEach((company, i) => {
-        const angle = (i / companies.length) * Math.PI * 2;
-        const radius = 50 + Math.random() * 30;
-        const height = (Math.random() - 0.5) * 40;
-
-        // Determine color by type and region
-        let color = typeColors[company.company_type] || '#64748b';
-        const hq = company.headquarters || '';
-        if (hq.includes('UK') || hq.includes('London')) color = regionColors['UK'];
-        else if (hq.includes('US') || hq.includes('New York')) color = regionColors['US'];
+        const isAgent = company.company_type === 'placement_agent';
+        const isPE = company.company_type === 'pe_firm';
 
         nodes.push({
           id: `company-${company.id}`,
-          label: company.display_name || company.name,
+          label: company.display_name?.substring(0, 20) || company.name.substring(0, 20),
           group: company.company_type,
-          type: 'company',
           slug: company.slug,
           headquarters: company.headquarters,
           rank: company.global_rank,
-          val: company.global_rank ? 20 - Math.min(company.global_rank, 15) : 8,
-          color,
-          fx: Math.cos(angle) * radius,
-          fy: height,
-          fz: Math.sin(angle) * radius
+          color: {
+            background: colors[company.company_type] || '#64748b',
+            border: colors[company.company_type] || '#64748b',
+            highlight: { background: '#1e40af', border: '#1e40af' }
+          },
+          size: isAgent ? (company.global_rank && company.global_rank <= 10 ? 30 : 20) : 15,
+          font: { color: '#374151', size: 11 }
         });
       });
 
-      // Add articles as deal/news nodes
+      // Add articles as nodes
       articles.forEach((article, i) => {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 80 + Math.random() * 20;
-        const height = (Math.random() - 0.5) * 60;
-
         const isDeal = article.title?.match(/acqui|merger|buyout|investment|raises|funding|stake/i);
 
         nodes.push({
           id: `article-${article.id}`,
-          label: article.title?.substring(0, 40) + '...',
+          label: article.title?.substring(0, 25) + '...',
           group: isDeal ? 'deal' : 'news',
-          type: 'article',
           slug: article.slug,
-          val: isDeal ? 6 : 4,
-          color: isDeal ? typeColors.deal : typeColors.news,
-          fx: Math.cos(angle) * radius,
-          fy: height,
-          fz: Math.sin(angle) * radius
+          color: {
+            background: isDeal ? colors.deal : colors.news,
+            border: isDeal ? colors.deal : colors.news,
+            highlight: { background: '#dc2626', border: '#dc2626' }
+          },
+          size: isDeal ? 12 : 8,
+          font: { color: '#6b7280', size: 9 }
         });
       });
 
-      // Create links between nearby entities (simulating relationships)
-      nodes.forEach((node, i) => {
-        // Link companies to nearby articles
-        if (node.type === 'company') {
-          nodes.forEach((other, j) => {
-            if (i !== j && other.type === 'article') {
-              const dist = Math.sqrt(
-                Math.pow(node.fx - other.fx, 2) +
-                Math.pow(node.fy - other.fy, 2) +
-                Math.pow(node.fz - other.fz, 2)
-              );
-              if (dist < 40) {
-                links.push({
-                  source: node.id,
-                  target: other.id,
-                  value: 0.3
-                });
-              }
-            }
-          });
-        }
-
-        // Link same-type companies
-        if (node.type === 'company' && node.group === 'placement_agent') {
-          nodes.forEach((other, j) => {
-            if (i < j && other.type === 'company' && other.group === 'placement_agent') {
-              const dist = Math.sqrt(
-                Math.pow(node.fx - other.fx, 2) +
-                Math.pow(node.fz - other.fz, 2)
-              );
-              if (dist < 30) {
-                links.push({
-                  source: node.id,
-                  target: other.id,
-                  value: 0.5
-                });
-              }
-            }
-          });
+      // Create edges between same-type companies
+      const agentNodes = nodes.filter(n => n.group === 'placement_agent');
+      agentNodes.forEach((node, i) => {
+        // Connect to 2-3 nearby agents
+        for (let j = i + 1; j < Math.min(i + 4, agentNodes.length); j++) {
+          if (Math.random() > 0.4) {
+            edges.push({
+              from: node.id,
+              to: agentNodes[j].id,
+              color: { color: '#e5e7eb', highlight: '#4f46e5' },
+              width: 1
+            });
+          }
         }
       });
 
-      // Update stats
-      nodeCountEl.textContent = nodes.length;
-      edgeCountEl.textContent = links.length;
-      agentCountEl.textContent = sectors.placement_agents?.length || 0;
+      // Connect articles to random companies
+      const articleNodes = nodes.filter(n => n.group === 'deal' || n.group === 'news');
+      articleNodes.forEach(article => {
+        const randomCompanies = agentNodes
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
 
-      // Create 3D graph
-      const Graph = ForceGraph3D()
-        (graphEl)
-        .graphData({ nodes, links })
-        .backgroundColor('#000')
-        .nodeColor(node => node.color)
-        .nodeVal(node => node.val)
-        .nodeOpacity(0.9)
-        .nodeRelSize(4)
-        .linkColor(() => 'rgba(99, 102, 241, 0.15)')
-        .linkWidth(0.5)
-        .linkDirectionalParticles(link => link.value > 0.4 ? 1 : 0)
-        .linkDirectionalParticleSpeed(0.002)
-        .enableNodeDrag(false)
-        .onNodeHover(node => {
-          graphEl.style.cursor = node ? 'pointer' : 'default';
+        randomCompanies.forEach(company => {
+          edges.push({
+            from: article.id,
+            to: company.id,
+            color: { color: '#fde68a', highlight: '#f59e0b' },
+            width: 1,
+            dashes: true
+          });
+        });
+      });
 
-          if (node) {
-            const screen = Graph.graph2ScreenCoords(node.x, node.y, node.z);
-            tooltipEl.style.left = (screen.x + 20) + 'px';
-            tooltipEl.style.top = (screen.y - 20) + 'px';
-            document.getElementById('tooltip-title').textContent = node.label;
-            document.getElementById('tooltip-subtitle').textContent =
-              node.type === 'company' ? (node.headquarters || node.group) : node.group;
-            tooltipEl.classList.add('visible');
-          } else {
-            tooltipEl.classList.remove('visible');
-          }
-        })
-        .onNodeClick(node => {
-          if (node && node.slug) {
-            const url = node.type === 'company'
-              ? `/private-equity-placement-agents-list/${node.slug}`
-              : `/${node.slug}`;
+      // Update connection count
+      if (connectionCount) {
+        connectionCount.textContent = edges.length;
+      }
+
+      // Create network
+      const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+
+      const options = {
+        physics: {
+          enabled: true,
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: {
+            gravitationalConstant: -30,
+            centralGravity: 0.01,
+            springLength: 150,
+            springConstant: 0.08
+          },
+          stabilization: { iterations: 100 }
+        },
+        nodes: {
+          shape: 'dot',
+          borderWidth: 2
+        },
+        edges: {
+          smooth: { type: 'continuous' }
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 0,
+          hideEdgesOnDrag: true
+        }
+      };
+
+      const network = new vis.Network(container, data, options);
+
+      // Hide loading when stable
+      network.once('stabilized', () => {
+        loading?.classList.add('hidden');
+      });
+
+      // Hover tooltip
+      network.on('hoverNode', (params) => {
+        const node = nodes.find(n => n.id === params.node);
+        if (node) {
+          const pos = params.event.center;
+          tooltip.style.left = (pos.x + 20) + 'px';
+          tooltip.style.top = (pos.y - 20) + 'px';
+          document.getElementById('tooltip-title').textContent = node.label;
+          document.getElementById('tooltip-subtitle').textContent = node.headquarters || node.group;
+          tooltip.classList.add('visible');
+        }
+      });
+
+      network.on('blurNode', () => {
+        tooltip.classList.remove('visible');
+      });
+
+      // Click to navigate
+      network.on('click', (params) => {
+        if (params.nodes.length > 0) {
+          const node = nodes.find(n => n.id === params.nodes[0]);
+          if (node?.slug) {
+            const url = node.group === 'deal' || node.group === 'news'
+              ? `/${node.slug}`
+              : `/private-equity-placement-agents-list/${node.slug}`;
             window.location.href = url;
           }
-        });
-
-      // Camera
-      Graph.cameraPosition({ x: 150, y: 80, z: 150 }, { x: 0, y: 0, z: 0 }, 2000);
-
-      // Rotation
-      let angle = 0;
-      let rotating = true;
-      const animate = () => {
-        if (rotating) {
-          angle += 0.001;
-          Graph.cameraPosition({
-            x: Math.sin(angle) * 150,
-            y: 60,
-            z: Math.cos(angle) * 150
-          });
         }
-        requestAnimationFrame(animate);
-      };
-      setTimeout(animate, 3000);
-
-      // Stop rotation on interaction
-      graphEl.addEventListener('mousedown', () => { rotating = false; });
-      graphEl.addEventListener('wheel', () => { rotating = false; });
-
-      // Reset camera button
-      document.getElementById('reset-camera')?.addEventListener('click', () => {
-        rotating = true;
-        angle = 0;
-        Graph.cameraPosition({ x: 150, y: 80, z: 150 }, { x: 0, y: 0, z: 0 }, 1500);
       });
 
-      // Hide loading
-      setTimeout(() => {
-        loadingEl.classList.add('hidden');
-      }, 1500);
+      // Controls
+      document.getElementById('reset-view')?.addEventListener('click', () => {
+        network.fit({ animation: true });
+      });
+
+      let physicsEnabled = true;
+      document.getElementById('toggle-physics')?.addEventListener('click', () => {
+        physicsEnabled = !physicsEnabled;
+        network.setOptions({ physics: { enabled: physicsEnabled } });
+      });
+
+      // Region filters
+      document.querySelectorAll('.filter-btn[data-region]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.filter-btn[data-region]').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+
+          const region = this.dataset.region;
+          // Filter logic would go here
+          network.fit({ animation: true });
+        });
+      });
+
+      // Export PNG
+      document.getElementById('export-png')?.addEventListener('click', () => {
+        const canvas = container.querySelector('canvas');
+        if (canvas) {
+          const link = document.createElement('a');
+          link.download = 'placement-universe.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
+      });
+
+      // Export CSV
+      document.getElementById('export-csv')?.addEventListener('click', () => {
+        let csv = 'Name,Type,Headquarters\n';
+        companies.forEach(c => {
+          csv += `"${c.display_name || c.name}","${c.company_type}","${c.headquarters || ''}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.download = 'placement-universe.csv';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      });
     };
 
-    // Initialize when ready
     if (document.readyState === 'complete') {
-      initUniverse();
+      initNetwork();
     } else {
-      window.addEventListener('load', initUniverse);
+      window.addEventListener('load', initNetwork);
     }
   </script>
 </body>
