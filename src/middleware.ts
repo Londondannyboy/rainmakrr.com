@@ -97,7 +97,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // Future improvement: Implement nonces for stricter CSP
     headers.set('Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.mux.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.mux.com https://unpkg.com; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "img-src 'self' data: https: blob:; " +
       "media-src 'self' https://*.mux.com https://stream.mux.com blob:; " +
