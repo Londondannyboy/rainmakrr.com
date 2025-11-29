@@ -13,8 +13,10 @@ import CompanyTimeline from '../components/CompanyTimeline.astro';
 // Fetch all companies with published status
 const companies = await sql`
   SELECT
-    id, name, slug, display_name, description, headquarters_city,
-    headquarters_country, featured_asset_url, logo_url
+    id, name, slug,
+    COALESCE(display_name, name) as display_name,
+    description, headquarters,
+    featured_asset_url, logo_url
   FROM companies
   WHERE status = 'published' AND company_type = 'placement_agent'
   ORDER BY
@@ -208,8 +210,8 @@ const companies = await sql`
           <div class="viz-card-header">
             <div>
               <div class="viz-card-title">{company.display_name || company.name}</div>
-              {company.headquarters_city && (
-                <div class="viz-card-location">{company.headquarters_city}, {company.headquarters_country}</div>
+              {company.headquarters && (
+                <div class="viz-card-location">{company.headquarters}</div>
               )}
             </div>
             <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">3D</span>
