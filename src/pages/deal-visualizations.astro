@@ -1,0 +1,259 @@
+---
+/**
+ * Deal Visualizations Page
+ *
+ * A gallery of interactive knowledge graph visualizations for all placement agents
+ */
+import { sql } from '../lib/db';
+import SEO from '../components/SEO.astro';
+import Navigation from '../components/Navigation.astro';
+import ZepGraph3D from '../components/ZepGraph3D.astro';
+import CompanyTimeline from '../components/CompanyTimeline.astro';
+
+// Fetch all companies with published status
+const companies = await sql`
+  SELECT
+    id, name, slug, display_name, description, headquarters_city,
+    headquarters_country, featured_asset_url, logo_url
+  FROM companies
+  WHERE status = 'published' AND company_type = 'placement_agent'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+  LIMIT 30
+`;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title="Deal Visualizations | Private Equity Placement Agents Network"
+    description="Interactive 3D knowledge graph visualizations showing deal networks, relationships, and timelines for top private equity placement agents."
+  />
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+
+  <!-- Load visualization libraries -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+  <script src="https://unpkg.com/3d-force-graph@1.79.0" defer></script>
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(to bottom right, #020617, #0f172a, #020617);
+      color: #f1f5f9;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Hero */
+    .hero {
+      padding: 8rem 1.5rem 4rem;
+      text-align: center;
+      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      color: #a5b4fc;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: linear-gradient(to right, #fff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Grid */
+    .viz-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      gap: 2rem;
+      padding: 2rem 0 4rem;
+    }
+
+    @media (max-width: 768px) {
+      .viz-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card */
+    .viz-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .viz-card:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      transform: translateY(-4px);
+    }
+    .viz-card-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .viz-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    .viz-card-location {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .viz-card-body {
+      padding: 0;
+      height: 350px;
+    }
+    .viz-card-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .viz-card-link {
+      font-size: 0.8rem;
+      color: #6366f1;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+    .viz-card-link:hover {
+      color: #818cf8;
+    }
+
+    /* Section Divider */
+    .section-divider {
+      text-align: center;
+      padding: 4rem 1.5rem 2rem;
+    }
+    .section-divider h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+    }
+    .section-divider p {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    /* Footer */
+    .page-footer {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    .page-footer p {
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+    .page-footer a {
+      color: #6366f1;
+    }
+  </style>
+</head>
+<body>
+  <Navigation currentPage="visualizations" />
+
+  <!-- Hero Section -->
+  <div class="hero">
+    <div class="hero-badge">
+      <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      </svg>
+      Interactive Knowledge Graphs
+    </div>
+    <h1>Deal Visualizations</h1>
+    <p>Explore interactive 3D network visualizations showing deal flows, relationships, and connections for leading private equity placement agents.</p>
+  </div>
+
+  <!-- 3D Graph Gallery -->
+  <div class="container">
+    <div class="viz-grid">
+      {companies.map((company: any) => (
+        <div class="viz-card">
+          <div class="viz-card-header">
+            <div>
+              <div class="viz-card-title">{company.display_name || company.name}</div>
+              {company.headquarters_city && (
+                <div class="viz-card-location">{company.headquarters_city}, {company.headquarters_country}</div>
+              )}
+            </div>
+            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">3D</span>
+          </div>
+          <div class="viz-card-body">
+            <ZepGraph3D companyId={company.slug} companyName={company.name} height="350px" />
+          </div>
+          <div class="viz-card-footer">
+            <span style="font-size: 0.7rem; color: #64748b;">Drag to rotate • Scroll to zoom</span>
+            <a href={`/private-equity-placement-agents-list/${company.slug}`} class="viz-card-link">
+              View Profile
+              <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Timeline Section -->
+  <div class="section-divider">
+    <h2>Company Timelines</h2>
+    <p>Track the history and deal milestones of each placement agent</p>
+  </div>
+
+  <div class="container">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem; padding-bottom: 4rem;">
+      {companies.slice(0, 12).map((company: any) => (
+        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(51, 65, 85, 0.3); border-radius: 0.75rem; padding: 1rem;">
+          <div style="font-size: 0.9rem; font-weight: 600; color: #f1f5f9; margin-bottom: 0.75rem;">{company.display_name || company.name}</div>
+          <CompanyTimeline companyId={company.slug} companyName={company.name} />
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="page-footer">
+    <p>
+      Visualizations powered by our <a href="/">Knowledge Graph</a> •
+      Data updated continuously from industry sources
+    </p>
+  </div>
+</body>
+</html>
