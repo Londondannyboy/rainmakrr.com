@@ -3,12 +3,15 @@
  * Deal Visualizations Page
  *
  * A gallery of interactive knowledge graph visualizations for all placement agents
+ * Features: Deal Timeline 3D, Company Networks, Historical Timelines
  */
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Navigation from '../components/Navigation.astro';
 import ZepGraph3D from '../components/ZepGraph3D.astro';
+import ZepGraphVisualization from '../components/ZepGraphVisualization.astro';
 import CompanyTimeline from '../components/CompanyTimeline.astro';
+import DealTimeline3D from '../components/DealTimeline3D.astro';
 
 // Fetch all companies with published status
 const companies = await sql`
@@ -103,6 +106,9 @@ const companies = await sql`
     @media (max-width: 768px) {
       .viz-grid {
         grid-template-columns: 1fr;
+      }
+      .viz-two-col {
+        grid-template-columns: 1fr !important;
       }
     }
 
@@ -202,49 +208,101 @@ const companies = await sql`
     <p>Explore interactive 3D network visualizations showing deal flows, relationships, and connections for leading private equity placement agents.</p>
   </div>
 
-  <!-- 3D Graph Gallery -->
+  <!-- Featured: Deal Flow Timeline 3D -->
   <div class="container">
-    <div class="viz-grid">
-      {companies.map((company: any) => (
-        <div class="viz-card">
-          <div class="viz-card-header">
-            <div>
-              <div class="viz-card-title">{company.display_name || company.name}</div>
-              {company.headquarters && (
-                <div class="viz-card-location">{company.headquarters}</div>
-              )}
+    <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 1rem; padding: 1.5rem; margin-bottom: 3rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: linear-gradient(135deg, #ef4444, #f59e0b); display: flex; align-items: center; justify-content: center;">
+            <svg style="width: 1.5rem; height: 1.5rem; color: #fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #f1f5f9;">Deal Flow Timeline</h2>
+            <p style="font-size: 0.8rem; color: #94a3b8;">Real-time 3D visualization of PE deals and market events</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.3);">LIVE</span>
+          <span style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc; padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 600; border: 1px solid rgba(99, 102, 241, 0.3);">3D WebGL</span>
+        </div>
+      </div>
+      <DealTimeline3D height="450px" />
+    </div>
+  </div>
+
+  <!-- Section: Company Networks -->
+  <div class="section-divider" style="padding-top: 1rem;">
+    <h2>Company Knowledge Graphs</h2>
+    <p>Explore each placement agent's network of deals, people, and relationships</p>
+  </div>
+
+  <!-- Company Visualization Gallery - Full Cards with Timeline + 2D/3D -->
+  <div class="container">
+    <div style="display: flex; flex-direction: column; gap: 3rem; padding: 2rem 0 4rem;">
+      {companies.slice(0, 15).map((company: any) => (
+        <div class="viz-card" style="padding: 1.5rem;">
+          <!-- Header -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: #fff;">
+                {(company.display_name || company.name).charAt(0)}
+              </div>
+              <div>
+                <div class="viz-card-title" style="font-size: 1.25rem;">{company.display_name || company.name}</div>
+                {company.headquarters && (
+                  <div class="viz-card-location">{company.headquarters}</div>
+                )}
+              </div>
             </div>
-            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">3D</span>
-          </div>
-          <div class="viz-card-body">
-            <ZepGraph3D companyId={company.slug} companyName={company.name} height="350px" />
-          </div>
-          <div class="viz-card-footer">
-            <span style="font-size: 0.7rem; color: #64748b;">Drag to rotate • Scroll to zoom</span>
-            <a href={`/private-equity-placement-agents-list/${company.slug}`} class="viz-card-link">
-              View Profile
+            <a href={`/private-equity-placement-agents-list/${company.slug}`} class="viz-card-link" style="background: rgba(99, 102, 241, 0.2); padding: 0.5rem 1rem; border-radius: 100px; border: 1px solid rgba(99, 102, 241, 0.3);">
+              View Full Profile
               <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </a>
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
 
-  <!-- Timeline Section -->
-  <div class="section-divider">
-    <h2>Company Timelines</h2>
-    <p>Track the history and deal milestones of each placement agent</p>
-  </div>
+          <!-- Timeline - Full Width -->
+          <div style="margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <span style="background: linear-gradient(135deg, #10b981, #14b8a6); padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">Timeline</span>
+              <span style="color: #64748b; font-size: 0.75rem;">Company history & milestones</span>
+            </div>
+            <CompanyTimeline companyId={company.slug} companyName={company.name} />
+          </div>
 
-  <div class="container">
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.5rem; padding-bottom: 4rem;">
-      {companies.slice(0, 12).map((company: any) => (
-        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(51, 65, 85, 0.3); border-radius: 0.75rem; padding: 1rem;">
-          <div style="font-size: 0.9rem; font-weight: 600; color: #f1f5f9; margin-bottom: 0.75rem;">{company.display_name || company.name}</div>
-          <CompanyTimeline companyId={company.slug} companyName={company.name} />
+          <!-- 2D and 3D Side by Side -->
+          <div class="viz-two-col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- 3D Graph -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">3D WebGL</span>
+                <span style="color: #64748b; font-size: 0.7rem;">Interactive</span>
+              </div>
+              <div style="height: 300px; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid rgba(51, 65, 85, 0.3); overflow: hidden;">
+                <ZepGraph3D companyId={company.slug} companyName={company.name} height="300px" />
+              </div>
+            </div>
+
+            <!-- 2D Graph -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="background: linear-gradient(135deg, #3b82f6, #06b6d4); padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;">2D Network</span>
+                <span style="color: #64748b; font-size: 0.7rem;">Accessible</span>
+              </div>
+              <div style="height: 300px; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid rgba(51, 65, 85, 0.3); overflow: hidden;">
+                <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(51, 65, 85, 0.3); display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.7rem; color: #64748b;">Drag to rotate • Scroll to zoom • Click nodes to explore</span>
+            <span style="font-size: 0.7rem; color: #94a3b8;">Data from Knowledge Graph</span>
+          </div>
         </div>
       ))}
     </div>

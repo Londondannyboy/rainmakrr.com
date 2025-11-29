@@ -1,0 +1,332 @@
+---
+/**
+ * Deal Timeline 3D Visualization
+ *
+ * Creates an interactive 3D timeline of deals and news events using 3d-force-graph
+ * Events are positioned in 3D space based on time, category, and importance
+ */
+
+interface Props {
+  height?: string;
+  maxDeals?: number;
+}
+
+const { height = '400px', maxDeals = 20 } = Astro.props;
+const uniqueId = `deal-timeline-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<div class="deal-timeline-3d">
+  <div id={uniqueId} style={`width: 100%; height: ${height}; background: rgba(15, 23, 42, 0.8); border-radius: 1rem; border: 1px solid rgba(51, 65, 85, 0.5); position: relative; overflow: hidden;`}>
+    <!-- Loading state -->
+    <div id={`${uniqueId}-loading`} style="display: flex; align-items: center; justify-content: center; height: 100%;">
+      <div style="text-align: center;">
+        <div style="width: 3rem; height: 3rem; border: 3px solid rgba(99, 102, 241, 0.3); border-top-color: #6366f1; border-radius: 9999px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+        <p style="color: #94a3b8; font-size: 0.875rem;">Loading deal timeline...</p>
+      </div>
+    </div>
+
+    <!-- 3D Graph container -->
+    <div id={`${uniqueId}-graph`} style="width: 100%; height: 100%; display: none;"></div>
+
+    <!-- Timeline axis overlay -->
+    <div id={`${uniqueId}-axis`} style="position: absolute; bottom: 20px; left: 50px; right: 50px; display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid rgba(99, 102, 241, 0.4);">
+        <span id={`${uniqueId}-start`} style="font-size: 0.7rem; color: #64748b; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); padding: 0 4px;"></span>
+        <span style="font-size: 0.7rem; color: #64748b; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); padding: 0 4px;">Timeline</span>
+        <span id={`${uniqueId}-end`} style="font-size: 0.7rem; color: #64748b; transform: translateY(-50%); background: rgba(15, 23, 42, 0.9); padding: 0 4px;"></span>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; font-size: 0.65rem; z-index: 10;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></div>
+          <span style="color: #cbd5e1;">Deals</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></div>
+          <span style="color: #cbd5e1;">News</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></div>
+          <span style="color: #cbd5e1;">Companies</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></div>
+          <span style="color: #cbd5e1;">Events</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat counter -->
+    <div id={`${uniqueId}-stats`} style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; color: #94a3b8; z-index: 10; display: none;">
+      <div id={`${uniqueId}-deal-count`}></div>
+    </div>
+
+    <!-- Tooltip -->
+    <div id={`${uniqueId}-tooltip`} style="position: absolute; padding: 10px 14px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(99, 102, 241, 0.5); border-radius: 8px; font-size: 0.75rem; color: #f1f5f9; pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 100; max-width: 280px;"></div>
+  </div>
+</div>
+
+<script define:vars={{ uniqueId, maxDeals }}>
+  const initDealTimeline = async () => {
+    const loadingEl = document.getElementById(`${uniqueId}-loading`);
+    const graphEl = document.getElementById(`${uniqueId}-graph`);
+    const axisEl = document.getElementById(`${uniqueId}-axis`);
+    const tooltipEl = document.getElementById(`${uniqueId}-tooltip`);
+    const statsEl = document.getElementById(`${uniqueId}-stats`);
+    const dealCountEl = document.getElementById(`${uniqueId}-deal-count`);
+    const startEl = document.getElementById(`${uniqueId}-start`);
+    const endEl = document.getElementById(`${uniqueId}-end`);
+
+    // Wait for library
+    const waitForLib = () => new Promise((resolve) => {
+      const check = () => {
+        if (typeof ForceGraph3D !== 'undefined') resolve();
+        else setTimeout(check, 100);
+      };
+      check();
+    });
+
+    await waitForLib();
+
+    try {
+      // Fetch articles/news data
+      const response = await fetch('/api/deals-timeline');
+
+      let deals = [];
+      if (response.ok) {
+        deals = await response.json();
+      }
+
+      // If no API, generate sample data from page
+      if (!deals.length) {
+        // Sample deal data structure
+        deals = [
+          { id: 1, title: 'PAG $8.3B China Mall Deal', date: '2025-11', type: 'deal', value: 8300, company: 'PAG' },
+          { id: 2, title: 'UK Healthcare £500M Opportunity', date: '2025-10', type: 'deal', value: 500, company: 'Various' },
+          { id: 3, title: 'Ares €2B Plenitude Investment', date: '2025-09', type: 'deal', value: 2000, company: 'Ares Management' },
+          { id: 4, title: 'PE Rising Stars 2025', date: '2025-08', type: 'news', value: 0, company: 'Industry' },
+          { id: 5, title: 'Ares GP Stakes Launch', date: '2025-07', type: 'event', value: 0, company: 'Ares' },
+          { id: 6, title: 'Real Madrid 5% Stake', date: '2025-06', type: 'deal', value: 500, company: 'Real Madrid' },
+          { id: 7, title: 'Inspiro Acquires Remit', date: '2025-05', type: 'deal', value: 100, company: 'Inspiro' },
+          { id: 8, title: 'Legal PE Transformation', date: '2025-04', type: 'news', value: 0, company: 'Legal Sector' },
+        ];
+      }
+
+      // Create nodes and links
+      const nodes = [];
+      const links = [];
+
+      // Sort by date
+      deals.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Time range
+      const dates = deals.map(d => new Date(d.date));
+      const minDate = Math.min(...dates);
+      const maxDate = Math.max(...dates);
+      const timeRange = maxDate - minDate || 1;
+
+      // Category Y positions
+      const categoryY = {
+        deal: 2,
+        news: 0,
+        event: -2,
+        company: -1
+      };
+
+      // Colors
+      const categoryColors = {
+        deal: '#ef4444',
+        news: '#3b82f6',
+        event: '#f59e0b',
+        company: '#10b981'
+      };
+
+      // Central timeline node
+      nodes.push({
+        id: 'timeline',
+        label: 'Deal Flow',
+        group: 'center',
+        x: 0, y: 0, z: 0,
+        fx: 0, fy: 0, fz: 0,
+        val: 15,
+        color: '#6366f1'
+      });
+
+      // Add deal nodes
+      deals.slice(0, maxDeals).forEach((deal, i) => {
+        const date = new Date(deal.date);
+        const timeFactor = (date - minDate) / timeRange;
+
+        // Position along X axis based on time, Y based on category, Z for depth
+        const x = (timeFactor - 0.5) * 60;
+        const y = categoryY[deal.type] || 0;
+        const z = (Math.random() - 0.5) * 20;
+
+        // Node size based on deal value
+        const val = deal.value ? Math.log10(deal.value + 1) * 3 + 4 : 5;
+
+        nodes.push({
+          id: `deal-${deal.id}`,
+          label: deal.title,
+          group: deal.type,
+          date: deal.date,
+          value: deal.value,
+          company: deal.company,
+          x, y, z,
+          val,
+          color: categoryColors[deal.type] || '#6366f1'
+        });
+
+        // Link to timeline
+        links.push({
+          source: 'timeline',
+          target: `deal-${deal.id}`,
+          value: 1
+        });
+
+        // Link to adjacent deals for flow
+        if (i > 0) {
+          links.push({
+            source: `deal-${deals[i-1].id}`,
+            target: `deal-${deal.id}`,
+            value: 0.5
+          });
+        }
+      });
+
+      // Add company nodes
+      const companies = [...new Set(deals.map(d => d.company).filter(c => c && c !== 'Various' && c !== 'Industry'))];
+      companies.slice(0, 10).forEach((company, i) => {
+        const angle = (i / companies.length) * Math.PI * 2;
+        const radius = 35;
+
+        nodes.push({
+          id: `company-${i}`,
+          label: company,
+          group: 'company',
+          x: Math.cos(angle) * radius,
+          y: -4,
+          z: Math.sin(angle) * radius,
+          val: 6,
+          color: '#10b981'
+        });
+
+        // Link companies to their deals
+        deals.forEach(deal => {
+          if (deal.company === company) {
+            links.push({
+              source: `company-${i}`,
+              target: `deal-${deal.id}`,
+              value: 0.3
+            });
+          }
+        });
+      });
+
+      // Hide loading, show graph
+      loadingEl.style.display = 'none';
+      graphEl.style.display = 'block';
+      axisEl.style.display = 'block';
+      statsEl.style.display = 'block';
+
+      // Update stats
+      const dealCount = deals.filter(d => d.type === 'deal').length;
+      const totalValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+      dealCountEl.innerHTML = `<div>${dealCount} Deals</div><div style="color: #6366f1;">$${(totalValue/1000).toFixed(1)}B+</div>`;
+
+      // Update axis
+      startEl.textContent = new Date(minDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      endEl.textContent = new Date(maxDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
+      // Create 3D graph
+      const Graph = ForceGraph3D()
+        (graphEl)
+        .graphData({ nodes, links })
+        .backgroundColor('rgba(0,0,0,0)')
+        .nodeColor(node => node.color)
+        .nodeVal(node => node.val)
+        .nodeOpacity(0.9)
+        .nodeRelSize(5)
+        .linkColor(() => 'rgba(99, 102, 241, 0.25)')
+        .linkWidth(1)
+        .linkDirectionalParticles(1)
+        .linkDirectionalParticleSpeed(0.003)
+        .linkDirectionalParticleWidth(1.5)
+        .enableNodeDrag(false)
+        .onNodeHover(node => {
+          graphEl.style.cursor = node ? 'pointer' : 'default';
+
+          if (node && node.id !== 'timeline') {
+            const rect = graphEl.getBoundingClientRect();
+            tooltipEl.innerHTML = `
+              <div style="font-weight: 600; margin-bottom: 4px; color: ${node.color};">${node.label}</div>
+              ${node.date ? `<div style="color: #94a3b8;">Date: ${new Date(node.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</div>` : ''}
+              ${node.value ? `<div style="color: #10b981; font-weight: 600;">$${node.value >= 1000 ? (node.value/1000).toFixed(1) + 'B' : node.value + 'M'}</div>` : ''}
+              ${node.company ? `<div style="color: #64748b; font-size: 0.7rem;">${node.company}</div>` : ''}
+            `;
+            tooltipEl.style.opacity = '1';
+            tooltipEl.style.left = (rect.width / 2) + 'px';
+            tooltipEl.style.top = '60px';
+          } else {
+            tooltipEl.style.opacity = '0';
+          }
+        })
+        .onNodeClick(node => {
+          if (node && node.id !== 'timeline') {
+            // Could navigate to article
+            console.log('Clicked:', node.label);
+          }
+        });
+
+      // Camera position - side view to see timeline
+      Graph.cameraPosition({ x: 0, y: 30, z: 80 }, { x: 0, y: 0, z: 0 }, 2000);
+
+      // Slow rotation
+      let angle = 0;
+      const animate = () => {
+        angle += 0.001;
+        Graph.cameraPosition({
+          x: Math.sin(angle) * 80,
+          y: 25,
+          z: Math.cos(angle) * 80
+        });
+        requestAnimationFrame(animate);
+      };
+      animate();
+
+    } catch (error) {
+      console.error('Error initializing deal timeline:', error);
+      loadingEl.innerHTML = `
+        <div style="text-align: center; color: #64748b;">
+          <p>Unable to load deal timeline</p>
+        </div>
+      `;
+    }
+  };
+
+  // Lazy load
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        initDealTimeline();
+        observer.disconnect();
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  const container = document.getElementById(uniqueId);
+  if (container) observer.observe(container);
+</script>
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .deal-timeline-3d {
+    width: 100%;
+  }
+</style>

@@ -9,6 +9,9 @@ import { marked } from 'marked';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
 import Navigation from '../components/Navigation.astro';
+import DealTimeline3D from '../components/DealTimeline3D.astro';
+import ZepGraph3D from '../components/ZepGraph3D.astro';
+import CompanyTimeline from '../components/CompanyTimeline.astro';
 
 // Hero video playback ID (Mux)
 const heroPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
@@ -172,6 +175,10 @@ function renderMarkdown(content: string): string {
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://stream.mux.com" crossorigin>
   <link rel="preconnect" href="https://image.mux.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <!-- Load visualization libraries -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+  <script src="https://unpkg.com/3d-force-graph@1.79.0" defer></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #fff; color: #1a1a1a; line-height: 1.6; }
@@ -322,6 +329,89 @@ function renderMarkdown(content: string): string {
       </div>
     </section>
   </main>
+
+  <!-- IN FOCUS: Data Visualization Section -->
+  <section style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 80px 20px;">
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <div style="text-align: center; margin-bottom: 48px;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); padding: 8px 16px; border-radius: 100px; font-size: 12px; color: #a5b4fc; margin-bottom: 16px;">
+          <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          In Focus: Data Visualizations
+        </div>
+        <h2 style="font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 12px;">Deal Flow Intelligence</h2>
+        <p style="font-size: 16px; color: #94a3b8; max-width: 600px; margin: 0 auto;">Interactive 3D visualizations powered by our knowledge graph, showing real-time deal flows and market connections.</p>
+      </div>
+
+      <!-- Deal Timeline 3D - Featured -->
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 16px; padding: 24px; margin-bottom: 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #ef4444, #f59e0b); display: flex; align-items: center; justify-content: center;">
+              <svg style="width: 24px; height: 24px; color: #fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 700; color: #fff;">PE Deal Flow Timeline</h3>
+              <p style="font-size: 12px; color: #64748b;">3D visualization of market activity</p>
+            </div>
+          </div>
+          <a href="/deal-visualizations" style="display: flex; align-items: center; gap: 6px; background: rgba(99, 102, 241, 0.2); color: #a5b4fc; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; border: 1px solid rgba(99, 102, 241, 0.3);">
+            Explore All
+            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+        <DealTimeline3D height="400px" />
+      </div>
+
+      <!-- Featured Company Graphs - 2 Column -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 32px;">
+        {topAgents.slice(0, 2).map((agent: any) => (
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 16px; overflow: hidden;">
+            <div style="padding: 16px; border-bottom: 1px solid rgba(51, 65, 85, 0.3); display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;">
+                  {agent.name.charAt(0)}
+                </div>
+                <div>
+                  <h4 style="font-size: 14px; font-weight: 600; color: #fff;">{agent.name}</h4>
+                  {agent.headquarters && <p style="font-size: 11px; color: #64748b;">{agent.headquarters}</p>}
+                </div>
+              </div>
+              <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; color: #fff;">3D</span>
+            </div>
+            <div style="height: 280px;">
+              <ZepGraph3D companyId={agent.slug} companyName={agent.name} height="280px" />
+            </div>
+            <div style="padding: 12px 16px; border-top: 1px solid rgba(51, 65, 85, 0.3); display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 11px; color: #64748b;">Drag to rotate • Click to explore</span>
+              <a href={`/private-equity-placement-agents-list/${agent.slug}`} style="font-size: 12px; color: #6366f1; display: flex; align-items: center; gap: 4px;">
+                View Profile
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- CTA -->
+      <div style="text-align: center;">
+        <a href="/deal-visualizations" style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; padding: 14px 28px; border-radius: 100px; font-weight: 600; font-size: 15px;">
+          <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Explore All Visualizations
+        </a>
+        <p style="margin-top: 12px; font-size: 13px; color: #64748b;">Interactive 3D graphs for 30+ placement agents</p>
+      </div>
+    </div>
+  </section>
 
   <!-- SEO CONTENT SECTIONS -->
 
