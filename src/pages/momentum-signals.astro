@@ -81,8 +81,8 @@ function getThumbnail(signal: any): string | null {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #f9fafb;
-      color: #1a1a1a;
+      background: #0a0a0f;
+      color: #fff;
       line-height: 1.6;
     }
 
@@ -93,9 +93,9 @@ function getThumbnail(signal: any): string | null {
 
     /* Header */
     .header-section {
-      background: #fff;
+      background: linear-gradient(180deg, #0f0f1a 0%, #0a0a0f 100%);
       padding: 40px 20px 32px;
-      border-bottom: 1px solid #e5e7eb;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     .header-inner {
@@ -107,12 +107,12 @@ function getThumbnail(signal: any): string | null {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: #fef3c7;
-      border: 1px solid #fcd34d;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.3);
       padding: 6px 14px;
       border-radius: 100px;
       font-size: 12px;
-      color: #b45309;
+      color: #fbbf24;
       margin-bottom: 12px;
     }
 
@@ -128,12 +128,12 @@ function getThumbnail(signal: any): string | null {
     h1 {
       font-size: 2rem;
       font-weight: 800;
-      color: #1a1a1a;
+      color: #fff;
       margin-bottom: 8px;
     }
 
     .subtitle {
-      color: #6b7280;
+      color: rgba(255,255,255,0.6);
       font-size: 1rem;
       max-width: 600px;
     }
@@ -147,8 +147,8 @@ function getThumbnail(signal: any): string | null {
     }
 
     .stat-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 16px 20px;
       min-width: 120px;
@@ -157,12 +157,12 @@ function getThumbnail(signal: any): string | null {
     .stat-value {
       font-size: 1.5rem;
       font-weight: 800;
-      color: #4f46e5;
+      color: #60a5fa;
     }
 
     .stat-label {
       font-size: 11px;
-      color: #6b7280;
+      color: rgba(255,255,255,0.5);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -186,29 +186,29 @@ function getThumbnail(signal: any): string | null {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 100px;
       padding: 8px 16px;
       font-size: 13px;
-      color: #374151;
+      color: rgba(255,255,255,0.7);
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .filter-pill:hover {
-      border-color: #4f46e5;
-      color: #4f46e5;
+      border-color: #60a5fa;
+      color: #60a5fa;
     }
 
     .filter-pill.active {
-      background: #4f46e5;
-      border-color: #4f46e5;
+      background: #60a5fa;
+      border-color: #60a5fa;
       color: #fff;
     }
 
     .filter-pill .count {
-      background: rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.1);
       padding: 2px 8px;
       border-radius: 100px;
       font-size: 11px;
@@ -225,8 +225,8 @@ function getThumbnail(signal: any): string | null {
     }
 
     .signal-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 20px;
       display: grid;
@@ -237,8 +237,9 @@ function getThumbnail(signal: any): string | null {
     }
 
     .signal-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
       transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.15);
     }
 
     .signal-icon {
@@ -275,24 +276,24 @@ function getThumbnail(signal: any): string | null {
     }
 
     .signal-strength.high {
-      background: #fef2f2;
-      color: #dc2626;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
     }
 
     .signal-strength.medium {
-      background: #fef3c7;
-      color: #d97706;
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
     }
 
     .signal-strength.low {
-      background: #f0fdf4;
-      color: #16a34a;
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
     }
 
     .signal-headline {
       font-size: 16px;
       font-weight: 700;
-      color: #1a1a1a;
+      color: #fff;
       line-height: 1.4;
       margin-bottom: 8px;
     }
@@ -303,12 +304,12 @@ function getThumbnail(signal: any): string | null {
     }
 
     .signal-headline a:hover {
-      color: #4f46e5;
+      color: #60a5fa;
     }
 
     .signal-excerpt {
       font-size: 14px;
-      color: #6b7280;
+      color: rgba(255,255,255,0.6);
       line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -321,7 +322,7 @@ function getThumbnail(signal: any): string | null {
       gap: 16px;
       margin-top: 12px;
       font-size: 12px;
-      color: #9ca3af;
+      color: rgba(255,255,255,0.4);
     }
 
     .signal-thumbnail {
@@ -336,7 +337,7 @@ function getThumbnail(signal: any): string | null {
       width: 120px;
       height: 80px;
       border-radius: 8px;
-      background: #f3f4f6;
+      background: rgba(255,255,255,0.05);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -346,13 +347,13 @@ function getThumbnail(signal: any): string | null {
     .signal-placeholder svg {
       width: 24px;
       height: 24px;
-      color: #d1d5db;
+      color: rgba(255,255,255,0.2);
     }
 
     /* Scan Button */
     .scan-section {
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
@@ -366,13 +367,13 @@ function getThumbnail(signal: any): string | null {
     .scan-info h3 {
       font-size: 16px;
       font-weight: 700;
-      color: #1a1a1a;
+      color: #fff;
       margin-bottom: 4px;
     }
 
     .scan-info p {
       font-size: 14px;
-      color: #6b7280;
+      color: rgba(255,255,255,0.6);
     }
 
     .scan-btn {
@@ -410,27 +411,27 @@ function getThumbnail(signal: any): string | null {
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      background: #fff;
-      border: 1px dashed #e5e7eb;
+      background: rgba(255,255,255,0.02);
+      border: 1px dashed rgba(255,255,255,0.15);
       border-radius: 12px;
     }
 
     .empty-state svg {
       width: 48px;
       height: 48px;
-      color: #d1d5db;
+      color: rgba(255,255,255,0.2);
       margin-bottom: 16px;
     }
 
     .empty-state h3 {
       font-size: 18px;
       font-weight: 700;
-      color: #374151;
+      color: #fff;
       margin-bottom: 8px;
     }
 
     .empty-state p {
-      color: #6b7280;
+      color: rgba(255,255,255,0.5);
       font-size: 14px;
     }
 
@@ -439,7 +440,7 @@ function getThumbnail(signal: any): string | null {
       text-align: center;
       padding: 24px;
       font-size: 11px;
-      color: #9ca3af;
+      color: rgba(255,255,255,0.4);
     }
 
     /* Mobile */
