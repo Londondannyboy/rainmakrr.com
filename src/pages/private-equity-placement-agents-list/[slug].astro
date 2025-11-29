@@ -185,8 +185,8 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
 <html lang="en">
 <head>
   <SEO
-    title={`${company.display_name} - Placement Agent Profile | Placement`}
-    description={metaDescription}
+    title={`${company.display_name} Placement Agent | Profile & Services`}
+    description={`${company.display_name} placement agent - ${metaDescription}`}
     article={true}
   />
 
@@ -539,7 +539,7 @@ const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.le
     <div class="hero-content container">
       <span class="badge">Placement Agent</span>
 
-      <h1 class="title">{company.display_name}</h1>
+      <h1 class="title">{company.display_name} <span style="font-weight: 400; opacity: 0.7;">Placement Agent</span></h1>
 
       {overviewSection && (
         <div>
