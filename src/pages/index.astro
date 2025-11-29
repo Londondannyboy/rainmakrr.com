@@ -33,16 +33,17 @@ const sections = {
   faq: homepageContent.find((s: any) => s.section_type === 'faq'),
 };
 
-// Fetch LEAD article (most recent featured) for hero banner
+// Fetch LEAD article for hero banner - pick 2nd most recent featured (or any good one)
 const leadArticles = await sql`
   SELECT id, title, excerpt, slug, published_at, created_at,
     article_angle, featured_asset_url, video_playback_id
   FROM articles
   WHERE app = 'placement' AND status = 'published' AND is_featured = true
   ORDER BY COALESCE(published_at, created_at) DESC
-  LIMIT 1
+  LIMIT 2
 `;
-const leadArticle = leadArticles[0] || null;
+// Use the second featured article as lead (or first if only one exists)
+const leadArticle = leadArticles[1] || leadArticles[0] || null;
 
 // Fetch featured articles (excluding lead) for 2-panel section
 const featuredArticles = await sql`
@@ -107,8 +108,8 @@ const allVideoIds = [
   ...articles.filter((a: any) => a.video_playback_id).map((a: any) => a.video_playback_id)
 ];
 
-// Lead article video ID for hero section
-const leadVideoId = leadArticle?.video_playback_id || heroPlaybackId;
+// Lead article video ID for hero section - always use the woman walking video
+const leadVideoId = heroPlaybackId;
 
 // Helper: get company image (logo, featured image, or placeholder)
 function getCompanyImage(company: any): { url: string | null; type: 'logo' | 'image' | 'placeholder' } {
