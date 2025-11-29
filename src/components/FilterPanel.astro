@@ -1,0 +1,356 @@
+---
+/**
+ * FilterPanel Component
+ *
+ * Cross-filtering panel for visualization pages.
+ * Synchronizes filter state across Capital Flow, Geo Map, and other visualizations.
+ */
+
+interface Props {
+  showRegions?: boolean;
+  showLpTypes?: boolean;
+  showFundStrategies?: boolean;
+  showSearch?: boolean;
+  compact?: boolean;
+}
+
+const {
+  showRegions = true,
+  showLpTypes = true,
+  showFundStrategies = true,
+  showSearch = true,
+  compact = false
+} = Astro.props;
+
+const regions = [
+  { id: 'north-america', label: 'North America', color: '#8b5cf6' },
+  { id: 'europe', label: 'Europe', color: '#06b6d4' },
+  { id: 'uk', label: 'UK', color: '#3b82f6' },
+  { id: 'asia-pacific', label: 'Asia Pacific', color: '#ec4899' },
+  { id: 'middle-east', label: 'Middle East', color: '#f59e0b' }
+];
+
+const lpTypes = [
+  { id: 'pension', label: 'Pension Funds' },
+  { id: 'endowment', label: 'Endowments' },
+  { id: 'sovereign', label: 'Sovereign Wealth' },
+  { id: 'insurance', label: 'Insurance' },
+  { id: 'family', label: 'Family Offices' },
+  { id: 'fof', label: 'Fund of Funds' }
+];
+
+const fundStrategies = [
+  { id: 'buyout', label: 'Buyout', color: '#ef4444' },
+  { id: 'growth', label: 'Growth', color: '#10b981' },
+  { id: 'credit', label: 'Credit', color: '#f59e0b' },
+  { id: 'infra', label: 'Infra', color: '#6366f1' },
+  { id: 're', label: 'Real Estate', color: '#ec4899' },
+  { id: 'vc', label: 'VC', color: '#8b5cf6' }
+];
+---
+
+<div class={`filter-panel ${compact ? 'compact' : ''}`} id="filter-panel">
+  {showSearch && (
+    <div class="filter-section">
+      <div class="search-box">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input
+          type="text"
+          id="filter-search"
+          placeholder="Search agents, funds..."
+          class="search-input"
+        />
+      </div>
+    </div>
+  )}
+
+  {showRegions && (
+    <div class="filter-section">
+      <div class="filter-label">Regions</div>
+      <div class="filter-chips">
+        {regions.map(region => (
+          <button
+            class="filter-chip"
+            data-filter="region"
+            data-value={region.id}
+            style={`--chip-color: ${region.color}`}
+          >
+            {region.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  {showLpTypes && !compact && (
+    <div class="filter-section">
+      <div class="filter-label">LP Types</div>
+      <div class="filter-chips">
+        {lpTypes.map(lp => (
+          <button
+            class="filter-chip"
+            data-filter="lpType"
+            data-value={lp.id}
+          >
+            {lp.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  {showFundStrategies && (
+    <div class="filter-section">
+      <div class="filter-label">Fund Strategies</div>
+      <div class="filter-chips">
+        {fundStrategies.map(strategy => (
+          <button
+            class="filter-chip"
+            data-filter="strategy"
+            data-value={strategy.id}
+            style={`--chip-color: ${strategy.color}`}
+          >
+            {strategy.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div class="filter-actions">
+    <button class="clear-btn" id="clear-filters">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+      Clear All
+    </button>
+    <div class="active-count" id="active-filter-count">No filters</div>
+  </div>
+</div>
+
+<style>
+  .filter-panel {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 320px;
+  }
+
+  .filter-panel.compact {
+    padding: 12px;
+    max-width: none;
+  }
+
+  .filter-panel.compact .filter-section {
+    display: inline-flex;
+    flex-direction: column;
+    margin-right: 16px;
+    margin-bottom: 0;
+  }
+
+  .filter-section {
+    margin-bottom: 16px;
+  }
+
+  .filter-section:last-of-type {
+    margin-bottom: 12px;
+  }
+
+  .filter-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .search-box {
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+  }
+
+  .search-input {
+    width: 100%;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 8px;
+    padding: 10px 12px 10px 36px;
+    font-size: 13px;
+    color: #f1f5f9;
+    transition: all 0.2s;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: rgba(30, 41, 59, 1);
+  }
+
+  .search-input::placeholder {
+    color: #64748b;
+  }
+
+  .filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filter-chip {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-chip:hover {
+    border-color: var(--chip-color, #6366f1);
+    color: #e2e8f0;
+  }
+
+  .filter-chip.active {
+    background: var(--chip-color, #6366f1);
+    border-color: var(--chip-color, #6366f1);
+    color: #fff;
+  }
+
+  .filter-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(51, 65, 85, 0.3);
+  }
+
+  .clear-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .clear-btn:hover {
+    color: #ef4444;
+  }
+
+  .clear-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .active-count {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  .active-count.has-filters {
+    color: #6366f1;
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  // Filter state
+  const activeFilters: Record<string, Set<string>> = {
+    region: new Set(),
+    lpType: new Set(),
+    strategy: new Set()
+  };
+  let searchQuery = '';
+
+  // DOM elements
+  const panel = document.getElementById('filter-panel');
+  const searchInput = document.getElementById('filter-search') as HTMLInputElement;
+  const clearBtn = document.getElementById('clear-filters');
+  const countEl = document.getElementById('active-filter-count');
+  const chips = panel?.querySelectorAll('.filter-chip');
+
+  // Custom event for filter changes
+  const dispatchFilterChange = () => {
+    const event = new CustomEvent('filterChange', {
+      detail: {
+        regions: Array.from(activeFilters.region),
+        lpTypes: Array.from(activeFilters.lpType),
+        strategies: Array.from(activeFilters.strategy),
+        searchQuery
+      }
+    });
+    document.dispatchEvent(event);
+    updateActiveCount();
+  };
+
+  // Update active count display
+  const updateActiveCount = () => {
+    const total =
+      activeFilters.region.size +
+      activeFilters.lpType.size +
+      activeFilters.strategy.size +
+      (searchQuery ? 1 : 0);
+
+    if (countEl) {
+      countEl.textContent = total > 0 ? `${total} filter${total > 1 ? 's' : ''} active` : 'No filters';
+      countEl.classList.toggle('has-filters', total > 0);
+    }
+  };
+
+  // Chip click handler
+  chips?.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const filterType = chip.getAttribute('data-filter');
+      const value = chip.getAttribute('data-value');
+
+      if (filterType && value && activeFilters[filterType]) {
+        if (activeFilters[filterType].has(value)) {
+          activeFilters[filterType].delete(value);
+          chip.classList.remove('active');
+        } else {
+          activeFilters[filterType].add(value);
+          chip.classList.add('active');
+        }
+        dispatchFilterChange();
+      }
+    });
+  });
+
+  // Search input handler
+  searchInput?.addEventListener('input', (e) => {
+    searchQuery = (e.target as HTMLInputElement).value;
+    dispatchFilterChange();
+  });
+
+  // Clear all filters
+  clearBtn?.addEventListener('click', () => {
+    Object.keys(activeFilters).forEach(key => {
+      activeFilters[key].clear();
+    });
+    searchQuery = '';
+    if (searchInput) searchInput.value = '';
+    chips?.forEach(chip => chip.classList.remove('active'));
+    dispatchFilterChange();
+  });
+
+  // Initialize
+  updateActiveCount();
+</script>
