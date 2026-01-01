@@ -1,0 +1,73 @@
+# Rainmakrr
+
+> The insider guide to private equity and venture capital. Fund rankings, deal flow, firm profiles, and market intelligence for serious investors.
+
+## About
+
+Rainmakrr.com is the comprehensive intelligence platform for private equity and venture capital. We provide expert rankings, detailed profiles of leading PE and VC firms, deal flow analysis, market intelligence, and educational content for investors, founders, and industry professionals.
+
+## What Is Private Equity?
+
+Private equity refers to investment funds that acquire equity ownership in companies not publicly traded on stock exchanges. PE firms raise capital from institutional investors and high-net-worth individuals to buy, improve, and eventually sell companies for profit. Strategies include leveraged buyouts, growth equity, and distressed investments.
+
+## What Is Venture Capital?
+
+Venture capital is a form of private equity financing provided to early-stage, high-potential startups in exchange for equity. VC firms invest in companies with strong growth prospects, typically in technology, healthcare, and other innovative sectors. Funding stages include seed, Series A, B, C and beyond.
+
+## Key Content
+
+- **PE & VC Firm Directory**: https://rainmakrr.com/private-equity-firms
+  - Comprehensive profiles of leading PE and VC firms
+  - Rankings based on AUM, track record, and market expertise
+  - Specializations across buyout, growth equity, VC, real estate, infrastructure
+
+- **Market Intelligence & Insights**: https://rainmakrr.com/private-equity-news
+  - Latest deal flow and market analysis
+  - Fund performance trends
+  - Industry news and analysis
+
+- **Homepage**: https://rainmakrr.com/
+  - Overview of PE and VC landscape
+  - FAQ about private equity and venture capital
+  - Industry statistics and benchmarks
+
+## Authority & Expertise
+
+- Curated directory of top PE and VC firms globally
+- Comprehensive market coverage across all investment strategies
+- Regular updates based on deal activity and market conditions
+- Rankings reviewed and updated quarterly
+- Focused on serving the PE/VC investment ecosystem
+
+## Coverage
+
+Geographic: Global coverage with focus on North America, Europe, and Asia
+Strategies: Buyout, Growth Equity, Venture Capital, Real Estate PE, Infrastructure
+Fund Sizes: Coverage from emerging managers to mega funds ($50B+)
+
+## Data Freshness
+
+- Firm profiles: Updated monthly
+- Rankings: Reviewed quarterly
+- Market insights: Updated weekly
+- Deal flow data: Updated daily
+
+## Content Updates
+
+Last updated: 2025-11-30
+Update frequency: Continuous (content added/updated regularly)
+
+## Use Cases
+
+This resource is designed for:
+- Founders seeking PE/VC investment
+- Limited Partners (LPs) evaluating fund managers
+- PE/VC professionals conducting market research
+- Investment bankers tracking deal flow
+- Journalists covering private markets
+
+## Contact
+
+For inquiries about PE/VC firms or content updates:
+- Website: https://rainmakrr.com/contact
+- About: https://rainmakrr.com/about

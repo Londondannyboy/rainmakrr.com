@@ -1,0 +1,1003 @@
+---
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+import ZepGraph3D from '../../components/ZepGraph3D.astro';
+import CompanyTimeline from '../../components/CompanyTimeline.astro';
+
+// Enable hybrid rendering for this page
+export const prerender = false;
+
+// Get slug from URL
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/private-equity-placement-agents-list');
+}
+
+// Fetch company data from Neon
+const companies = await sql`
+  SELECT *
+  FROM companies
+  WHERE slug = ${slug}
+  LIMIT 1
+`;
+
+const companyRaw = companies[0];
+
+if (!companyRaw) {
+  return Astro.redirect('/private-equity-placement-agents-list');
+}
+
+// Merge payload data into company object for easier access
+const company = {
+  ...companyRaw,
+  ...(companyRaw.payload || {}),
+  // Keep original top-level fields that might exist
+  display_name: companyRaw.display_name || companyRaw.payload?.display_name || companyRaw.name,
+};
+
+// For SEO, use the full company name (name field) which is what users search for
+const seoName = companyRaw.name;
+
+// Extract overview from profile sections for meta description
+const overviewSection = company.profile_sections?.overview || company.profile_sections?.about;
+const metaDescription = overviewSection
+  ? overviewSection.content.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').substring(0, 160) + '...'
+  : `${seoName} placement agent profile - services, team, deals, and market positioning.`;
+
+// Parse tags from content for visual display
+const parseTagsFromContent = (sections: any) => {
+  const tags = {
+    industries: [] as string[],
+    services: [] as string[],
+    locations: [] as string[]
+  };
+
+  if (!sections) return tags;
+
+  // Look for common industry keywords
+  const content = JSON.stringify(sections).toLowerCase();
+
+  if (content.includes('private equity')) tags.industries.push('Private Equity');
+  if (content.includes('venture capital')) tags.industries.push('Venture Capital');
+  if (content.includes('private credit') || content.includes('private debt')) tags.industries.push('Private Credit');
+  if (content.includes('real estate') || content.includes('real assets')) tags.industries.push('Real Assets');
+  if (content.includes('infrastructure')) tags.industries.push('Infrastructure');
+  if (content.includes('secondaries')) tags.industries.push('Secondaries');
+  if (content.includes('fund of funds')) tags.industries.push('Fund of Funds');
+  if (content.includes('co-investment')) tags.services.push('Co-Investment');
+  if (content.includes('gp stakes')) tags.services.push('GP Stakes');
+  if (content.includes('fundraising')) tags.services.push('Fundraising');
+  if (content.includes('advisory')) tags.services.push('Advisory');
+
+  // Location tags from headquarters
+  if (company.headquarters_city) tags.locations.push(company.headquarters_city);
+  if (company.headquarters_country && company.headquarters_country !== company.headquarters_city) {
+    tags.locations.push(company.headquarters_country);
+  }
+
+  return {
+    industries: [...new Set(tags.industries)].slice(0, 3),
+    services: [...new Set(tags.services)].slice(0, 2),
+    locations: [...new Set(tags.locations)].slice(0, 2)
+  };
+};
+
+const tags = parseTagsFromContent(company.profile_sections);
+
+// Get last updated timestamp
+const lastUpdated = company.updated_at
+  ? new Date(company.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : null;
+
+// Internal linking helpers
+const getLocationBasedLinks = (city: string, country: string) => {
+  const links = [];
+
+  const citySlugMap: Record<string, string> = {
+    'New York': '/top-private-equity-placement-agents-us',
+    'London': '/top-private-equity-placement-agents-uk',
+    'Singapore': '/top-private-equity-placement-agents-singapore',
+    'Hong Kong': '/top-private-equity-placement-agents-asia-pacific',
+    'Tokyo': '/top-private-equity-placement-agents-asia-pacific',
+    'Sydney': '/top-private-equity-placement-agents-asia-pacific',
+    'San Francisco': '/top-private-equity-placement-agents-us',
+    'Boston': '/top-private-equity-placement-agents-us',
+    'Chicago': '/top-private-equity-placement-agents-us',
+    'Los Angeles': '/top-private-equity-placement-agents-us',
+  };
+
+  const countrySlugMap: Record<string, string> = {
+    'United States': '/top-private-equity-placement-agents-us',
+    'USA': '/top-private-equity-placement-agents-us',
+    'United Kingdom': '/top-private-equity-placement-agents-uk',
+    'UK': '/top-private-equity-placement-agents-uk',
+    'Singapore': '/top-private-equity-placement-agents-singapore',
+  };
+
+  const regionMap: Record<string, { url: string; region: string }> = {
+    'United States': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'USA': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'Canada': { url: '/top-private-equity-placement-agents-north-america', region: 'North America' },
+    'United Kingdom': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'UK': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'Germany': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'France': { url: '/top-private-equity-placement-agents-europe', region: 'Europe' },
+    'Singapore': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Hong Kong': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Japan': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'Australia': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+    'China': { url: '/top-private-equity-placement-agents-asia-pacific', region: 'Asia Pacific' },
+  };
+
+  if (city && citySlugMap[city]) {
+    links.push({ url: citySlugMap[city], text: `${city} placement agents`, type: 'city' });
+  }
+
+  if (country && countrySlugMap[country]) {
+    links.push({ url: countrySlugMap[country], text: `${country} placement agents`, type: 'country' });
+  }
+
+  if (country && regionMap[country]) {
+    links.push({ url: regionMap[country].url, text: `${regionMap[country].region} placement agents`, type: 'region' });
+  }
+
+  return links.slice(0, 3);
+};
+
+const getAssetClassLinks = (sections: any) => {
+  const links = [];
+  const content = sections ? JSON.stringify(sections).toLowerCase() : '';
+
+  if (content.includes('venture capital') || content.includes('vc ')) {
+    links.push({ url: '/venture-capital-placement-agents', text: 'Venture Capital Placement Agents', type: 'asset' });
+  }
+  if (content.includes('private credit') || content.includes('private debt') || content.includes('direct lending')) {
+    links.push({ url: '/private-credit-placement-agents', text: 'Private Credit Placement Agents', type: 'asset' });
+  }
+  if (content.includes('real estate') || content.includes('real assets')) {
+    links.push({ url: '/real-estate-private-equity-placement-agents', text: 'Real Estate PE Placement Agents', type: 'asset' });
+  }
+
+  return links.slice(0, 2);
+};
+
+const locationLinks = getLocationBasedLinks(company.headquarters_city, company.headquarters_country);
+const assetLinks = getAssetClassLinks(company.profile_sections);
+const internalLinks = [...locationLinks, ...assetLinks].slice(0, 4);
+
+// Rotating contextual links for variety
+const contextualLinks = [
+  'Explore our comprehensive directory of private equity placement agents',
+  'Compare this firm with other leading placement agents',
+  'View our full ranking of top placement agents',
+  'Browse placement agents by region and specialty',
+];
+const rotationIndex = company.display_name.length % contextualLinks.length;
+
+// Sidebar link rotation
+const sidebarLinks = [
+  'Complete Placement Agent Directory',
+  'Browse All Placement Agents',
+  'Full Agent Rankings & Profiles',
+  'Explore Top Placement Agents',
+];
+const sidebarRotationIndex = (company.display_name.length + 1) % sidebarLinks.length;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title={`${company.display_name} Placement Agent | Profile & Services`}
+    description={`${company.display_name} placement agent - ${metaDescription}`}
+    article={true}
+  />
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+
+  <!-- Load vis-network library for 2D deal graphs -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <!-- Load 3d-force-graph for 3D WebGL visualization -->
+  <script src="https://unpkg.com/3d-force-graph@1.79.0" defer></script>
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(to bottom right, #020617, #0f172a, #020617);
+      color: #f1f5f9;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* Container */
+    .container { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
+
+    /* Navigation */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .nav-inner {
+      max-width: 80rem; margin: 0 auto; padding: 0 1rem;
+      display: flex; justify-content: space-between; align-items: center; height: 4rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 700;
+      background: linear-gradient(to right, #60a5fa, #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .nav-links { display: flex; align-items: center; gap: 2rem; }
+    .nav-link { color: #cbd5e1; font-size: 0.875rem; font-weight: 500; }
+    .nav-link:hover { color: #fff; }
+    .nav-link-active { color: #60a5fa; }
+
+    /* Hero */
+    .hero { position: relative; padding: 6rem 0 3rem; }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0; overflow: hidden;
+    }
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.1; filter: blur(4px); }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(2,6,23,0.5), rgba(15,23,42,0.8), #020617);
+    }
+    .hero-content { position: relative; z-index: 10; }
+    .hero-full-img { width: 100%; height: 24rem; overflow: hidden; margin-bottom: 2rem; }
+    .hero-full-img img { width: 100%; height: 100%; object-fit: cover; }
+
+    .badge {
+      display: inline-block; padding: 0.25rem 0.75rem;
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; margin-bottom: 1rem;
+    }
+    .title {
+      font-size: 2.5rem; font-weight: 900; margin-bottom: 1rem;
+      background: linear-gradient(to right, #fff, #bfdbfe, #ddd6fe);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1.1;
+    }
+    @media (min-width: 1024px) { .title { font-size: 3.75rem; } }
+
+    .overview { font-size: 1.25rem; color: #f1f5f9; line-height: 1.6; max-width: 48rem; margin-bottom: 1rem; }
+
+    /* Tags */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+    .tag {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid;
+    }
+    .tag svg { width: 0.75rem; height: 0.75rem; margin-right: 0.375rem; }
+    .tag-purple { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border-color: rgba(168, 85, 247, 0.3); }
+    .tag-blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3); }
+    .tag-green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
+
+    /* Meta */
+    .meta { display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.875rem; margin-top: 1.5rem; }
+    .meta-item { display: flex; align-items: center; gap: 0.5rem; }
+    .meta-label { color: #64748b; }
+    .meta-value { color: #fff; font-weight: 600; }
+    .meta-link { color: #60a5fa; display: flex; align-items: center; gap: 0.5rem; }
+    .meta-link:hover { color: #93c5fd; }
+    .meta-link svg { width: 1rem; height: 1rem; }
+
+    /* Grid Layout */
+    .content-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; padding-bottom: 4rem; }
+    @media (min-width: 1024px) { .content-grid { grid-template-columns: 2fr 1fr; } }
+    .main-content { display: flex; flex-direction: column; gap: 1.5rem; }
+    .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Cards */
+    .card {
+      background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.5), rgba(30, 41, 59, 0.3));
+      backdrop-filter: blur(8px); border-radius: 1rem; padding: 2rem;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .card:hover { border-color: rgba(59, 130, 246, 0.3); }
+    .card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+    .card-icon {
+      flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 0.75rem;
+      background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 1.125rem;
+    }
+    .card-icon-green { background: linear-gradient(to bottom right, #10b981, #059669); }
+    .card-title { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
+    .card-bar { height: 0.25rem; width: 5rem; background: linear-gradient(to right, #3b82f6, #8b5cf6); border-radius: 9999px; }
+    .card-bar-green { background: linear-gradient(to right, #10b981, #059669); }
+
+    /* Prose */
+    .prose { color: #f1f5f9; line-height: 1.75; }
+    .prose p { margin-bottom: 1.5rem; }
+    .prose strong { color: #fff; font-weight: 600; }
+    .prose a { color: #60a5fa; border-bottom: 1px solid rgba(96, 165, 250, 0.3); }
+    .prose a:hover { border-color: #60a5fa; }
+    .prose ul, .prose ol { margin: 1.25rem 0; padding-left: 1.5rem; }
+    .prose ul { list-style-type: disc; }
+    .prose ol { list-style-type: decimal; }
+    .prose li { margin: 0.5rem 0; }
+    .prose h2 { color: #fff; font-weight: 700; font-size: 1.5rem; margin: 2rem 0 1rem; }
+    .prose h3 { color: #fff; font-weight: 600; font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 2rem; }
+    .timeline-line {
+      position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(to bottom, #10b981, #059669, transparent);
+    }
+    .timeline-item { position: relative; margin-bottom: 1.5rem; }
+    .timeline-dot {
+      position: absolute; left: -1.75rem; top: 0.5rem; width: 1rem; height: 1rem;
+      border-radius: 9999px; background: linear-gradient(to bottom right, #34d399, #10b981);
+      border: 2px solid #0f172a; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .timeline-card {
+      background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4));
+      border-radius: 0.75rem; padding: 1.25rem; border: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    .timeline-card:hover { border-color: rgba(16, 185, 129, 0.3); }
+    .timeline-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+    .timeline-date {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      background: rgba(16, 185, 129, 0.2); color: #6ee7b7;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .timeline-date svg { width: 0.75rem; height: 0.75rem; margin-right: 0.375rem; }
+    .timeline-value {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd;
+      font-size: 0.75rem; font-weight: 700; border-radius: 9999px; border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    /* Sidebar Cards */
+    .sidebar-card {
+      background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.5));
+      backdrop-filter: blur(8px); border-radius: 1rem; padding: 1.5rem;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .sidebar-card-blue {
+      background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.2), rgba(88, 28, 135, 0.2));
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .sidebar-card-green {
+      background: linear-gradient(to bottom right, rgba(6, 78, 59, 0.2), rgba(17, 94, 89, 0.2));
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .sidebar-title {
+      font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sidebar-dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; }
+    .sidebar-dot-blue { background: #3b82f6; }
+    .sidebar-dot-purple { background: #8b5cf6; }
+    .sidebar-dot-green { background: #10b981; }
+    .info-item { margin-bottom: 1rem; }
+    .info-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .info-value { color: #fff; font-weight: 500; }
+    .data-freshness { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(51, 65, 85, 0.3); }
+    .data-freshness-inner { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
+    .data-freshness-inner svg { width: 1rem; height: 1rem; color: #34d399; }
+    .data-freshness-text { color: #94a3b8; }
+    .data-freshness-date { color: #34d399; font-weight: 600; }
+    .data-freshness-note { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+
+    /* Resource Links */
+    .resource-link {
+      display: block; padding: 1rem;
+      background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.3), rgba(15, 23, 42, 0.3));
+      border-radius: 0.5rem; border: 1px solid rgba(51, 65, 85, 0.2); margin-bottom: 0.75rem;
+    }
+    .resource-link:hover { border-color: rgba(59, 130, 246, 0.4); }
+    .resource-link-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .resource-link-header svg { width: 1.25rem; height: 1.25rem; color: #60a5fa; }
+    .resource-link-title { color: #fff; font-weight: 600; font-size: 0.875rem; }
+    .resource-link-desc { font-size: 0.75rem; color: #94a3b8; }
+    .resource-link-small { padding: 0.75rem; margin-bottom: 0.5rem; }
+    .resource-link-small .resource-link-header { margin-bottom: 0; }
+    .resource-link-small .resource-link-title { color: #cbd5e1; }
+
+    /* Internal Link Box */
+    .internal-link-box {
+      background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.1), rgba(88, 28, 135, 0.1));
+      border-radius: 0.75rem; padding: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .internal-link-box-inner { display: flex; align-items: flex-start; gap: 1rem; }
+    .internal-link-box svg { flex-shrink: 0; width: 1.25rem; height: 1.25rem; color: #60a5fa; margin-top: 0.125rem; }
+    .internal-link-box p { color: #f1f5f9; line-height: 1.6; }
+    .internal-link-box a { color: #60a5fa; }
+    .internal-link-box a:hover { color: #93c5fd; }
+
+    /* Full Width Sections */
+    .full-section {
+      margin-top: 3rem;
+      background: linear-gradient(to bottom right, rgba(6, 78, 59, 0.2), rgba(17, 94, 89, 0.2));
+      border-radius: 1rem; padding: 2rem; border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .full-section-blue {
+      background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.2), rgba(88, 28, 135, 0.2));
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .full-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .full-section-title { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .full-section-icon {
+      width: 2.5rem; height: 2.5rem; border-radius: 0.75rem;
+      background: linear-gradient(to bottom right, #10b981, #14b8a6);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .full-section-icon-blue { background: linear-gradient(to bottom right, #3b82f6, #8b5cf6); }
+    .full-section-icon svg { width: 1.5rem; height: 1.5rem; color: #fff; }
+    .full-section-badge {
+      padding: 0.25rem 0.75rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7;
+      font-size: 0.75rem; font-weight: 600; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .full-section-badge-blue {
+      background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3);
+    }
+    .full-section-text { color: #f1f5f9; margin-bottom: 1.5rem; }
+
+    /* Article Grid */
+    .article-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 768px) { .article-grid { grid-template-columns: 1fr 1fr; } }
+    .article-card {
+      background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5));
+      border-radius: 0.75rem; padding: 1.5rem; border: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    .article-card:hover { border-color: rgba(59, 130, 246, 0.5); }
+    .article-card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+    .article-card-icon {
+      flex-shrink: 0; width: 3rem; height: 3rem; border-radius: 0.5rem;
+      background: linear-gradient(to bottom right, #3b82f6, #8b5cf6);
+      display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;
+    }
+    .article-card-title { font-size: 1.125rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; line-height: 1.4; }
+    .article-card:hover .article-card-title { color: #93c5fd; }
+    .article-card-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: #94a3b8; }
+    .article-card-excerpt { color: #f1f5f9; font-size: 0.875rem; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .article-card-link { display: flex; align-items: center; color: #60a5fa; font-size: 0.875rem; font-weight: 500; }
+    .article-card:hover .article-card-link { color: #93c5fd; }
+    .article-card-placeholder {
+      background: linear-gradient(to bottom right, rgba(30, 41, 59, 0.3), rgba(15, 23, 42, 0.3));
+      border-style: dashed; border-color: rgba(51, 65, 85, 0.2);
+    }
+    .article-card-placeholder-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem 0; }
+    .article-card-placeholder-icon {
+      width: 4rem; height: 4rem; border-radius: 9999px;
+      background: rgba(30, 41, 59, 0.5);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
+    }
+    .article-card-placeholder-icon svg { width: 2rem; height: 2rem; color: #64748b; }
+    .article-card-placeholder h4 { color: #94a3b8; font-weight: 600; margin-bottom: 0.5rem; }
+    .article-card-placeholder p { color: #64748b; font-size: 0.875rem; }
+
+    /* CTA */
+    .cta { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(51, 65, 85, 0.3); text-align: center; }
+    .cta p { color: #94a3b8; font-size: 0.875rem; }
+    .cta a { color: #60a5fa; font-weight: 500; margin-left: 0.25rem; }
+    .cta a:hover { color: #93c5fd; }
+
+    /* Resources */
+    .resources-section {
+      margin-top: 3rem;
+      background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.3), rgba(30, 41, 59, 0.2));
+      border-radius: 1rem; padding: 2rem; border: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    .resources-title { font-size: 1.25rem; font-weight: 700; color: #cbd5e1; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .resources-title svg { width: 1.25rem; height: 1.25rem; }
+
+    /* Navigation Bottom */
+    .nav-bottom { margin-top: 3rem; display: flex; justify-content: space-between; align-items: center; }
+    .nav-back {
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem;
+      background: rgba(30, 41, 59, 0.5); color: #fff; border-radius: 0.75rem;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .nav-back:hover { background: rgba(51, 65, 85, 0.5); border-color: rgba(59, 130, 246, 0.3); }
+    .nav-back svg { width: 1.25rem; height: 1.25rem; }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid rgba(51, 65, 85, 0.5);
+      background: rgba(2, 6, 23, 0.5); backdrop-filter: blur(8px); padding: 3rem 0;
+    }
+    .footer-inner { max-width: 80rem; margin: 0 auto; padding: 0 1rem; text-align: center; }
+    .footer p { color: #64748b; font-size: 0.875rem; }
+
+    /* Small SVG icon helper */
+    .icon-sm { width: 0.75rem; height: 0.75rem; }
+    .icon-md { width: 1rem; height: 1rem; }
+    .icon-lg { width: 1.5rem; height: 1.5rem; }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">Placement</a>
+      <div class="nav-links">
+        <a href="/private-equity-placement-agent-news" class="nav-link">News</a>
+        <a href="/private-equity-placement-agents-list" class="nav-link nav-link-active">Agents</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Full-Width Hero Image -->
+  {company.hero_asset_url && (
+    <div class="hero-full-img" style="margin-top: 4rem;">
+      <img src={company.hero_asset_url} alt={company.display_name} />
+    </div>
+  )}
+
+  <!-- Hero Section -->
+  <div class="hero" style={company.hero_asset_url ? 'padding-top: 2rem;' : ''}>
+    {company.featured_asset_url && !company.hero_asset_url && (
+      <div class="hero-bg">
+        <img src={company.featured_asset_url} alt={company.display_name} />
+        <div class="hero-overlay"></div>
+      </div>
+    )}
+
+    <div class="hero-content container">
+      <span class="badge">Placement Agent</span>
+
+      <h1 class="title">{company.display_name} <span style="font-weight: 400; opacity: 0.7;">Placement Agent</span></h1>
+
+      {overviewSection && (
+        <div>
+          <p class="overview">
+            {overviewSection.content.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').split('.')[0]}.
+          </p>
+
+          <div class="tags">
+            {tags.industries.map(tag => (
+              <span class="tag tag-purple">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                </svg>
+                {tag}
+              </span>
+            ))}
+            {tags.services.map(tag => (
+              <span class="tag tag-blue">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                {tag}
+              </span>
+            ))}
+            {tags.locations.map(tag => (
+              <span class="tag tag-green">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Meta Info -->
+      <div class="meta">
+        {company.founded_year && (
+          <div class="meta-item">
+            <span class="meta-label">Founded</span>
+            <span class="meta-value">{company.founded_year}</span>
+          </div>
+        )}
+        {company.employee_range && (
+          <div class="meta-item">
+            <span class="meta-label">Employees</span>
+            <span class="meta-value">{company.employee_range}</span>
+          </div>
+        )}
+        {company.headquarters_city && (
+          <div class="meta-item">
+            <span class="meta-label">Location</span>
+            <span class="meta-value">{company.headquarters_city}, {company.headquarters_country}</span>
+          </div>
+        )}
+        {company.website && (
+          <a href={company.website} target="_blank" rel="noopener noreferrer" class="meta-link">
+            <span>Visit Website</span>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured Visualization Section - Full Width at Top -->
+  <div class="full-section" style="padding-top: 2rem; padding-bottom: 2rem;" id="knowledge-graph">
+    <div class="full-section-header">
+      <h2 class="full-section-title">
+        <div class="full-section-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <span>{company.display_name} Network</span>
+      </h2>
+      <span class="full-section-badge">Knowledge Graph</span>
+    </div>
+
+    <!-- 3D Interactive Knowledge Graph - Hero Visualization -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">3D WebGL</span>
+        <span style="color: #64748b; font-size: 0.8rem;">Interactive • Drag to rotate • Click to explore</span>
+      </div>
+      <ZepGraph3D companyId={company.slug} companyName={company.name} height="450px" />
+    </div>
+
+    <!-- Timeline - Company History -->
+    <div style="margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+        <span style="background: linear-gradient(135deg, #10b981, #14b8a6); padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Timeline</span>
+        <span style="color: #64748b; font-size: 0.8rem;">Company history & deal milestones</span>
+      </div>
+      <CompanyTimeline companyId={company.slug} companyName={company.name} />
+    </div>
+  </div>
+
+  <!-- Content Sections -->
+  <div class="container">
+    <div class="content-grid">
+      <!-- Main Content (2/3) -->
+      <div class="main-content">
+        {company.profile_sections && Object.entries(company.profile_sections)
+          .filter(([key]) => key !== 'resources')
+          .map(([key, section]: [string, any]) => {
+            // Special handling for deals section - display as timeline cards
+            if (key === 'deals' || key === 'transactions' || key === 'announcements') {
+              const dealLines = section.content
+                .split('\n')
+                .filter((line: string) => line.trim().startsWith('-'))
+                .map((line: string) => line.trim().substring(1).trim());
+
+              return (
+                <div id={key} class="card">
+                  <div class="card-header">
+                    <div class="card-icon card-icon-green">{section.title.charAt(0)}</div>
+                    <div>
+                      <h2 class="card-title">{section.title}</h2>
+                      <div class="card-bar card-bar-green"></div>
+                    </div>
+                  </div>
+
+                  <div class="timeline">
+                    <div class="timeline-line"></div>
+                    {dealLines.map((deal: string, index: number) => {
+                      const dateMatch = deal.match(/(Q[1-4]\s+\d{4}|\w+\s+\d{4}|\d{4})/);
+                      const date = dateMatch ? dateMatch[0] : 'Recent';
+                      const valueMatch = deal.match(/\$[\d.]+\s*[BM](?:illion)?/i);
+                      const value = valueMatch ? valueMatch[0] : null;
+
+                      return (
+                        <div class="timeline-item">
+                          <div class="timeline-dot"></div>
+                          <div class="timeline-card">
+                            <div class="timeline-header">
+                              <span class="timeline-date">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                {date}
+                              </span>
+                              {value && <span class="timeline-value">{value}</span>}
+                            </div>
+                            <div class="prose" set:html={
+                              deal
+                                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                            }></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
+            // Regular section display
+            return (
+              <div id={key} class="card">
+                <div class="card-header">
+                  <div class="card-icon">{section.title.charAt(0)}</div>
+                  <div>
+                    <h2 class="card-title">{section.title}</h2>
+                    <div class="card-bar"></div>
+                  </div>
+                </div>
+
+                <div class="prose" set:html={
+                  section.content
+                    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/([.!?])(\s+)(?!(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|Inc|Ltd|Corp|Co|U\.S|U\.K|U\.N|E\.U|vs)\b)([A-Z])/g, '$1</p><p>$3')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/^(.+)$/m, '<p>$1</p>')
+                    .replace(/^- (.+)/gm, '<li>$1</li>')
+                    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                }></div>
+              </div>
+            );
+          })}
+
+        <!-- Internal Link Section -->
+        <div class="internal-link-box">
+          <div class="internal-link-box-inner">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>
+              <a href="/">
+                <span set:html={contextualLinks[rotationIndex]}></span>
+              </a> to compare services, expertise, and market positioning across the industry.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar (1/3) -->
+      <div class="sidebar">
+        <!-- Quick Info Card -->
+        {(company.industry || company.founded_year || company.employee_range || company.headquarters_city) && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-blue"></div>
+              Company Info
+            </h3>
+            <div>
+              {company.industry && (
+                <div class="info-item">
+                  <div class="info-label">Industry</div>
+                  <div class="info-value">{company.industry}</div>
+                </div>
+              )}
+              {company.founded_year && (
+                <div class="info-item">
+                  <div class="info-label">Founded</div>
+                  <div class="info-value">{company.founded_year}</div>
+                </div>
+              )}
+              {company.employee_range && (
+                <div class="info-item">
+                  <div class="info-label">Team Size</div>
+                  <div class="info-value">{company.employee_range}</div>
+                </div>
+              )}
+              {company.headquarters_city && (
+                <div class="info-item">
+                  <div class="info-label">Headquarters</div>
+                  <div class="info-value">{company.headquarters_city}, {company.headquarters_country}</div>
+                </div>
+              )}
+            </div>
+
+            {lastUpdated && (
+              <div class="data-freshness">
+                <div class="data-freshness-inner">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="data-freshness-text">Updated <span class="data-freshness-date">{lastUpdated}</span></span>
+                </div>
+                <div class="data-freshness-note">Live data from our knowledge graph</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <!-- Related Resources Card -->
+        <div class="sidebar-card sidebar-card-blue">
+          <h3 class="sidebar-title">
+            <div class="sidebar-dot sidebar-dot-blue"></div>
+            More Resources
+          </h3>
+          <div>
+            <a href="/" class="resource-link">
+              <div class="resource-link-header">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span class="resource-link-title">{sidebarLinks[sidebarRotationIndex]}</span>
+              </div>
+              <p class="resource-link-desc">Compare private equity placement agents</p>
+            </a>
+
+            {internalLinks.map((link) => (
+              <a href={link.url} class="resource-link resource-link-small">
+                <div class="resource-link-header">
+                  {link.type === 'city' || link.type === 'country' || link.type === 'region' ? (
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #34d399;">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                  ) : (
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #a78bfa;">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                  )}
+                  <span class="resource-link-title">{link.text}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <!-- Knowledge Graph Card -->
+        <div class="sidebar-card sidebar-card-green">
+          <h3 class="sidebar-title">
+            <div class="sidebar-dot sidebar-dot-green"></div>
+            Knowledge Graph
+          </h3>
+          <div style="margin-bottom: 1rem;">
+            <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+          </div>
+          <a href="#knowledge-graph" style="font-size: 0.75rem; color: #34d399;">View full network →</a>
+        </div>
+
+        <!-- Team Highlights Card -->
+        {company.profile_sections && (company.profile_sections.team || company.profile_sections.leadership) && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-purple"></div>
+              Leadership
+            </h3>
+            <div class="prose" style="font-size: 0.875rem;" set:html={
+              ((company.profile_sections.team || company.profile_sections.leadership).content)
+                .split(/\n\n/)[0]
+                .substring(0, 300) + '...'
+            }></div>
+            <a href="#team" style="display: inline-block; margin-top: 1rem; font-size: 0.75rem; color: #60a5fa;">View full team →</a>
+          </div>
+        )}
+
+        <!-- Key Deals Card -->
+        {company.profile_sections?.deals && (
+          <div class="sidebar-card">
+            <h3 class="sidebar-title">
+              <div class="sidebar-dot sidebar-dot-green"></div>
+              Recent Deals
+            </h3>
+            <div class="prose" style="font-size: 0.875rem;" set:html={
+              company.profile_sections.deals.content
+                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+                .split(/\n\n/)[0]
+                .substring(0, 300) + '...'
+            }></div>
+            <a href="#deals" style="display: inline-block; margin-top: 1rem; font-size: 0.75rem; color: #60a5fa;">View all deals →</a>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- 2D Network View - Accessibility Alternative -->
+    <div class="full-section">
+      <div class="full-section-header">
+        <h2 class="full-section-title">
+          <div class="full-section-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+            </svg>
+          </div>
+          <span>Network View</span>
+        </h2>
+        <span class="full-section-badge full-section-badge-blue">2D • Accessible</span>
+      </div>
+
+      <p class="full-section-text">
+        Traditional 2D network diagram showing {company.display_name}'s connections. Better for accessibility and screen readers.
+      </p>
+
+      <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+    </div>
+
+    <!-- Our Coverage Section -->
+    <div class="full-section full-section-blue">
+      <div class="full-section-header">
+        <h2 class="full-section-title">
+          <div class="full-section-icon full-section-icon-blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+          </div>
+          <span>Our Coverage</span>
+        </h2>
+        <span class="full-section-badge full-section-badge-blue">Open Access • No Paywall</span>
+      </div>
+
+      <p class="full-section-text">
+        Unlike PE News and other paywalled sources, all our coverage is freely accessible. Here's what we've written about {company.display_name}:
+      </p>
+
+      <div class="article-grid">
+        <a href={`/${company.slug}`} class="article-card">
+          <div class="article-card-header">
+            <div class="article-card-icon">{company.display_name.charAt(0)}</div>
+            <div>
+              <h3 class="article-card-title">{company.display_name} - Placement Agent Profile</h3>
+              <div class="article-card-meta">
+                <span>Company Profile</span>
+                <span>•</span>
+                <span>{new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+              </div>
+            </div>
+          </div>
+          <p class="article-card-excerpt">
+            Comprehensive profile covering {company.display_name}'s services, team, recent deals, and market position in the private equity placement agent industry.
+          </p>
+          <div class="article-card-link">Read Full Profile →</div>
+        </a>
+
+        <div class="article-card article-card-placeholder">
+          <div class="article-card-placeholder-inner">
+            <div class="article-card-placeholder-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+            </div>
+            <h4>More Coverage Coming</h4>
+            <p>Stay tuned for in-depth articles, deal analysis, and industry insights about {company.display_name}.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta">
+        <p>
+          Want to stay updated on {company.display_name}?
+          <a href="/private-equity-placement-agent-news">Browse all articles →</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Resources Section -->
+    {company.profile_sections?.resources && (
+      <div class="resources-section">
+        <h2 class="resources-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          {company.profile_sections.resources.title}
+        </h2>
+        <div class="prose" set:html={
+          company.profile_sections.resources.content
+            .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+            .replace(/^- (.+)/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        }></div>
+      </div>
+    )}
+
+    <!-- Navigation -->
+    <div class="nav-bottom">
+      <a href="/private-equity-placement-agents-list" class="nav-back">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        All Placement Agents
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p>© 2025 Placement. All rights reserved.</p>
+      <p class="disclaimer" style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 12px;">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+    </div>
+  </footer>
+</body>
+</html>

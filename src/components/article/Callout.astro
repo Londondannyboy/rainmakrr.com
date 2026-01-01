@@ -1,0 +1,43 @@
+---
+/**
+ * Callout Component
+ * Pro tip or warning callout box with optional image
+ *
+ * @prop type - "pro_tip" (blue) or "warning" (amber)
+ * @prop title - Callout title
+ * @prop content - Callout body text
+ * @prop imageUrl - Optional thumbnail image URL
+ */
+interface Props {
+  type: 'pro_tip' | 'warning';
+  title: string;
+  content: string;
+  imageUrl?: string;
+}
+
+const { type, title, content, imageUrl } = Astro.props;
+
+const isWarning = type === 'warning';
+const icon = isWarning ? '⚠️' : '💡';
+const cardClass = isWarning
+  ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-400'
+  : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-500';
+const titleClass = isWarning ? 'text-amber-800' : 'text-blue-800';
+const textClass = isWarning ? 'text-amber-900' : 'text-blue-900';
+---
+
+<div class={`my-8 rounded-xl border-l-4 overflow-hidden ${cardClass}`}>
+  <div class="flex flex-col md:flex-row gap-6 p-6">
+    {imageUrl && (
+      <div class="md:w-1/3">
+        <img src={imageUrl} alt="" class="w-full h-48 md:h-full object-cover rounded-lg" loading="lazy" />
+      </div>
+    )}
+    <div class={imageUrl ? 'md:w-2/3' : 'w-full'}>
+      <h4 class={`text-lg font-bold mb-2 flex items-center gap-2 ${titleClass}`}>
+        {icon} {title}
+      </h4>
+      <p class={`text-base leading-relaxed ${textClass}`}>{content}</p>
+    </div>
+  </div>
+</div>

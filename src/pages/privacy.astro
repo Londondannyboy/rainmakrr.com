@@ -1,0 +1,605 @@
+---
+import SEO from '../components/SEO.astro';
+import Navigation from '../components/Navigation.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Privacy Policy - Quest"
+    description="Our commitment to protecting your privacy and personal data"
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 800px;
+      position: relative;
+      z-index: 10;
+      opacity: 1;
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 80px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: clamp(18px, 2.5vw, 24px);
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    /* Content Container */
+    .privacy-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .date-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      padding: 12px 24px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 60px;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Table of Contents */
+    .toc {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      margin: 40px 0 60px;
+      opacity: 1;
+      position: relative;
+      z-index: 10;
+    }
+
+    .toc h3 {
+      margin-top: 0;
+      margin-bottom: 24px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .toc ul {
+      margin-left: 0;
+      list-style: none;
+    }
+
+    .toc li {
+      margin-bottom: 12px;
+    }
+
+    .toc a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      padding: 8px 0;
+      display: inline-block;
+    }
+
+    .toc a:hover {
+      color: #667eea;
+      transform: translateX(4px);
+    }
+
+    /* Content Styles */
+    .privacy-content {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+
+    .content-section {
+      margin-bottom: 60px;
+      opacity: 1;
+    }
+
+    .privacy-content h2 {
+      color: #fff;
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 700;
+      margin: 60px 0 24px;
+    }
+
+    .privacy-content h3 {
+      color: #fff;
+      font-size: clamp(20px, 3vw, 26px);
+      font-weight: 600;
+      margin: 40px 0 16px;
+    }
+
+    .privacy-content p {
+      margin-bottom: 20px;
+    }
+
+    .privacy-content ul, .privacy-content ol {
+      margin: 20px 0 20px 24px;
+    }
+
+    .privacy-content li {
+      margin-bottom: 12px;
+    }
+
+    .privacy-content a {
+      color: #667eea;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .privacy-content a:hover {
+      color: #f093fb;
+      border-bottom-color: rgba(240, 147, 251, 0.5);
+    }
+
+    .privacy-content strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Footer */
+    footer {
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 80px 60px 40px;
+      margin-top: 120px;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr repeat(3, 1fr);
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .footer-links a:hover {
+      color: #667eea;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+    }
+
+    .footer-bottom .disclaimer {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 20px 30px;
+      }
+
+      .nav-links {
+        gap: 20px;
+        font-size: 12px;
+      }
+
+      .hero {
+        padding: 140px 30px 60px;
+        min-height: 50vh;
+      }
+
+      .privacy-container {
+        padding: 60px 30px;
+      }
+
+      .toc {
+        padding: 30px;
+      }
+
+      footer {
+        padding: 60px 30px 30px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <Navigation />
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Privacy Policy</h1>
+      <p>Our commitment to protecting your privacy and personal data</p>
+    </div>
+  </section>
+
+  <!-- Privacy Policy Content -->
+  <div class="privacy-container">
+    <div class="date-badge">Last updated: November 12, 2025</div>
+
+    <div class="toc">
+      <h3>Contents</h3>
+      <ul>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#about">About this privacy policy</a></li>
+        <li><a href="#who-we-are">Who we are</a></li>
+        <li><a href="#data-collection">The types of personal data we collect</a></li>
+        <li><a href="#how-we-use">How we use your personal data</a></li>
+        <li><a href="#data-sharing">When we share your personal data</a></li>
+        <li><a href="#data-security">Security of your personal data</a></li>
+        <li><a href="#data-retention">How long we keep your personal data</a></li>
+        <li><a href="#your-rights">Your privacy and data protection rights</a></li>
+        <li><a href="#cookies">Cookies and similar technologies</a></li>
+        <li><a href="#contact">Contact us</a></li>
+      </ul>
+    </div>
+
+    <div class="privacy-content">
+      <div class="content-section" id="introduction">
+        <h2>Introduction</h2>
+        <p>This is the privacy policy for Quest (collectively referred to as "Quest", "we", "us" or "our" in this policy), our sites such as rainmakrr.com, relocation.quest, and gtm.quest, and our associated services.</p>
+
+        <p>Our values guide everything that we do – including our editorial approach and how we use personal data. We are strongly committed to keeping your personal data safe. This commitment exists throughout the lifecycle of your personal data, from the design of any Quest service which uses personal data to the deletion of that data.</p>
+
+        <p>We think carefully about our use of personal data, and below you can find the details of what we do to protect your privacy. This policy covers, among other topics:</p>
+
+        <ul>
+          <li>Information about your rights and the choices available to you</li>
+          <li>Transparency about how we collect and use your personal data, including when and how it is shared</li>
+          <li>Information on how we protect your personal data</li>
+          <li>Information on how we will facilitate your rights and respond to your questions</li>
+        </ul>
+      </div>
+
+      <div class="content-section" id="about">
+        <h2>About this privacy policy</h2>
+        <p>This privacy policy explains how we collect, use, share, and transfer your personal data when you use the services provided on our sites or interact with us. This privacy policy also explains your data privacy rights.</p>
+
+        <p>Personal data is any information about you by which you can be identified or be identifiable. This can include information such as:</p>
+
+        <ul>
+          <li>Your name, email address, postal address, or phone number</li>
+          <li>Information about your device (such as the IP address, which is a numerical code to identify your device that can provide information about the country, region or city where you are based)</li>
+          <li>Information relating to how you use and interact with our sites and services</li>
+        </ul>
+      </div>
+
+      <div class="content-section" id="who-we-are">
+        <h2>Who we are</h2>
+        <p>Quest is an independent media organization. If you want to contact us directly, you can find our contact details in the "Contact us" section below.</p>
+      </div>
+
+      <div class="content-section" id="data-collection">
+        <h2>The types of personal data we collect about you</h2>
+        <p>We collect your personal data when you visit our sites or when you interact with us. We will only collect your personal data in line with applicable laws. We collect your personal data in the following ways:</p>
+
+        <h3>Directly from you</h3>
+        <p>When you:</p>
+        <ul>
+          <li>Browse or use our sites</li>
+          <li>Contact us via email or social media</li>
+          <li>Sign up for newsletters or notifications</li>
+          <li>Create an account on our sites</li>
+          <li>Participate in surveys or provide us with feedback</li>
+        </ul>
+
+        <h3>Personal data we generate about you</h3>
+        <p>When you use our sites we may use cookies or similar technologies to collect or generate extra data, including:</p>
+        <ul>
+          <li>Your IP address - a numerical code to identify your device</li>
+          <li>Your geolocation data - information about where you are based</li>
+          <li>Information on how you interact with our services</li>
+          <li>Your browsing history of the content you have visited on our sites</li>
+          <li>Details of your device (computer, mobile, tablet) and browsers used to access our content</li>
+        </ul>
+
+        <h3>Personal data we collect from third parties</h3>
+        <p>We may collect personal data from third parties, such as:</p>
+        <ul>
+          <li>Authentication providers when you sign in using social media accounts</li>
+          <li>Analytics providers that help us understand how our sites are used</li>
+          <li>Service providers that help us operate our sites</li>
+        </ul>
+
+        <p>We will not collect special categories of data from you - such as personal data concerning your race, political opinions, religion, health or sexual orientation - unless you have chosen to provide that type of personal data to us.</p>
+      </div>
+
+      <div class="content-section" id="how-we-use">
+        <h2>How we use your personal data</h2>
+        <p>We use personal data collected through our sites only when we have a valid reason and the legal grounds to do so. We determine the legal grounds based on the purposes for which we have collected your personal data.</p>
+
+        <h3>Legal grounds for using your personal data</h3>
+        <p>The legal ground may be one of the following:</p>
+
+        <ul>
+          <li><strong>Consent:</strong> We will use your personal data where we have asked for your consent, which you can withdraw at any time</li>
+          <li><strong>Performance of a contract:</strong> Where we need to use your personal data in order to perform a contract with you</li>
+          <li><strong>Compliance with law:</strong> In some cases, we may have a legal obligation to use or keep your personal data</li>
+          <li><strong>Our legitimate interest:</strong> We may process your personal data where it is necessary for our legitimate interests in a way that might be expected as part of running Quest and in a way which does not materially impact your rights and freedoms</li>
+        </ul>
+
+        <h3>How we use your personal data for our legitimate interests</h3>
+        <p>We use your personal data for the following legitimate interests:</p>
+
+        <ul>
+          <li>To enable you to access and use our sites</li>
+          <li>To improve our sites and services</li>
+          <li>To send you service communications and updates</li>
+          <li>To respond to your queries and resolve complaints</li>
+          <li>To analyze how our sites are used and improve user experience</li>
+          <li>For security and fraud prevention</li>
+          <li>To ensure our sites are safe and secure and used in line with our terms of use</li>
+        </ul>
+
+        <p>Quest is a media organization and publisher. Data protection law includes certain exemptions when personal data is processed for the purposes of journalism. Those exemptions apply to some of the ways Quest uses personal data. This privacy policy does not cover personal data that Quest processes for the purposes of journalism.</p>
+      </div>
+
+      <div class="content-section" id="data-sharing">
+        <h2>When we share your personal data</h2>
+        <p>We may share your personal data with other organizations under the following circumstances:</p>
+
+        <h3>Service providers</h3>
+        <p>We may share your data with organizations that provide services on our behalf, such as:</p>
+        <ul>
+          <li>Cloud hosting services (e.g., Railway, Neon)</li>
+          <li>Analytics providers</li>
+          <li>Content delivery networks</li>
+          <li>Email service providers</li>
+          <li>Authentication service providers</li>
+        </ul>
+
+        <h3>Legal requirements</h3>
+        <p>We may reveal your personal data to any law enforcement agency, court, regulator, government authority, or in connection with any legal action if we are required to do so to meet a legal or regulatory obligation, or otherwise to protect our rights or the rights of anyone else.</p>
+
+        <h3>Business transfers</h3>
+        <p>We may share your personal data to any other organization that buys, or to which we transfer all, or substantially all, of our assets and business. If this sale or transfer takes place, we will use reasonable efforts to make sure that the organization we transfer your personal data to uses it in line with our privacy policy.</p>
+
+        <p>When we share your personal data with any organization which accesses your data in the course of providing services on our behalf, they will be governed by strict contractual restrictions to make sure that they protect your data and comply with applicable law.</p>
+      </div>
+
+      <div class="content-section" id="data-security">
+        <h2>Security of your personal data</h2>
+        <p>We have implemented appropriate technical and organizational controls to protect your personal data against unauthorized processing and against accidental loss, damage or destruction. Sending any information, including personal data, via the internet is not completely secure. We cannot guarantee the security of any personal data sent to our site while still in transit and so you provide it at your own risk.</p>
+      </div>
+
+      <div class="content-section" id="data-retention">
+        <h2>How long we keep your personal data</h2>
+        <p>We keep your personal data for only as long as we need to. How long we need your personal data depends on what we are using it for, as set out in this privacy policy.</p>
+
+        <p>To determine the appropriate retention period for personal data, we consider the amount, nature and sensitivity of the personal data, the potential risk of harm from unauthorized use or disclosure of your personal data, the purposes for which we process your personal data and whether we can achieve those purposes through other means.</p>
+
+        <p>If we no longer need your data, we will delete it or make it anonymous by removing all details that identify you. However, when you unsubscribe from communications, we will keep your email address to ensure that we do not send you any communications in the future.</p>
+      </div>
+
+      <div class="content-section" id="your-rights">
+        <h2>Your privacy and data protection rights</h2>
+        <p>You have a number of rights with regard to the personal data that we hold about you:</p>
+
+        <ul>
+          <li>You have the right to receive a copy of the personal data we hold about you</li>
+          <li>You have the right to correct the personal data we hold about you</li>
+          <li>Where applicable, you may also have a right to receive a machine-readable copy of your personal data</li>
+          <li>You have the right to ask us to delete your personal data or restrict how it is used</li>
+          <li>Where applicable, you have the right to object to processing of your personal data for certain purposes</li>
+          <li>Where you have provided us with consent to use your personal data, you can withdraw this consent at any time</li>
+        </ul>
+
+        <p>If you would like to exercise any of your rights specified above, please email us using the contact details in the "Contact us" section below. We will respond to all legitimate requests within one month. Occasionally it may take us longer than a month if your request is particularly complex or you have made a large number of requests.</p>
+
+        <p>We may need verification of your identity to proceed with a request. This is a security measure to ensure that your personal data is not disclosed to any person who does not have a right to receive it.</p>
+      </div>
+
+      <div class="content-section" id="cookies">
+        <h2>Cookies and similar technologies</h2>
+        <p>When you visit our sites, we may collect personal data from you automatically using cookies or similar technologies. Cookies are small text files that are placed on your device to help our sites provide a better user experience.</p>
+
+        <h3>How we use cookies</h3>
+        <p>We use cookies for the following purposes:</p>
+
+        <ul>
+          <li><strong>Essential cookies:</strong> Required for our sites to function properly</li>
+          <li><strong>Analytics cookies:</strong> Help us understand how visitors interact with our sites</li>
+          <li><strong>Functionality cookies:</strong> Allow our sites to remember your preferences</li>
+          <li><strong>Performance cookies:</strong> Help us improve the performance of our sites</li>
+        </ul>
+
+        <h3>Managing cookies</h3>
+        <p>Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may impact your overall user experience.</p>
+      </div>
+
+      <div class="content-section" id="contact">
+        <h2>Contact us for information about how we use your personal data</h2>
+        <p>If you have any questions about how we use your personal data or if you have a concern about how your personal data is used, please contact us at:</p>
+
+        <p>
+          <strong>Email:</strong> <a href="mailto:hello@rainmakrr.com">hello@rainmakrr.com</a><br>
+          <strong>Website:</strong> <a href="https://rainmakrr.com/contact">rainmakrr.com/contact</a>
+        </p>
+
+        <p>We will respond to all queries and complaints within 30 days.</p>
+
+        <h3>Changes to this privacy policy</h3>
+        <p>If we decide to change our privacy policy, the updated privacy policy will be posted on this page. If the changes are significant, we may also choose to notify users via email or a notice on our sites.</p>
+
+        <p><strong>Last updated:</strong> November 12, 2025</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Placement</h3>
+        <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
+          Your definitive private equity placement agents news source.
+        </p>
+        <p style="margin-top: 16px;">
+          <a href="/" style="color: #667eea; text-decoration: none; font-weight: 600;">Top Private Equity Placement Agents</a>
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h3>Resources</h3>
+        <ul class="footer-links">
+          <li><a href="/private-equity-placement-agent-news">News</a></li>
+          <li><a href="/private-equity-placement-agents-list">Agency Directory</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms & Conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Quest. All rights reserved.</p>
+      <p class="disclaimer">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Wait for DOM and GSAP to load
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof gsap !== 'undefined') {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animation
+        gsap.to('.hero-content', {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: 'power3.out'
+        });
+
+        // TOC animation
+        gsap.to('.toc', {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+          delay: 0.3
+        });
+
+        // Content sections animation
+        gsap.utils.toArray('.content-section').forEach((section, i) => {
+          gsap.to(section, {
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 80%',
+              end: 'top 50%',
+              scrub: 1
+            },
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            ease: 'power3.out'
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

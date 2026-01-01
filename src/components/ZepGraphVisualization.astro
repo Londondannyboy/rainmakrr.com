@@ -1,0 +1,351 @@
+---
+/**
+ * Zep Deal Graph Visualization Component
+ *
+ * Renders an interactive network graph showing company deal connections
+ * using vis-network library
+ */
+
+interface Props {
+  companyId: string;
+  companyName: string;
+}
+
+const { companyId, companyName } = Astro.props;
+// Generate unique IDs to support multiple graph instances on same page
+const uniqueId = `graph-${companyId}-${Math.random().toString(36).substr(2, 9)}`;
+const loadingId = `${uniqueId}-loading`;
+const errorId = `${uniqueId}-error`;
+const networkId = `${uniqueId}-network`;
+---
+
+<div class="zep-graph-container">
+  <div id={uniqueId} style="width: 100%; height: 24rem; background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid rgba(51, 65, 85, 0.3); position: relative;">
+    <!-- Loading state -->
+    <div id={loadingId} style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center;">
+        <div style="width: 3rem; height: 3rem; border: 4px solid rgba(16, 185, 129, 0.3); border-top-color: #10b981; border-radius: 9999px; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+        <p style="color: #94a3b8; font-size: 0.875rem;">Loading deal graph...</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id={errorId} style="position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;" class="error-state">
+      <svg style="width: 3rem; height: 3rem; color: #475569; margin-bottom: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <p style="color: #94a3b8; font-size: 0.875rem;">Deal graph visualization coming soon</p>
+      <p style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">Building deal connections...</p>
+    </div>
+
+    <!-- Graph canvas -->
+    <div id={networkId} style="width: 100%; height: 100%;"></div>
+  </div>
+
+  <!-- Graph legend -->
+  <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem; font-size: 0.75rem;">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #3b82f6;"></div>
+      <span style="color: #94a3b8;">Company</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #a855f7;"></div>
+      <span style="color: #94a3b8;">Deals</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #10b981;"></div>
+      <span style="color: #94a3b8;">People</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div style="width: 0.75rem; height: 0.75rem; border-radius: 9999px; background: #64748b;"></div>
+      <span style="color: #94a3b8;">Info</span>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ companyId, companyName, loadingId, errorId, networkId }}>
+  // Lazy load graph when it becomes visible (IntersectionObserver)
+  const initGraph = async () => {
+    const loadingEl = document.getElementById(loadingId);
+    const errorEl = document.getElementById(errorId);
+    const networkEl = document.getElementById(networkId);
+
+    // Wait for vis-network library to be available (with timeout)
+    if (typeof vis === 'undefined') {
+      const visLoaded = await new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max
+        const checkVis = setInterval(() => {
+          attempts++;
+          if (typeof vis !== 'undefined') {
+            clearInterval(checkVis);
+            resolve(true);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkVis);
+            resolve(false);
+          }
+        }, 100);
+      });
+
+      if (!visLoaded) {
+        console.warn('vis-network library failed to load');
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'flex';
+        return;
+      }
+    }
+
+    try {
+      // Fetch graph data from API endpoint
+      const response = await fetch(`/api/zep-graph/${companyId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch graph data');
+      }
+
+      const graphData = await response.json();
+
+      // Check response type - Priority: video > data > screenshot
+
+      // Handle 3D video (Attempt #2)
+      if (graphData.type === 'video' && graphData.video_url) {
+        loadingEl.style.display = 'none';
+        networkEl.innerHTML = `
+          <video
+            autoplay
+            loop
+            muted
+            playsinline
+            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem; background: #0f172a;"
+          >
+            <source src="${graphData.video_url}" type="video/webm" />
+            Your browser does not support video playback.
+          </video>
+        `;
+        networkEl.style.display = 'block';
+        return;
+      }
+
+      // Handle screenshot (Attempt #3)
+      if (graphData.type === 'screenshot' && graphData.screenshot_url) {
+        loadingEl.style.display = 'none';
+        networkEl.innerHTML = `
+          <img
+            src="${graphData.screenshot_url}"
+            alt="Deal Graph for ${companyName}"
+            style="width: 100%; height: 100%; object-fit: contain; border-radius: 0.75rem; background: #0f172a;"
+          />
+        `;
+        networkEl.style.display = 'block';
+        return;
+      }
+
+      // Handle interactive data (Attempt #1)
+      if (!graphData.nodes || graphData.nodes.length === 0) {
+        // No data - show coming soon message
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'flex';
+        return;
+      }
+
+      // Hide loading, show graph
+      loadingEl.style.display = 'none';
+      networkEl.style.display = 'block';
+
+      // Create vis-network
+      const nodes = new vis.DataSet(graphData.nodes.map(node => {
+        const hasArticle = node.hasArticle || node.url || node.group === 'company' || node.group === 'article';
+
+        return {
+          id: node.id,
+          label: node.label,
+          group: node.group || 'default',
+          title: node.title || node.label + (hasArticle ? ' (double-click to open)' : ''),
+          shape: 'dot',
+          size: node.label === companyName ? 30 : 20,
+          hasArticle: hasArticle,
+          url: node.url,
+          font: {
+            color: hasArticle ? '#fbbf24' : '#e2e8f0',  // Gold for clickable
+            size: 14,
+            face: 'system-ui',
+            bold: hasArticle ? { size: 15 } : undefined
+          },
+          borderWidth: hasArticle ? 3 : 2,  // Thicker border for clickable
+          borderWidthSelected: hasArticle ? 5 : 4
+        };
+      }));
+
+      const edges = new vis.DataSet(graphData.edges.map(edge => ({
+        from: edge.from,
+        to: edge.to,
+        label: edge.label || '',
+        title: edge.title || '',
+        arrows: 'to',
+        font: {
+          color: '#94a3b8',
+          size: 10,
+          align: 'middle'
+        },
+        color: {
+          color: '#475569',
+          highlight: '#3b82f6'
+        }
+      })));
+
+      const data = { nodes, edges };
+
+      const options = {
+        nodes: {
+          borderWidth: 2,
+          borderWidthSelected: 4,
+          color: {
+            border: '#334155',
+            background: '#1e293b',
+            highlight: {
+              border: '#3b82f6',
+              background: '#1e3a8a'
+            }
+          }
+        },
+        edges: {
+          width: 2,
+          smooth: {
+            type: 'continuous'
+          }
+        },
+        physics: {
+          stabilization: {
+            iterations: 200
+          },
+          barnesHut: {
+            gravitationalConstant: -2000,
+            centralGravity: 0.3,
+            springLength: 150,
+            springConstant: 0.04
+          }
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 100,
+          navigationButtons: true,
+          keyboard: true
+        },
+        groups: {
+          company: {
+            color: { background: '#3b82f6', border: '#1e40af' }
+          },
+          deal: {
+            color: { background: '#a855f7', border: '#7e22ce' }
+          },
+          person: {
+            color: { background: '#10b981', border: '#059669' }
+          },
+          article: {
+            color: { background: '#f59e0b', border: '#d97706' }
+          },
+          entity: {
+            color: { background: '#64748b', border: '#475569' }
+          }
+        }
+      };
+
+      const network = new vis.Network(networkEl, data, options);
+
+      // Add click handler to focus/zoom to nodes
+      network.on('click', (params) => {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const node = nodes.get(nodeId);
+          console.log('Clicked node:', node);
+
+          // Focus/zoom to the clicked node
+          network.focus(nodeId, {
+            scale: 1.5,
+            animation: {
+              duration: 800,
+              easingFunction: 'easeInOutQuad'
+            }
+          });
+
+          // Select the node visually
+          network.selectNodes([nodeId]);
+        }
+      });
+
+      // Double-click to navigate (if article exists)
+      network.on('doubleClick', (params) => {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const node = nodes.get(nodeId);
+
+          // Only navigate if node has article/URL
+          if (node.hasArticle || node.url) {
+            if (node.url) {
+              window.location.href = node.url;
+            } else if (node.group === 'company') {
+              const slug = node.label.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+              window.location.href = `/${slug}`;
+            } else if (node.group === 'article') {
+              const slug = node.label.toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+              window.location.href = `/articles/${slug}`;
+            }
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('Error loading graph:', error);
+      loadingEl.style.display = 'none';
+      errorEl.style.display = 'flex';
+    }
+  };
+
+  // Use IntersectionObserver to lazy-load graphs only when they become visible
+  const container = document.getElementById(loadingId);
+  if (container) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // Graph is now visible, initialize it
+          initGraph();
+          // Stop observing after initialization
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      // Start loading when graph is 100px from viewport
+      rootMargin: '100px'
+    });
+
+    observer.observe(container);
+  }
+</script>
+
+<style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  #graph-network {
+    border-radius: 0.75rem;
+  }
+
+  /* vis-network overrides for dark theme */
+  :global(.vis-network) {
+    background: transparent !important;
+  }
+
+  :global(.vis-tooltip) {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #e2e8f0 !important;
+    border-radius: 0.5rem !important;
+    padding: 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+</style>

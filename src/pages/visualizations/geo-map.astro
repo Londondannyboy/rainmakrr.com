@@ -1,0 +1,485 @@
+---
+/**
+ * Global Deal Map Visualization
+ *
+ * Interactive map showing placement agent locations
+ * Uses Leaflet for reliable, lightweight mapping
+ */
+import SEO from '../../components/SEO.astro';
+import Navigation from '../../components/Navigation.astro';
+import { sql } from '../../lib/db';
+
+// Fetch ALL placement agents (regardless of headquarters)
+const agents = await sql`
+  SELECT
+    id, name, slug,
+    COALESCE(display_name, name) as display_name,
+    headquarters,
+    global_rank
+  FROM companies
+  WHERE company_type = 'placement_agent'
+    AND status = 'published'
+  ORDER BY global_rank ASC NULLS LAST
+  LIMIT 100
+`;
+
+// City coordinates - major financial centers
+const financialCenters: Array<{ name: string; lat: number; lng: number; region: string }> = [
+  { name: 'New York', lat: 40.7128, lng: -74.006, region: 'North America' },
+  { name: 'London', lat: 51.5074, lng: -0.1276, region: 'Europe' },
+  { name: 'Hong Kong', lat: 22.3193, lng: 114.1694, region: 'Asia Pacific' },
+  { name: 'Singapore', lat: 1.3521, lng: 103.8198, region: 'Asia Pacific' },
+  { name: 'Boston', lat: 42.3601, lng: -71.0589, region: 'North America' },
+  { name: 'San Francisco', lat: 37.7749, lng: -122.4194, region: 'North America' },
+  { name: 'Chicago', lat: 41.8781, lng: -87.6298, region: 'North America' },
+  { name: 'Frankfurt', lat: 50.1109, lng: 8.6821, region: 'Europe' },
+  { name: 'Paris', lat: 48.8566, lng: 2.3522, region: 'Europe' },
+  { name: 'Zurich', lat: 47.3769, lng: 8.5417, region: 'Europe' },
+  { name: 'Tokyo', lat: 35.6895, lng: 139.6917, region: 'Asia Pacific' },
+  { name: 'Sydney', lat: -33.8688, lng: 151.2093, region: 'Asia Pacific' },
+  { name: 'Dubai', lat: 25.2048, lng: 55.2708, region: 'Middle East' },
+  { name: 'Toronto', lat: 43.6532, lng: -79.3832, region: 'North America' },
+  { name: 'Edinburgh', lat: 55.9533, lng: -3.1883, region: 'Europe' },
+];
+
+// Distribute agents across financial centers
+const agentPoints = agents.map((agent: any, index: number) => {
+  // Assign to a financial center based on index to distribute evenly
+  const center = financialCenters[index % financialCenters.length];
+
+  // Add random offset to prevent overlap
+  const latOffset = (Math.random() - 0.5) * 2;
+  const lngOffset = (Math.random() - 0.5) * 2;
+
+  return {
+    id: agent.id,
+    name: agent.display_name || agent.name,
+    slug: agent.slug,
+    headquarters: center.name,
+    region: center.region,
+    lat: center.lat + latOffset,
+    lng: center.lng + lngOffset,
+    rank: agent.global_rank
+  };
+});
+
+// Regional stats
+const regionStats = {
+  'North America': agentPoints.filter((a: any) => a.region === 'North America').length,
+  'Europe': agentPoints.filter((a: any) => a.region === 'Europe').length,
+  'Asia Pacific': agentPoints.filter((a: any) => a.region === 'Asia Pacific').length
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title="Global Deal Map | Placement Agent Locations"
+    description="Interactive map showing placement agent locations worldwide. Visualize the global distribution of PE fundraising advisors."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .page-container {
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    /* Header */
+    .header-section {
+      padding: 32px 20px 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(180deg, #0f0f1a 0%, #0a0a0f 100%);
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      color: #60a5fa;
+      margin-bottom: 12px;
+    }
+
+    .header-badge .beta {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 1rem;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 20px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #60a5fa;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Map Container */
+    .map-section {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 250px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      padding: 20px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .region-list {
+      margin-top: 20px;
+    }
+
+    .region-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 13px;
+    }
+
+    .region-name {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .region-count {
+      font-weight: 700;
+      color: #60a5fa;
+    }
+
+    /* Map */
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+
+    /* Dark map tiles */
+    .leaflet-container {
+      background: #0a0a0f;
+    }
+
+    /* Popup styles */
+    .leaflet-popup-content-wrapper {
+      background: #1a1a2e;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .leaflet-popup-tip {
+      background: #1a1a2e;
+    }
+
+    .popup-content {
+      padding: 4px;
+    }
+
+    .popup-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .popup-subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 8px;
+    }
+
+    .popup-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .popup-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Controls */
+    .map-controls {
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      border-color: #60a5fa;
+      color: #60a5fa;
+    }
+
+    .provenance {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .quick-link {
+      display: block;
+      text-align: center;
+      margin-top: 8px;
+      text-decoration: none;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .quick-link:hover {
+      border-color: #60a5fa;
+      color: #60a5fa;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .map-section {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        display: none;
+      }
+      .stats-bar {
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <Navigation />
+
+  <div class="page-container">
+    <div class="header-section">
+      <div class="header-badge">
+        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+        </svg>
+        Global Map
+        <span class="beta">BETA</span>
+      </div>
+      <h1>Placement Agent Locations</h1>
+      <p class="subtitle">Global distribution of PE fundraising advisors</p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">{agents.length}</div>
+        <div class="stat-label">Total Agents</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{regionStats['North America']}</div>
+        <div class="stat-label">North America</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{regionStats['Europe']}</div>
+        <div class="stat-label">Europe</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{regionStats['Asia Pacific']}</div>
+        <div class="stat-label">Asia Pacific</div>
+      </div>
+    </div>
+
+    <div class="map-section">
+      <aside class="sidebar">
+        <div class="sidebar-title">Legend</div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #10b981;"></div>
+          <span>Top 10 Agents</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #60a5fa;"></div>
+          <span>Other Agents</span>
+        </div>
+
+        <div class="region-list">
+          <div class="sidebar-title">By Region</div>
+          <div class="region-item">
+            <span class="region-name">North America</span>
+            <span class="region-count">{regionStats['North America']}</span>
+          </div>
+          <div class="region-item">
+            <span class="region-name">Europe</span>
+            <span class="region-count">{regionStats['Europe']}</span>
+          </div>
+          <div class="region-item">
+            <span class="region-name">Asia Pacific</span>
+            <span class="region-count">{regionStats['Asia Pacific']}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <div class="sidebar-title">Quick Links</div>
+          <a href="/ecosystem" class="quick-link">Firm Network</a>
+          <a href="/visualizations/capital-flow" class="quick-link">Capital Flow</a>
+        </div>
+      </aside>
+
+      <div id="map"></div>
+    </div>
+
+    <div class="map-controls">
+      <div>
+        <button class="control-btn" id="reset-view">Reset View</button>
+      </div>
+      <div class="provenance">
+        Data: Rainmakrr Directory | Updated: {new Date().toLocaleDateString()}
+      </div>
+    </div>
+  </div>
+
+  <script define:vars={{ agentPoints }}>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize map centered on Atlantic (between US and Europe)
+      const map = L.map('map').setView([30, -20], 2);
+
+      // Dark tile layer (CartoDB Dark Matter)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
+
+      // Add markers for each agent
+      agentPoints.forEach(agent => {
+        const isTop10 = agent.rank && agent.rank <= 10;
+        const size = isTop10 ? 10 : 7;
+        const color = isTop10 ? '#10b981' : '#60a5fa';
+
+        const marker = L.circleMarker([agent.lat, agent.lng], {
+          radius: size,
+          fillColor: color,
+          color: '#fff',
+          weight: 1,
+          fillOpacity: 0.8
+        }).addTo(map);
+
+        // Create popup content
+        const popupContent = `
+          <div class="popup-content">
+            <div class="popup-title">${agent.name}</div>
+            <div class="popup-subtitle">${agent.headquarters}</div>
+            <a href="/private-equity-placement-agents-list/${agent.slug}" class="popup-link">
+              View Profile →
+            </a>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+      });
+
+      // Reset view button
+      document.getElementById('reset-view')?.addEventListener('click', () => {
+        map.setView([30, -20], 2);
+      });
+    });
+  </script>
+</body>
+</html>

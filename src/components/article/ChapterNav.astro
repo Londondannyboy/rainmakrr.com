@@ -1,0 +1,47 @@
+---
+/**
+ * ChapterNav Component
+ * Dark navigation bar showing 4 chapter/act titles
+ *
+ * @prop acts - Array of act objects with video_title
+ */
+interface Act {
+  video_title?: string;
+  title?: string;
+}
+
+interface Props {
+  acts: Act[];
+}
+
+const { acts } = Astro.props;
+
+const colors = ['blue', 'indigo', 'emerald', 'teal'];
+
+function getChapterLabel(act: Act, index: number): string {
+  return act.video_title || act.title?.split(':')[0]?.substring(0, 20) || `Part ${index + 1}`;
+}
+---
+
+<div class="bg-gray-900 py-4">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="flex items-center gap-2">
+      <span class="text-gray-500 text-xs uppercase tracking-wider mr-2">Chapters</span>
+      <div class="flex-1 flex items-center gap-1">
+        {acts.slice(0, 4).map((act, i) => (
+          <button onclick={`seekTo(${i * 3})`} class="chapter-marker flex-1 group cursor-pointer">
+            <div class={`h-1 bg-${colors[i]}-500/60 rounded-full group-hover:bg-${colors[i]}-400 transition-colors`}></div>
+            <span class="text-xs text-gray-400 mt-1 block truncate">{getChapterLabel(act, i)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  function seekTo(time) {
+    const player = document.querySelector('mux-player');
+    if (player) player.currentTime = time;
+  }
+</script>

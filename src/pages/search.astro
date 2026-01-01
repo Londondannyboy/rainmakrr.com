@@ -1,0 +1,328 @@
+---
+import { sql } from '../lib/db';
+
+// Get search query from URL params
+const searchQuery = Astro.url.searchParams.get('q') || '';
+
+let companies = [];
+if (searchQuery && searchQuery.length >= 2) {
+  // Search companies by name, display_name, or location
+  companies = await sql`
+    SELECT
+      id,
+      name,
+      COALESCE(display_name, name) as display_name,
+      slug,
+      description,
+      primary_country,
+      primary_region,
+      logo_url,
+      featured_asset_url,
+      payload
+    FROM companies
+    WHERE company_type = 'placement_agent'
+      AND status = 'published'
+      AND (
+        LOWER(name) LIKE LOWER(${'%' + searchQuery + '%'})
+        OR LOWER(display_name) LIKE LOWER(${'%' + searchQuery + '%'})
+        OR LOWER(primary_country) LIKE LOWER(${'%' + searchQuery + '%'})
+        OR LOWER(primary_region) LIKE LOWER(${'%' + searchQuery + '%'})
+      )
+    ORDER BY
+      CASE
+        WHEN LOWER(name) = LOWER(${searchQuery}) THEN 1
+        WHEN LOWER(display_name) = LOWER(${searchQuery}) THEN 2
+        WHEN LOWER(name) LIKE LOWER(${searchQuery + '%'}) THEN 3
+        WHEN LOWER(display_name) LIKE LOWER(${searchQuery + '%'}) THEN 4
+        ELSE 5
+      END,
+      name ASC
+    LIMIT 50
+  `;
+}
+
+// Image optimization
+function optimizeCloudinaryImage(url: string, width: number = 400): string {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  const transformations = `f_auto,q_60,w_${width},c_limit`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{searchQuery ? `Search Results for "${searchQuery}"` : 'Search Placement Agents'} | Rainmakrr</title>
+  <meta name="description" content={`Search for private equity placement agents${searchQuery ? ` - results for "${searchQuery}"` : ''}`}>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    nav {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px 0;
+      margin-bottom: 40px;
+      border-radius: 12px;
+    }
+
+    nav .nav-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .search-box {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      margin-bottom: 40px;
+    }
+
+    .search-input-wrapper {
+      display: flex;
+      gap: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 16px 20px;
+      font-size: 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: #667eea;
+    }
+
+    .search-button {
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .search-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .results-header {
+      color: #fff;
+      font-size: 24px;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 24px;
+    }
+
+    .company-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 24px;
+      text-decoration: none;
+      color: #333;
+      transition: transform 0.3s, box-shadow 0.3s;
+      display: block;
+    }
+
+    .company-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .company-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .company-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #f5f5f5;
+    }
+
+    .company-info h3 {
+      font-size: 20px;
+      margin-bottom: 4px;
+      color: #667eea;
+    }
+
+    .company-location {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .company-description {
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .company-region {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: #fff;
+    }
+
+    .no-results h2 {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .no-results p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-input-wrapper {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/">← Back to Home</a>
+      <a href="/private-equity-placement-agents-list">All Companies</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="search-box">
+      <form action="/search" method="get">
+        <div class="search-input-wrapper">
+          <input
+            type="text"
+            name="q"
+            class="search-input"
+            placeholder="Search placement agents by name, country, or region..."
+            value={searchQuery}
+            autofocus
+          />
+          <button type="submit" class="search-button">Search</button>
+        </div>
+      </form>
+    </div>
+
+    {searchQuery && (
+      <div class="results-header">
+        {companies.length > 0
+          ? `Found ${companies.length} result${companies.length === 1 ? '' : 's'} for "${searchQuery}"`
+          : `No results found for "${searchQuery}"`
+        }
+      </div>
+    )}
+
+    {companies.length > 0 ? (
+      <div class="results-grid">
+        {companies.map((company: any) => (
+          <a href={`/${company.slug}`} class="company-card">
+            <div class="company-header">
+              {(company.logo_url || company.featured_asset_url) && (
+                <img
+                  src={optimizeCloudinaryImage(company.logo_url || company.featured_asset_url, 120)}
+                  alt={company.display_name}
+                  class="company-logo"
+                  loading="lazy"
+                />
+              )}
+              <div class="company-info">
+                <h3>{company.display_name}</h3>
+                <div class="company-location">
+                  {company.payload?.headquarters_city && `${company.payload.headquarters_city}, `}
+                  {company.primary_country}
+                </div>
+              </div>
+            </div>
+
+            {company.description && (
+              <p class="company-description">{company.description}</p>
+            )}
+
+            {company.primary_region && (
+              <span class="company-region">{company.primary_region}</span>
+            )}
+          </a>
+        ))}
+      </div>
+    ) : searchQuery && (
+      <div class="no-results">
+        <h2>No placement agents found</h2>
+        <p>Try searching with different keywords or browse all companies</p>
+      </div>
+    )}
+
+    {!searchQuery && (
+      <div class="no-results">
+        <h2>Search Placement Agents</h2>
+        <p>Enter a company name, country, or region to find placement agents</p>
+      </div>
+    )}
+  </div>
+</body>
+</html>

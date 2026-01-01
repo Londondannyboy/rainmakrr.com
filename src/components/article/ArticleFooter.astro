@@ -1,0 +1,59 @@
+---
+/**
+ * ArticleFooter Component
+ * Author attribution and navigation links
+ *
+ * @prop publishedAt - Publication date
+ * @prop wordCount - Article word count
+ * @prop playbackId - Optional Mux playback ID for author avatar
+ */
+interface Props {
+  publishedAt: string;
+  wordCount?: number;
+  playbackId?: string;
+}
+
+const { publishedAt, wordCount, playbackId } = Astro.props;
+
+function getMuxThumbnail(time: number): string {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=800`;
+}
+
+const formattedDate = new Date(publishedAt).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+---
+
+<footer class="pt-8 border-t border-gray-200">
+  <div class="flex items-center gap-4">
+    {playbackId && (
+      <img
+        src={getMuxThumbnail(10.5)}
+        alt="Rainmakrr"
+        class="w-16 h-16 object-cover rounded-full border-2 border-blue-200"
+        loading="lazy"
+      />
+    )}
+    <div>
+      <p class="text-sm font-medium text-gray-900">Rainmakrr Editorial Team</p>
+      <p class="text-xs text-gray-500">
+        Published {formattedDate}
+        {wordCount && ` • ${wordCount.toLocaleString()} words`}
+      </p>
+    </div>
+  </div>
+  <div class="mt-6 flex flex-wrap gap-3">
+    <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors">
+      ← Back to Home
+    </a>
+    <a href="/private-equity-placement-agent-news" class="inline-flex items-center text-gray-500 hover:text-gray-700 font-medium transition-colors">
+      More News
+    </a>
+    <a href="/private-equity-placement-agents-list" class="inline-flex items-center text-gray-500 hover:text-gray-700 font-medium transition-colors">
+      Agent Directory
+    </a>
+  </div>
+</footer>

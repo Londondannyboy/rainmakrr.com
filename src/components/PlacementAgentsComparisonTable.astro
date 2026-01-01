@@ -1,0 +1,347 @@
+---
+import { sql } from '../lib/db';
+
+// Fetch top placement agents with additional fields
+const topAgents = await sql`
+  SELECT
+    name,
+    COALESCE(display_name, name) as display_name,
+    slug,
+    description,
+    primary_country,
+    primary_region,
+    specializations,
+    global_rank,
+    featured_asset_url,
+    logo_url,
+    payload->'headquarters_city' as headquarters_city,
+    payload->'website' as website,
+    payload->'employee_range' as employee_range
+  FROM companies
+  WHERE company_type = 'placement_agent'
+    AND tags && ARRAY['top']
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+  LIMIT 15
+`;
+
+// Image optimization for small logos
+function optimizeCloudinaryLogo(url: string): string {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  const transformations = 'q_50,w_96,h_96,c_fill';
+  return url.replace('/upload/', `/upload/${transformations}/`).replace(/\.(jpg|jpeg|png)$/i, '.webp');
+}
+
+// Industry estimates for top placement agents
+const agentEstimates: Record<string, any> = {
+  'campbell-lutyens': { yearFounded: 1988, estRaisedTotal: '$500B+', preqinRank: 1 },
+  'pjt-park-hill': { yearFounded: 2015, estRaisedTotal: '$300B+', preqinRank: 2 },
+  'lazard': { yearFounded: 1848, estRaisedTotal: '$250B+', preqinRank: 5 },
+  'eaton-partners': { yearFounded: 1983, estRaisedTotal: '$400B+', preqinRank: 3 },
+  'greenhill': { yearFounded: 1996, estRaisedTotal: '$200B+', preqinRank: null },
+  'jefferies': { yearFounded: 1962, estRaisedTotal: '$150B+', preqinRank: null },
+  'hl': { yearFounded: 2005, estRaisedTotal: '$100B+', preqinRank: null },
+  'mvision': { yearFounded: 2009, estRaisedTotal: '$180B+', preqinRank: 4 },
+  'evercore': { yearFounded: 1995, estRaisedTotal: '$120B+', preqinRank: null },
+  'goldmansachs': { yearFounded: 1869, estRaisedTotal: '$200B+', preqinRank: null }
+};
+
+// Merge database data with estimates
+const tableData = topAgents.map((agent: any) => {
+  const estimates = agentEstimates[agent.slug] || {};
+  return {
+    ...agent,
+    yearFounded: estimates.yearFounded || null,
+    estRaisedTotal: estimates.estRaisedTotal || 'N/A',
+    preqinRank: estimates.preqinRank
+  };
+});
+---
+
+<section id="best-private-equity-placement-agents" class="comparison-table-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-badge">Leading Private Equity Placement Agents</span>
+      <h2 class="section-title">Best Private Equity Placement Agents</h2>
+      <p class="section-desc">
+        Comprehensive directory of the world's best private equity placement agents, including Preqin 2025 rankings, estimated funds raised, and detailed firm profiles.
+      </p>
+    </div>
+
+    <!-- Card Grid Layout -->
+    <div class="agents-grid">
+      {tableData.map((agent: any) => (
+        <a href={`/${agent.slug}`} class="agent-card">
+          <div class="card-header">
+            {(agent.featured_asset_url || agent.logo_url) && (
+              <img
+                src={optimizeCloudinaryLogo(agent.featured_asset_url || agent.logo_url)}
+                alt={agent.display_name}
+                class="agent-logo"
+                loading="lazy"
+                width="64"
+                height="64"
+              />
+            )}
+            <div class="card-title-area">
+              <h3 class="agent-name">{agent.display_name}</h3>
+              {agent.preqinRank && (
+                <span class="rank-badge">#{agent.preqinRank} Preqin</span>
+              )}
+            </div>
+          </div>
+
+          <div class="card-stats">
+            <div class="stat">
+              <span class="stat-label">Est. Raised</span>
+              <span class="stat-value">{agent.estRaisedTotal}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Founded</span>
+              <span class="stat-value">{agent.yearFounded || '—'}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Location</span>
+              <span class="stat-value">{agent.primary_country || '—'}</span>
+            </div>
+          </div>
+
+          {agent.specializations && agent.specializations.length > 0 && (
+            <div class="card-tags">
+              {agent.specializations.slice(0, 3).map((spec: string) => (
+                <span class="tag">{spec}</span>
+              ))}
+            </div>
+          )}
+        </a>
+      ))}
+    </div>
+
+    <div class="data-sources">
+      <p>
+        <strong>Data Sources:</strong> Rankings from <a href="https://www.preqin.com" target="_blank" rel="noopener nofollow">Preqin 2025 Global Placement Agent Rankings</a>.
+        Estimated funds raised based on industry research and <a href="https://www.privateequitymarketeer.com/placement-agents" target="_blank" rel="noopener nofollow">Private Equity Marketeer</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .comparison-table-section {
+    padding: 80px 40px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(15, 15, 30, 0.98) 100%);
+    border-top: 2px solid rgba(102, 126, 234, 0.3);
+  }
+
+  .section-container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .section-badge {
+    display: inline-block;
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 42px;
+    font-weight: 900;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .section-desc {
+    font-size: 18px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.8);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .agent-card {
+    display: block;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+  }
+
+  .agent-card:hover {
+    background: rgba(102, 126, 234, 0.08);
+    border-color: rgba(102, 126, 234, 0.4);
+    transform: translateY(-4px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .agent-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .card-title-area {
+    flex: 1;
+  }
+
+  .agent-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px 0;
+  }
+
+  .rank-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
+    color: #667eea;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(102, 126, 234, 0.4);
+  }
+
+  .card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 16px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-label {
+    display: block;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    background: rgba(102, 126, 234, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+  }
+
+  .data-sources {
+    margin-top: 40px;
+    padding: 24px;
+    background: rgba(102, 126, 234, 0.05);
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+  }
+
+  .data-sources p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+  }
+
+  .data-sources strong {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .data-sources a {
+    color: #667eea;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .comparison-table-section {
+      padding: 60px 20px;
+    }
+
+    .section-title {
+      font-size: 28px;
+    }
+
+    .agents-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card-stats {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat-value {
+      font-size: 13px;
+    }
+  }
+</style>
+
+<!-- Schema for SEO -->
+<script type="application/ld+json" set:html={JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Best Private Equity Placement Agents",
+  "description": "Top-ranked private equity placement agents including Preqin rankings and estimated funds raised",
+  "numberOfItems": tableData.length,
+  "itemListElement": tableData.map((agent: any, index: number) => ({
+    "@type": "ListItem",
+    "position": index + 1,
+    "item": {
+      "@type": "Organization",
+      "name": agent.display_name,
+      "url": `https://rainmakrr.com/${agent.slug}`
+    }
+  }))
+})} />

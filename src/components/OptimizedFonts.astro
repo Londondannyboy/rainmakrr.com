@@ -1,0 +1,19 @@
+---
+// Optimized Google Fonts using astro-font
+// Minimal: just 400 (body) + 700 (bold) = ~50KB
+import { AstroFont } from "astro-font";
+---
+
+<AstroFont
+  config={[
+    {
+      src: [],
+      name: "Inter",
+      googleFontsURL: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
+      preload: true,
+      display: "swap",
+      selector: "body",
+      fallback: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    },
+  ]}
+/>

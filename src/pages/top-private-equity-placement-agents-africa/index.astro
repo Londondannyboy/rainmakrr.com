@@ -1,0 +1,535 @@
+---
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Schema from '../../components/Schema.astro';
+import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+
+// Fetch Africa placement agents
+const companies = await sql`
+  SELECT
+    id,
+    name,
+    COALESCE(display_name, name) as display_name,
+    slug,
+    description,
+    featured_asset_url,
+    headquarters,
+    logo_url,
+    specializations,
+    global_rank,
+    primary_country,
+    primary_region
+  FROM companies
+  WHERE company_type = 'placement_agent'
+    AND status = 'published'
+    AND primary_region = 'Africa'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+`;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Top Private Equity Placement Agents Africa | Rainmakrr"
+    description="Leading private equity placement agents in Africa. Expert LATAM PE fundraising agencies specializing in capital raising across Chile, Brazil, Peru, and regional institutional investors."
+  />
+  <Schema type="company_list" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    nav {
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    /* Dropdown navigation */
+    .nav-item {
+      position: relative;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 250px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 1000;
+      margin-top: 12px;
+    }
+
+    .nav-item:hover .dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s;
+    }
+
+    .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      opacity: 1;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
+    .breadcrumbs {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 60px 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .breadcrumbs a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .breadcrumbs a:hover {
+      color: #fff;
+    }
+
+    .breadcrumbs span {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .hero {
+      padding: 80px 60px 60px;
+      text-align: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 56px;
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 48px;
+      line-height: 1.8;
+    }
+
+    .region-switcher {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 48px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .region-btn {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+
+    .region-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .region-btn.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 60px;
+    }
+
+    h2 {
+      font-size: 36px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    h3 {
+      font-size: 24px;
+      margin: 40px 0 16px 0;
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 24px;
+    }
+
+    .companies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .company-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .company-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-4px);
+    }
+
+    .company-name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .company-location {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+    }
+
+    .company-description {
+      font-size: 16px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 16px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: transform 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    footer {
+      margin-top: 120px;
+      padding: 60px;
+      background: rgba(0, 0, 0, 0.3);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 48px;
+    }
+
+    .footer-section h4 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 8px;
+      transition: color 0.3s;
+    }
+
+    .footer-section a:hover {
+      color: #fff;
+    }
+
+    .footer-bottom {
+      max-width: 1400px;
+      margin: 48px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">Rainmakrr</a>
+    <ul class="nav-links">
+      <li><a href="/private-equity-placement-agent-news">News</a></li>
+      <li class="nav-item">
+        <a href="/private-equity-placement-agents-list">Agents</a>
+        <div class="dropdown">
+          <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-north-america">North America</a>
+          <a href="/top-private-equity-placement-agents-europe">Europe</a>
+          <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Africa</a>
+          <a href="/top-private-equity-placement-agents-africa">Africa</a>
+          <a href="/top-private-equity-placement-agents-middle-east">Middle East</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-us">United States</a>
+          <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+          <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+          <div class="dropdown-divider"></div>
+          <a href="/venture-capital-placement-agents">Venture Capital Placement Agents</a>
+          <a href="/private-credit-placement-agents">Private Credit Placement Agents</a>
+          <a href="/real-estate-private-equity-placement-agents">Real Estate PE Placement Agents</a>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="breadcrumbs">
+    <a href="/">Home</a>
+    <span>/</span>
+    <a href="/private-equity-placement-agents-list">Private Equity Placement Agents</a>
+    <span>/</span>
+    <span>Africa</span>
+  </div>
+
+  <div class="hero">
+    <h1>Top Private Equity Placement Agents Africa</h1>
+    <p class="subtitle">
+      Leading African private equity placement agents specializing in regional capital raising. Connect with expert LATAM PE fundraising firms with deep relationships across Chilean pension funds (AFPs), Brazilian institutional investors, and regional family offices.
+    </p>
+
+    <div class="region-switcher">
+      <a href="/private-equity-placement-agents-list" class="region-btn">All Regions</a>
+      <a href="/top-private-equity-placement-agents-north-america" class="region-btn">North America</a>
+      <a href="/top-private-equity-placement-agents-europe" class="region-btn">Europe</a>
+      <a href="/top-private-equity-placement-agents-asia-pacific" class="region-btn">Asia Pacific</a>
+      <a href="/top-private-equity-placement-agents-latin-america" class="region-btn active">Africa</a>
+      <span style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></span>
+      <a href="/top-private-equity-placement-agents-us" class="region-btn">United States</a>
+      <a href="/top-private-equity-placement-agents-uk" class="region-btn">United Kingdom</a>
+      <a href="/top-private-equity-placement-agents-singapore" class="region-btn">Singapore</a>
+    </div>
+  </div>
+
+  <div class="content">
+    <h2>Africa Private Equity Placement Market</h2>
+    <p>
+      Africa represents an emerging private equity market with growing sophistication in fundraising infrastructure. Chilean and Brazilian placement agents lead regional activity, connecting local and international fund managers with African institutional capital, particularly the powerful Chilean pension system (AFPs) and Brazilian insurance companies and family offices.
+    </p>
+
+    <h3>Why Choose African Placement Agents</h3>
+    <p>
+      LATAM-based placement agents offer specialized advantages for managers targeting regional institutional capital and cross-border fundraising. These firms navigate diverse regulatory frameworks across multiple jurisdictions, maintain crucial relationships with Chilean AFPs (collectively managing over $200 billion), Brazilian pension funds, and understand the cultural and structural nuances essential for successful fundraising across African markets.
+    </p>
+    <p>
+      Leading African placement agencies typically focus on deep relationships with 50-150+ institutional investors and family offices across the region, providing access to capital allocators in Chile, Brazil, Peru, Mexico, and other growing markets with increasing allocations to private equity strategies.
+    </p>
+
+    <h3>Top Private Equity Placement Agents in Africa ({companies.length})</h3>
+
+    <div class="companies-grid">
+      {companies.map((company: any) => (
+        <a href={`/${company.slug}`} style="text-decoration: none; color: inherit;">
+          <div class="company-card">
+            {company.featured_asset_url && (
+              <div style="width: 100%; height: 200px; overflow: hidden; margin: -32px -32px 24px -32px; border-radius: 24px 24px 0 0;">
+                <img
+                  src={company.featured_asset_url}
+                  alt={company.display_name}
+                  loading="lazy"
+                  decoding="async"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                />
+              </div>
+            )}
+            <h4 class="company-name">{company.display_name}</h4>
+            {company.primary_country && (
+              <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
+            )}
+            {company.global_rank && (
+              <div class="company-location">🏆 Rank #{company.global_rank}</div>
+            )}
+            {company.description && (
+              <p class="company-description">{company.description}</p>
+            )}
+            <div style="margin-top: 16px; color: #667eea; font-weight: 600;">
+              View Profile →
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <div style="text-align: center; margin-top: 64px;">
+      <a href="/private-equity-placement-agents-list" class="btn">View All Regions</a>
+    </div>
+  </div>
+
+
+  <!-- Regional Knowledge Graph Section -->
+  <div class="content" style="margin-top: 80px;">
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <div class="bg-gradient-to-br from-emerald-900/20 to-teal-900/20 backdrop-blur-sm rounded-2xl p-8 border border-emerald-700/30">
+        <div class="flex items-center justify-between mb-6">
+          <h2 style="font-size: 32px; font-weight: 900; color: #fff; margin: 0;">
+            Africa PE Network
+          </h2>
+          <span style="padding: 8px 16px; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; font-size: 12px; font-weight: 600; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.3);">
+            Knowledge Graph
+          </span>
+        </div>
+
+        <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 32px; font-size: 16px; line-height: 1.7;">
+          Interactive network visualization showing relationships and connections between placement agents, deals, and key people in the latin america private equity ecosystem.
+        </p>
+
+        <!-- Graph visualization placeholder -->
+        <div style="background: rgba(15, 23, 42, 0.5); border-radius: 16px; padding: 60px 20px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1);">
+          <svg style="width: 64px; height: 64px; margin: 0 auto 24px; opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <h3 style="color: rgba(255, 255, 255, 0.6); font-size: 18px; margin-bottom: 12px;">Regional Network Graph</h3>
+          <p style="color: rgba(255, 255, 255, 0.4); font-size: 14px;">
+            Comprehensive network visualization showing {companies.length} placement agents and their interconnections
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Rainmakrr</h4>
+        <p style="color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+          Your comprehensive guide to private equity placement agents worldwide.
+        </p>
+      </div>
+      <div class="footer-section">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/private-equity-placement-agents-list">All Placement Agents</a></li>
+          <li><a href="/private-equity-placement-agent-news">News</a></li>
+          <li><a href="/about">About</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Regions</h4>
+        <ul>
+          <li><a href="/top-private-equity-placement-agents-north-america">North America</a></li>
+          <li><a href="/top-private-equity-placement-agents-europe">Europe</a></li>
+          <li><a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a></li>
+          <li><a href="/top-private-equity-placement-agents-latin-america">Africa</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 Rainmakrr. All rights reserved.
+      <p class="disclaimer">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+    </div>
+  </footer>
+</body>
+</html>

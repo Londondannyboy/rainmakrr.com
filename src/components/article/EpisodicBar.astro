@@ -1,0 +1,14 @@
+---
+/**
+ * EpisodicBar Component
+ * Colored progress bar showing 4-act structure
+ * Clickable to seek to each act in the video
+ */
+---
+
+<div class="episodic-bar flex h-1 bg-gray-800">
+  <span class="flex-1 bg-blue-500 cursor-pointer hover:opacity-70 transition-opacity" onclick="seekTo(0)"></span>
+  <span class="flex-1 bg-indigo-500 cursor-pointer hover:opacity-70 transition-opacity" onclick="seekTo(3)"></span>
+  <span class="flex-1 bg-emerald-500 cursor-pointer hover:opacity-70 transition-opacity" onclick="seekTo(6)"></span>
+  <span class="flex-1 bg-teal-500 cursor-pointer hover:opacity-70 transition-opacity" onclick="seekTo(9)"></span>
+</div>

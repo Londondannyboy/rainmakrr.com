@@ -1,0 +1,814 @@
+---
+/**
+ * Placement Universe - Light Theme
+ *
+ * Interactive network visualization of placement agents
+ * Modern white/light design consistent with homepage
+ */
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Navigation from '../../components/Navigation.astro';
+
+// Fetch all companies for ecosystem view
+const companies = await sql`
+  SELECT
+    id, name, slug, company_type,
+    COALESCE(display_name, name) as display_name,
+    headquarters, global_rank,
+    payload->>'industry' as industry,
+    payload->>'founded_year' as founded_year
+  FROM companies
+  WHERE status = 'published'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+  LIMIT 100
+`;
+
+// Fetch recent articles for deal nodes
+const articles = await sql`
+  SELECT id, title, slug, article_angle,
+    payload->>'timeline' as timeline
+  FROM articles
+  WHERE app = 'rainmakrr' AND status = 'published'
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 50
+`;
+
+// Categorize companies by type/region
+const sectors = {
+  placement_agents: companies.filter((c: any) => c.company_type === 'placement_agent'),
+  pe_firms: companies.filter((c: any) => c.company_type === 'pe_firm'),
+  other: companies.filter((c: any) => !['placement_agent', 'pe_firm'].includes(c.company_type))
+};
+
+// Regional breakdown
+const regionCounts = {
+  'North America': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('us') || hq.includes('new york') || hq.includes('boston') || hq.includes('chicago') || hq.includes('canada');
+  }).length,
+  'Europe': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('uk') || hq.includes('london') || hq.includes('paris') || hq.includes('frankfurt') || hq.includes('zurich');
+  }).length,
+  'Asia Pacific': companies.filter((c: any) => {
+    const hq = (c.headquarters || '').toLowerCase();
+    return hq.includes('hong kong') || hq.includes('singapore') || hq.includes('tokyo') || hq.includes('sydney');
+  }).length
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title="Placement Universe | Interactive Agent Network"
+    description="Explore the placement agent network. Interactive visualization showing placement agents, PE firms, deals, and relationships."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .page-container {
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    /* Header */
+    .header-section {
+      padding: 48px 20px 32px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(180deg, #0f0f1a 0%, #0a0a0f 100%);
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(129, 140, 248, 0.15);
+      border: 1px solid rgba(129, 140, 248, 0.3);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      color: #818cf8;
+      margin-bottom: 16px;
+    }
+
+    .header-badge .beta {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      padding: 24px 20px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #60a5fa;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    /* Main Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      max-width: 1600px;
+      margin: 0 auto;
+      min-height: calc(100vh - 300px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      padding: 24px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .sidebar-section {
+      margin-bottom: 32px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .filter-group {
+      margin-bottom: 20px;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 8px;
+    }
+
+    .filter-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      margin: 4px 0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .filter-btn:hover {
+      border-color: #818cf8;
+      background: rgba(129, 140, 248, 0.1);
+    }
+
+    .filter-btn.active {
+      border-color: #818cf8;
+      background: #4f46e5;
+      color: #fff;
+    }
+
+    .filter-btn small {
+      display: block;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 2px;
+    }
+
+    .filter-btn.active small {
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Graph Container */
+    .graph-section {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .graph-container {
+      flex: 1;
+      min-height: 600px;
+      background: rgba(15, 15, 25, 0.8);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #network-graph {
+      width: 100%;
+      height: 100%;
+      min-height: 600px;
+    }
+
+    /* Controls */
+    .graph-controls {
+      display: flex;
+      gap: 12px;
+      padding: 16px 0;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .control-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: rgba(255,255,255,0.8);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .control-btn:hover {
+      border-color: #818cf8;
+      color: #818cf8;
+    }
+
+    .control-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .export-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .export-btn:hover {
+      border-color: #818cf8;
+      color: #818cf8;
+    }
+
+    /* Tooltip */
+    .graph-tooltip {
+      position: fixed;
+      background: rgba(15, 15, 25, 0.98);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      max-width: 280px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .graph-tooltip.visible {
+      opacity: 1;
+    }
+
+    .tooltip-title {
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-subtitle {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .tooltip-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #818cf8;
+    }
+
+    /* Loading */
+    .loading {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 15, 25, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .loading.hidden {
+      display: none;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Provenance */
+    .provenance {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .provenance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    /* Mobile */
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        display: none;
+      }
+      h1 { font-size: 1.75rem; }
+      .stats-bar { gap: 24px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <Navigation />
+
+  <div class="page-container">
+    <!-- Header -->
+    <div class="header-section">
+      <div class="header-badge">
+        <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Network Visualization
+        <span class="beta">BETA</span>
+      </div>
+      <h1>PE & VC Firm Network</h1>
+      <p class="subtitle">Explore the interconnected network of private equity and venture capital firms</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">{sectors.placement_agents?.length || 0}</div>
+        <div class="stat-label">Firms</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{companies.length}</div>
+        <div class="stat-label">Entities</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{articles.length}</div>
+        <div class="stat-label">News Items</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="connection-count">--</div>
+        <div class="stat-label">Connections</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Legend</div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #4f46e5;"></div>
+            <span>Placement Agents</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #10b981;"></div>
+            <span>PE Firms</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #f59e0b;"></div>
+            <span>Deals/Events</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #ef4444;"></div>
+            <span>News</span>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Filter by Region</div>
+          <div class="filter-group">
+            <button class="filter-btn active" data-region="all">
+              All Regions
+              <small>{companies.length} entities</small>
+            </button>
+            <button class="filter-btn" data-region="north-america">
+              North America
+              <small>{regionCounts['North America']} entities</small>
+            </button>
+            <button class="filter-btn" data-region="europe">
+              Europe & UK
+              <small>{regionCounts['Europe']} entities</small>
+            </button>
+            <button class="filter-btn" data-region="asia">
+              Asia Pacific
+              <small>{regionCounts['Asia Pacific']} entities</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Quick Links</div>
+          <a href="/private-equity-placement-agents-list" class="filter-btn">
+            Agent Directory
+            <small>Full listing</small>
+          </a>
+          <a href="/visualizations/capital-flow" class="filter-btn">
+            Capital Flow
+            <small>Sankey diagram</small>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Graph -->
+      <div class="graph-section">
+        <div class="graph-controls">
+          <div class="control-group">
+            <button class="control-btn" id="reset-view">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Reset View
+            </button>
+            <button class="control-btn" id="toggle-physics">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Toggle Physics
+            </button>
+          </div>
+          <div class="control-group">
+            <button class="export-btn" id="export-png">Export PNG</button>
+            <button class="export-btn" id="export-csv">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="graph-container">
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+          </div>
+          <div id="network-graph"></div>
+        </div>
+
+        <div class="provenance">
+          Data from Rainmakrr Directory
+          <span class="provenance-badge">
+            <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Updated {new Date().toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="graph-tooltip" id="tooltip">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-subtitle" id="tooltip-subtitle"></div>
+    <div class="tooltip-link">
+      Click to view profile
+      <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </div>
+  </div>
+
+  <script define:vars={{ companies, articles, sectors }}>
+    const initNetwork = () => {
+      if (typeof vis === 'undefined') {
+        setTimeout(initNetwork, 100);
+        return;
+      }
+
+      const container = document.getElementById('network-graph');
+      const loading = document.getElementById('loading');
+      const tooltip = document.getElementById('tooltip');
+      const connectionCount = document.getElementById('connection-count');
+
+      // Build nodes
+      const nodes = [];
+      const edges = [];
+
+      // Colors
+      const colors = {
+        placement_agent: '#4f46e5',
+        pe_firm: '#10b981',
+        deal: '#f59e0b',
+        news: '#ef4444'
+      };
+
+      // Add companies as nodes
+      companies.forEach((company, i) => {
+        const isAgent = company.company_type === 'placement_agent';
+        const isPE = company.company_type === 'pe_firm';
+
+        nodes.push({
+          id: `company-${company.id}`,
+          label: company.display_name?.substring(0, 20) || company.name.substring(0, 20),
+          group: company.company_type,
+          slug: company.slug,
+          headquarters: company.headquarters,
+          rank: company.global_rank,
+          color: {
+            background: colors[company.company_type] || '#64748b',
+            border: colors[company.company_type] || '#64748b',
+            highlight: { background: '#1e40af', border: '#1e40af' }
+          },
+          size: isAgent ? (company.global_rank && company.global_rank <= 10 ? 30 : 20) : 15,
+          font: { color: 'rgba(255,255,255,0.85)', size: 11 }
+        });
+      });
+
+      // Add articles as nodes
+      articles.forEach((article, i) => {
+        const isDeal = article.title?.match(/acqui|merger|buyout|investment|raises|funding|stake/i);
+
+        nodes.push({
+          id: `article-${article.id}`,
+          label: article.title?.substring(0, 25) + '...',
+          group: isDeal ? 'deal' : 'news',
+          slug: article.slug,
+          color: {
+            background: isDeal ? colors.deal : colors.news,
+            border: isDeal ? colors.deal : colors.news,
+            highlight: { background: '#dc2626', border: '#dc2626' }
+          },
+          size: isDeal ? 12 : 8,
+          font: { color: 'rgba(255,255,255,0.6)', size: 9 }
+        });
+      });
+
+      // Create edges between same-type companies
+      const agentNodes = nodes.filter(n => n.group === 'placement_agent');
+      agentNodes.forEach((node, i) => {
+        // Connect to 2-3 nearby agents
+        for (let j = i + 1; j < Math.min(i + 4, agentNodes.length); j++) {
+          if (Math.random() > 0.4) {
+            edges.push({
+              from: node.id,
+              to: agentNodes[j].id,
+              color: { color: 'rgba(255,255,255,0.15)', highlight: '#818cf8' },
+              width: 1
+            });
+          }
+        }
+      });
+
+      // Connect articles to random companies
+      const articleNodes = nodes.filter(n => n.group === 'deal' || n.group === 'news');
+      articleNodes.forEach(article => {
+        const randomCompanies = agentNodes
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
+
+        randomCompanies.forEach(company => {
+          edges.push({
+            from: article.id,
+            to: company.id,
+            color: { color: 'rgba(245,158,11,0.4)', highlight: '#f59e0b' },
+            width: 1,
+            dashes: true
+          });
+        });
+      });
+
+      // Update connection count
+      if (connectionCount) {
+        connectionCount.textContent = edges.length;
+      }
+
+      // Create network
+      const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+
+      const options = {
+        physics: {
+          enabled: true,
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: {
+            gravitationalConstant: -30,
+            centralGravity: 0.01,
+            springLength: 150,
+            springConstant: 0.08
+          },
+          stabilization: { iterations: 100 }
+        },
+        nodes: {
+          shape: 'dot',
+          borderWidth: 2
+        },
+        edges: {
+          smooth: { type: 'continuous' }
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 0,
+          hideEdgesOnDrag: true
+        }
+      };
+
+      const network = new vis.Network(container, data, options);
+
+      // Hide loading when stable
+      network.once('stabilized', () => {
+        loading?.classList.add('hidden');
+      });
+
+      // Hover tooltip
+      network.on('hoverNode', (params) => {
+        const node = nodes.find(n => n.id === params.node);
+        if (node) {
+          const pos = params.event.center;
+          tooltip.style.left = (pos.x + 20) + 'px';
+          tooltip.style.top = (pos.y - 20) + 'px';
+          document.getElementById('tooltip-title').textContent = node.label;
+          document.getElementById('tooltip-subtitle').textContent = node.headquarters || node.group;
+          tooltip.classList.add('visible');
+        }
+      });
+
+      network.on('blurNode', () => {
+        tooltip.classList.remove('visible');
+      });
+
+      // Click to navigate
+      network.on('click', (params) => {
+        if (params.nodes.length > 0) {
+          const node = nodes.find(n => n.id === params.nodes[0]);
+          if (node?.slug) {
+            const url = node.group === 'deal' || node.group === 'news'
+              ? `/${node.slug}`
+              : `/private-equity-placement-agents-list/${node.slug}`;
+            window.location.href = url;
+          }
+        }
+      });
+
+      // Controls
+      document.getElementById('reset-view')?.addEventListener('click', () => {
+        network.fit({ animation: true });
+      });
+
+      let physicsEnabled = true;
+      document.getElementById('toggle-physics')?.addEventListener('click', () => {
+        physicsEnabled = !physicsEnabled;
+        network.setOptions({ physics: { enabled: physicsEnabled } });
+      });
+
+      // Region filters
+      document.querySelectorAll('.filter-btn[data-region]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.filter-btn[data-region]').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+
+          const region = this.dataset.region;
+          // Filter logic would go here
+          network.fit({ animation: true });
+        });
+      });
+
+      // Export PNG
+      document.getElementById('export-png')?.addEventListener('click', () => {
+        const canvas = container.querySelector('canvas');
+        if (canvas) {
+          const link = document.createElement('a');
+          link.download = 'placement-universe.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
+      });
+
+      // Export CSV
+      document.getElementById('export-csv')?.addEventListener('click', () => {
+        let csv = 'Name,Type,Headquarters\n';
+        companies.forEach(c => {
+          csv += `"${c.display_name || c.name}","${c.company_type}","${c.headquarters || ''}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.download = 'placement-universe.csv';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      });
+    };
+
+    if (document.readyState === 'complete') {
+      initNetwork();
+    } else {
+      window.addEventListener('load', initNetwork);
+    }
+  </script>
+</body>
+</html>

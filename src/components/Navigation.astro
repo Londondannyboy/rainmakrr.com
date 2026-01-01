@@ -1,0 +1,359 @@
+---
+/**
+ * Navigation Component - Dark Theme
+ * Consistent across all pages
+ */
+interface Props {
+  currentPage?: string;
+}
+
+const { currentPage } = Astro.props;
+---
+
+<nav>
+  <a href="/" class="logo">Rainmakrr</a>
+  <button class="hamburger" id="hamburger-menu" aria-label="Toggle menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <ul class="nav-links" id="nav-menu">
+    <li><a href="/private-equity-placement-agent-news">News</a></li>
+    <li class="nav-item">
+      <a href="/ecosystem" style="display: flex; align-items: center; gap: 0.375rem;">
+        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Visualizations
+        <span class="beta-badge">Beta</span>
+      </a>
+      <div class="dropdown">
+        <a href="/ecosystem">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #818cf8;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Firm Network
+          </span>
+        </a>
+        <a href="/visualizations/capital-flow">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #f87171;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Capital Flow
+          </span>
+        </a>
+        <a href="/visualizations/geo-map">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #34d399;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"></path>
+            </svg>
+            Global Map
+          </span>
+        </a>
+        <a href="/momentum-signals">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #fbbf24;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+            Momentum Signals
+          </span>
+        </a>
+        <a href="/deal-flow">
+          <span class="dropdown-item-content">
+            <svg class="dropdown-icon" style="color: #f472b6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Deal Flow
+          </span>
+        </a>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a href="/private-equity-placement-agents-list">Firms</a>
+      <div class="dropdown">
+        <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+        <div class="dropdown-divider"></div>
+        <a href="/top-private-equity-placement-agents-north-america">North America</a>
+        <a href="/top-private-equity-placement-agents-europe">Europe</a>
+        <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+        <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+        <a href="/top-private-equity-placement-agents-africa">Africa</a>
+        <a href="/top-private-equity-placement-agents-middle-east">Middle East</a>
+        <div class="dropdown-divider"></div>
+        <a href="/top-private-equity-placement-agents-us">United States</a>
+        <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+        <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+        <div class="dropdown-divider"></div>
+        <a href="/venture-capital-placement-agents">VC Agents</a>
+        <a href="/private-credit-placement-agents">Credit Agents</a>
+        <a href="/real-estate-private-equity-placement-agents">Real Estate PE</a>
+      </div>
+    </li>
+  </ul>
+</nav>
+
+<style>
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(10, 10, 15, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-links a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover {
+    color: #60a5fa;
+  }
+
+  .beta-badge {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+  }
+
+  .nav-item {
+    position: relative;
+  }
+
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 25, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px 0;
+    min-width: 220px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    margin-top: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+  }
+
+  .dropdown a {
+    display: block;
+    padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+
+  .dropdown a:hover {
+    background: rgba(96, 165, 250, 0.1);
+    color: #60a5fa;
+  }
+
+  .dropdown-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dropdown-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 8px 0;
+  }
+
+  .nav-item:hover .dropdown {
+    opacity: 1;
+    visibility: visible;
+    margin-top: 8px;
+  }
+
+  /* Hamburger menu */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 1001;
+  }
+
+  .hamburger span {
+    width: 24px;
+    height: 2px;
+    background: #fff;
+    transition: all 0.3s;
+  }
+
+  .hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+  }
+
+  .hamburger.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+  }
+
+  /* Mobile styles */
+  @media (max-width: 768px) {
+    nav {
+      padding: 16px 20px;
+    }
+
+    .hamburger {
+      display: flex;
+    }
+
+    .nav-links {
+      position: absolute;
+      top: 100%;
+      right: 16px;
+      width: 260px;
+      background: rgba(15, 15, 25, 0.98);
+      flex-direction: column;
+      padding: 8px 0;
+      gap: 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+    }
+
+    .nav-links.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .nav-links > li > a {
+      display: block;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 15px;
+    }
+
+    .nav-links > li:last-child > a {
+      border-bottom: none;
+    }
+
+    .dropdown {
+      position: static;
+      transform: none;
+      opacity: 1;
+      visibility: hidden;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, visibility 0.3s;
+      margin-top: 0;
+      padding: 0;
+      background: rgba(0, 0, 0, 0.3);
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .nav-item:hover .dropdown {
+      margin-top: 0;
+    }
+
+    .nav-item.active .dropdown {
+      visibility: visible;
+      max-height: 500px;
+      padding: 8px 0;
+    }
+
+    .dropdown a {
+      padding: 10px 24px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .dropdown a:hover {
+      color: #60a5fa;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const hamburger = document.getElementById('hamburger-menu');
+    const navMenu = document.getElementById('nav-menu');
+    const navItems = navMenu?.querySelectorAll('.nav-item');
+
+    if (hamburger && navMenu) {
+      hamburger.addEventListener('click', function() {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('active');
+      });
+
+      const navLinks = navMenu.querySelectorAll('a');
+      navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          if (!this.parentElement?.classList.contains('nav-item')) {
+            hamburger.classList.remove('active');
+            navMenu.classList.remove('active');
+          }
+        });
+      });
+
+      navItems?.forEach(item => {
+        const link = item.querySelector('a');
+        link?.addEventListener('click', function(e) {
+          if (window.innerWidth <= 768) {
+            e.preventDefault();
+            item.classList.toggle('active');
+          }
+        });
+      });
+    }
+  });
+</script>

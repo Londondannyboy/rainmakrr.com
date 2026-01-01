@@ -1,0 +1,881 @@
+---
+/**
+ * Placement Agent Homepage
+ * ========================
+ * BBC-style news layout + SEO content sections
+ */
+import { sql } from '../lib/db';
+import { marked } from 'marked';
+import SEO from '../components/SEO.astro';
+import Schema from '../components/Schema.astro';
+import Navigation from '../components/Navigation.astro';
+import DealTimeline3D from '../components/DealTimeline3D.astro';
+import ZepGraph3D from '../components/ZepGraph3D.astro';
+import CompanyTimeline from '../components/CompanyTimeline.astro';
+import MiniTimeline from '../components/MiniTimeline.astro';
+import PlacementTimeline from '../components/PlacementTimeline.astro';
+
+// Hero video playback ID (Mux)
+const heroPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
+
+// Fetch homepage content from CMS
+const homepageContent = await sql`
+  SELECT section_type, title, subtitle, content
+  FROM homepage_content
+  WHERE site = 'rainmakrr' AND is_active = true
+  ORDER BY section_order ASC
+`;
+
+const sections = {
+  intro: homepageContent.find((s: any) => s.section_type === 'intro'),
+  role: homepageContent.find((s: any) => s.section_type === 'role'),
+  top_agents: homepageContent.find((s: any) => s.section_type === 'top_agents'),
+  how_it_works: homepageContent.find((s: any) => s.section_type === 'how_it_works'),
+  fee_structures: homepageContent.find((s: any) => s.section_type === 'fee_structures'),
+  selection: homepageContent.find((s: any) => s.section_type === 'selection'),
+  trends: homepageContent.find((s: any) => s.section_type === 'trends'),
+  why_use: homepageContent.find((s: any) => s.section_type === 'why_use'),
+  faq: homepageContent.find((s: any) => s.section_type === 'faq'),
+};
+
+// Fetch LEAD article for hero banner - pick 2nd most recent featured (or any good one)
+const leadArticles = await sql`
+  SELECT id, title, excerpt, slug, published_at, created_at,
+    article_angle, featured_asset_url, video_playback_id
+  FROM articles
+  WHERE app = 'rainmakrr' AND status = 'published' AND is_featured = true
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 2
+`;
+// Use the second featured article as lead (or first if only one exists)
+const leadArticle = leadArticles[1] || leadArticles[0] || null;
+
+// Fetch featured articles (excluding lead) for 2-panel section
+const featuredArticles = await sql`
+  SELECT id, title, excerpt, slug, published_at, created_at,
+    article_angle, featured_asset_url, video_playback_id
+  FROM articles
+  WHERE app = 'rainmakrr' AND status = 'published' AND is_featured = true
+    ${leadArticle ? sql`AND id != ${leadArticle.id}` : sql``}
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 2
+`;
+const featuredArticle1 = featuredArticles[0] || null;
+const featuredArticle2 = featuredArticles[1] || null;
+
+// Fetch all articles (newest first - strict chronological by published_at then created_at)
+const articlesRaw = await sql`
+  SELECT id, title, excerpt, slug, published_at, created_at,
+    article_angle, featured_asset_url, video_playback_id,
+    payload->>'timeline' as timeline_json
+  FROM articles
+  WHERE app = 'rainmakrr' AND status = 'published'
+    AND (is_featured = false OR is_featured IS NULL)
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 30
+`;
+
+// Parse timeline JSON for each article
+const articles = articlesRaw.map((a: any) => {
+  let timeline = [];
+  try {
+    if (a.timeline_json) {
+      timeline = JSON.parse(a.timeline_json);
+    }
+  } catch (e) {}
+  return { ...a, timeline };
+});
+
+// Fetch all placement agents for sidebar AND full listing
+const allAgents = await sql`
+  SELECT id, name, slug, description, logo_url, headquarters, specializations, global_rank, featured_asset_url
+  FROM companies
+  WHERE status = 'published' AND company_type = 'placement_agent'
+  ORDER BY CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END, global_rank ASC NULLS LAST, name ASC
+`;
+
+const topAgents = allAgents.slice(0, 8);
+
+// Helper: get static thumbnail
+function getThumbnail(article: any): string | null {
+  if (article.video_playback_id) {
+    return `https://image.mux.com/${article.video_playback_id}/thumbnail.webp?time=1&width=400`;
+  }
+  return article.featured_asset_url || null;
+}
+
+// Helper: get HLS video URL for Mux
+function getVideoUrl(article: any): string | null {
+  if (article.video_playback_id) {
+    return `https://stream.mux.com/${article.video_playback_id}.m3u8`;
+  }
+  return null;
+}
+
+// Helper: check if article has video
+function hasVideo(article: any): boolean {
+  return !!article.video_playback_id;
+}
+
+// Collect all video playback IDs for client-side HLS initialization
+const allVideoIds = [
+  ...(leadArticle?.video_playback_id ? [leadArticle.video_playback_id] : []),
+  ...(featuredArticle1?.video_playback_id ? [featuredArticle1.video_playback_id] : []),
+  ...(featuredArticle2?.video_playback_id ? [featuredArticle2.video_playback_id] : []),
+  ...articles.filter((a: any) => a.video_playback_id).map((a: any) => a.video_playback_id)
+];
+
+// Lead article video ID for hero section - always use the woman walking video
+const leadVideoId = heroPlaybackId;
+
+// Helper: get company image (logo, featured image, or placeholder)
+function getCompanyImage(company: any): { url: string | null; type: 'logo' | 'image' | 'placeholder' } {
+  if (company.logo_url) return { url: company.logo_url, type: 'logo' };
+  if (company.featured_asset_url) return { url: company.featured_asset_url, type: 'image' };
+  return { url: null, type: 'placeholder' };
+}
+
+// Helper: check if section has structured content (arrays)
+function hasStructuredContent(section: any): boolean {
+  if (!section?.content) return false;
+  const c = section.content;
+  return c.items || c.steps || c.criteria || c.trends || c.reasons || c.questions || c.standard_fees || c.retainer_models;
+}
+
+// Helper: get text content from section
+function getTextContent(section: any): string {
+  if (!section?.content) return '';
+  if (typeof section.content === 'string') return section.content;
+  if (section.content.text) return section.content.text;
+  if (section.content.body) return section.content.body;
+  // Handle paragraphs array structure
+  if (section.content.paragraphs && Array.isArray(section.content.paragraphs)) {
+    return section.content.paragraphs.map((p: any) => p.text || '').join('\n\n');
+  }
+  return '';
+}
+
+// Helper: format date
+function formatDate(date: string | Date | null): string {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Helper: format category
+function formatCategory(angle: string | null): string {
+  if (!angle) return '';
+  return angle.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+// Render markdown content
+function renderMarkdown(content: string): string {
+  if (!content) return '';
+  return marked.parse(content) as string;
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Private Equity & Venture Capital Intelligence"
+    description="The insider guide to PE and VC. Fund rankings, deal flow, firm profiles, and market intelligence for serious investors and founders."
+  />
+  <Schema type="homepage" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://stream.mux.com" crossorigin>
+  <link rel="preconnect" href="https://image.mux.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <!-- Load visualization libraries -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+  <script src="https://unpkg.com/3d-force-graph@1.79.0" defer></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0f; color: #fff; line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+    .news-item:hover .news-title { color: #60a5fa; }
+    .news-item:hover .animated-thumb { opacity: 1; }
+    .news-item .animated-thumb { opacity: 0; position: absolute; inset: 0; transition: opacity 0.3s; }
+    .news-item .static-thumb { transition: opacity 0.3s; }
+    .news-item:hover .static-thumb { opacity: 0; }
+    .category-badge { display: inline-block; background: rgba(96, 165, 250, 0.15); color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .agent-sidebar-card:hover { background: rgba(255,255,255,0.05); }
+    /* Dark sections - consistent design */
+    .dark-section { background: rgba(255,255,255,0.02); color: #fff; border-top: 1px solid rgba(255,255,255,0.1); }
+    .dark-section a { color: #60a5fa; }
+    .dark-section a:hover { color: #93c5fd; }
+    .gradient-section { background: #0a0a0f; color: #fff; border-top: 1px solid rgba(255,255,255,0.1); }
+    /* Card styles */
+    .card-dark { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
+    .card-dark:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+  </style>
+</head>
+<body>
+
+  <Navigation />
+
+  <!-- Lead Article Hero - Condé Nast Style -->
+  {leadArticle ? (
+    <a href={`/${leadArticle.slug}`} style="display: block; text-decoration: none; color: inherit;">
+      <section style="position: relative; height: 85vh; min-height: 600px; overflow: hidden;">
+        <video id="lead-video" autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; width: auto; height: auto; transform: translate(-50%, -50%); object-fit: cover; opacity: 0.9;"></video>
+        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 100%);"></div>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 60px; z-index: 10;">
+          <div style="max-width: 800px;">
+            <div style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px; color: #fff;">
+              {leadArticle.article_angle ? formatCategory(leadArticle.article_angle) : 'Featured'}
+            </div>
+            <h2 style="font-size: clamp(32px, 5vw, 56px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 30px rgba(0,0,0,0.5); color: #fff;">{leadArticle.title}</h2>
+            {leadArticle.excerpt && (
+              <p style="font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.9); margin-bottom: 32px; max-width: 600px;">{leadArticle.excerpt}</p>
+            )}
+            <span style="display: inline-flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.03); color: #764ba2; padding: 16px 32px; border-radius: 100px; font-weight: 700; font-size: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transition: transform 0.3s, box-shadow 0.3s;">
+              <span>Read Article</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </div>
+        </div>
+      </section>
+    </a>
+  ) : (
+    <section style="position: relative; overflow: hidden; color: #fff; padding: 80px 20px 60px;">
+      <video id="hero-video" autoplay loop muted playsinline style="position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; transform: translate(-50%, -50%); object-fit: cover; z-index: 0;"></video>
+      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(15,23,42,0.85), rgba(30,27,75,0.8), rgba(15,23,42,0.85)); z-index: 1;"></div>
+      <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; text-align: center;">
+        <p style="font-size: clamp(32px, 6vw, 56px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; text-shadow: 0 0 60px rgba(99,102,241,0.5);">Welcome to Rainmakrr</p>
+        <p style="font-size: clamp(16px, 2.5vw, 22px); font-weight: 500; color: #a5b4fc;">Fundraising Advisory & Capital Markets Intelligence</p>
+      </div>
+    </section>
+  )}
+
+  <!-- H1 Header Section -->
+  <section style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 48px 20px; text-align: center;">
+    <div style="max-width: 1200px; margin: 0 auto;">
+      <h1 style="font-size: clamp(28px, 5vw, 42px); font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 8px;">Private Equity & Venture Capital News</h1>
+      <p style="font-size: clamp(14px, 2vw, 18px); color: #a5b4fc; font-weight: 500;">Fund Rankings, Deal Flow & Market Intelligence</p>
+    </div>
+  </section>
+
+  <!-- NEWS SECTION - Dark Background -->
+  <main style="max-width: 1200px; margin: 0 auto; padding: 32px 20px;">
+
+    <!-- SEO Intro Text -->
+    <p style="font-size: 16px; color: rgba(255,255,255,0.7); line-height: 1.7; margin-bottom: 32px; max-width: 900px;">
+      Welcome to Rainmakrr, your insider guide to <strong style="color: #fff;">private equity and venture capital</strong>.
+      We track the top PE and VC firms, their deal flow, fund performance, and market intelligence.
+      Whether you're a founder seeking funding, an LP evaluating managers, or an industry professional tracking the market,
+      Rainmakrr delivers the intelligence you need to stay ahead.
+    </p>
+
+    <!-- Featured Articles - 2 Panel Grid -->
+    {(featuredArticle1 || featuredArticle2) && (
+      <section style="margin-bottom: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 4px solid #ef4444; display: inline-block;">Featured</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;" class="featured-grid">
+          {featuredArticle1 && (
+            <a href={`/${featuredArticle1.slug}`} class="news-item" style="display: block;">
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                {getThumbnail(featuredArticle1) && (
+                  <img src={getThumbnail(featuredArticle1)} alt={featuredArticle1.title} style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
+                )}
+                {featuredArticle1.video_playback_id && (
+                  <video class="thumb-video" data-playback-id={featuredArticle1.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"></video>
+                )}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                {featuredArticle1.article_angle && <span class="category-badge">{formatCategory(featuredArticle1.article_angle)}</span>}
+                <span style="font-size: 12px; color: #9ca3af;">{formatDate(featuredArticle1.published_at || featuredArticle1.created_at)}</span>
+              </div>
+              <h3 class="news-title" style="font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 8px;">{featuredArticle1.title}</h3>
+              {featuredArticle1.excerpt && <p style="font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{featuredArticle1.excerpt}</p>}
+            </a>
+          )}
+          {featuredArticle2 && (
+            <a href={`/${featuredArticle2.slug}`} class="news-item" style="display: block;">
+              <div style="position: relative; overflow: hidden; margin-bottom: 12px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                {getThumbnail(featuredArticle2) && (
+                  <img src={getThumbnail(featuredArticle2)} alt={featuredArticle2.title} style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
+                )}
+                {featuredArticle2.video_playback_id && (
+                  <video class="thumb-video" data-playback-id={featuredArticle2.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s;"></video>
+                )}
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                {featuredArticle2.article_angle && <span class="category-badge">{formatCategory(featuredArticle2.article_angle)}</span>}
+                <span style="font-size: 12px; color: #9ca3af;">{formatDate(featuredArticle2.published_at || featuredArticle2.created_at)}</span>
+              </div>
+              <h3 class="news-title" style="font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 8px;">{featuredArticle2.title}</h3>
+              {featuredArticle2.excerpt && <p style="font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{featuredArticle2.excerpt}</p>}
+            </a>
+          )}
+        </div>
+      </section>
+    )}
+
+    <!-- PLACEMENT UNIVERSE - Clean White Design -->
+    <section style="background: rgba(255,255,255,0.02); margin: 0 -20px; padding: 48px 20px; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: #e0e7ff; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 100px; font-size: 11px; color: #4f46e5; margin-bottom: 8px;">
+              <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+              Interactive Network
+              <span style="background: linear-gradient(135deg, #f59e0b, #ef4444); font-size: 8px; padding: 2px 5px; border-radius: 3px; font-weight: 700; text-transform: uppercase; color: #fff;">Beta</span>
+            </div>
+            <h2 style="font-size: 28px; font-weight: 800; color: #fff; margin: 0;">PE & VC Firms</h2>
+          </div>
+          <a href="/ecosystem" style="display: inline-flex; align-items: center; gap: 8px; background: #4f46e5; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Explore Universe
+          </a>
+        </div>
+
+        <!-- Stats Row -->
+        <div style="display: flex; gap: 32px; margin-bottom: 24px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 10px; height: 10px; background: #4f46e5; border-radius: 50%;"></div>
+            <span style="font-size: 14px; color: #374151;"><strong>87+</strong> PE & VC Firms</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%;"></div>
+            <span style="font-size: 14px; color: #374151;"><strong>106</strong> Entities</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 10px; height: 10px; background: #f59e0b; border-radius: 50%;"></div>
+            <span style="font-size: 14px; color: #374151;"><strong>599</strong> Connections</span>
+          </div>
+        </div>
+
+        <!-- Preview iframe -->
+        <a href="/ecosystem" style="display: block; position: relative; height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);">
+          <iframe src="/ecosystem/embed" style="width: 100%; height: 100%; border: none; pointer-events: none;" loading="lazy"></iframe>
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, transparent 50%);"></div>
+          <div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; background: #4f46e5; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; box-shadow: 0 2px 8px rgba(79,70,229,0.3);">
+              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+              </svg>
+              Click to Explore Full Network
+            </span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Placement Timeline - Full Width -->
+    <section style="background: rgba(255,255,255,0.03); margin: 0 -20px; padding: 60px 20px;">
+      <div style="max-width: 900px; margin: 0 auto;">
+        <PlacementTimeline maxItems={15} />
+      </div>
+    </section>
+
+    <!-- Latest News - Full Width Grid -->
+    <section>
+      <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 4px solid #2563eb; display: inline-block;">Latest News</h2>
+      <p style="font-size: 15px; color: rgba(255,255,255,0.6); margin-bottom: 32px;">Stay informed with the latest developments, deals, and insights from top private equity and venture capital firms.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 32px;" class="news-grid">
+        {articles.map((article: any) => (
+          <a href={`/${article.slug}`} class="news-item" style="display: block; transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="position: relative; overflow: hidden; margin-bottom: 16px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+              {getThumbnail(article) ? (
+                <img src={getThumbnail(article)} alt="" style="width: 100%; height: 100%; object-fit: cover;" class="thumb-img" />
+              ) : (
+                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">
+                  <svg style="width: 40px; height: 40px; color: #6366f1;" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/></svg>
+                </div>
+              )}
+              {article.video_playback_id && (
+                <video class="thumb-video" data-playback-id={article.video_playback_id} muted loop playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; border-radius: 12px;"></video>
+              )}
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+              {article.article_angle && <span class="category-badge">{formatCategory(article.article_angle)}</span>}
+              <span style="font-size: 12px; color: #9ca3af;">{formatDate(article.published_at || article.created_at)}</span>
+            </div>
+            <h3 class="news-title" style="font-size: 18px; font-weight: 700; color: #fff; line-height: 1.35; margin-bottom: 10px; transition: color 0.2s;">{article.title}</h3>
+            <p style="font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">{article.excerpt}</p>
+            {article.timeline && article.timeline.length > 0 && (
+              <MiniTimeline timeline={article.timeline} maxEvents={4} />
+            )}
+          </a>
+        ))}
+      </div>
+    </section>
+  </main>
+
+  <!-- SEO CONTENT SECTIONS -->
+
+  <!-- Intro Section -->
+  {sections.intro && (
+    <section class="dark-section" style="padding: 80px 20px;">
+      <div style="max-width: 900px; margin: 0 auto;">
+        <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 20px; color: #fff;">{sections.intro.title}</h2>
+        {sections.intro.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.6); margin-bottom: 24px;">{sections.intro.subtitle}</p>}
+        {getTextContent(sections.intro) && <div style="font-size: 16px; line-height: 1.8; color: rgba(255,255,255,0.7);" set:html={renderMarkdown(getTextContent(sections.intro))} />}
+      </div>
+    </section>
+  )}
+
+  <!-- Role of Placement Agents -->
+  {sections.role && (
+    <section class="gradient-section" style="padding: 80px 20px;">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 16px; text-align: center; color: #fff;">{sections.role.title}</h2>
+        {sections.role.subtitle && <p style="font-size: 17px; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 48px; max-width: 700px; margin-left: auto; margin-right: auto;">{sections.role.subtitle}</p>}
+        {sections.role.content?.items && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            {sections.role.content.items.map((item: any) => (
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: #fff;">{item.title}</h3>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6);">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Full Placement Agents Directory -->
+  <section class="dark-section" style="padding: 80px 20px;">
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 16px; text-align: center; color: #fff;">Top PE & VC Firms Directory</h2>
+      <p style="font-size: 16px; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 48px; max-width: 700px; margin-left: auto; margin-right: auto;">
+        Browse our comprehensive directory featuring top private equity and venture capital firms from around the world.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+        {allAgents.map((agent: any) => {
+          const img = getCompanyImage(agent);
+          return (
+            <a href={`/private-equity-placement-agents-list/${agent.slug}`} style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; overflow: hidden; transition: all 0.2s; display: block;" onmouseover="this.style.borderColor='#4f46e5';this.style.boxShadow='0 4px 12px rgba(79,70,229,0.1)'" onmouseout="this.style.borderColor='#e5e7eb';this.style.boxShadow='none'">
+              <div style="height: 100px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); position: relative; overflow: hidden;">
+                {img.url && img.type === 'image' ? (
+                  <img src={img.url} alt={agent.name} style="width: 100%; height: 100%; object-fit: cover;" />
+                ) : (
+                  <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 40px; font-weight: 900; color: #4f46e5; opacity: 0.3;">{agent.name?.charAt(0)}</span>
+                  </div>
+                )}
+                {img.type === 'logo' && img.url && (
+                  <div style="position: absolute; bottom: -16px; left: 16px; width: 48px; height: 48px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <img src={img.url} alt={agent.name} style="width: 100%; height: 100%; object-fit: contain;" />
+                  </div>
+                )}
+              </div>
+              <div style="padding: 20px; padding-top: 16px;">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #fff;">{agent.name}</h3>
+                {agent.headquarters && <p style="font-size: 12px; color: #9ca3af; margin-bottom: 6px;">{agent.headquarters}</p>}
+                {agent.description && <p style="font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.6); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{agent.description}</p>}
+                {agent.specializations && agent.specializations.length > 0 && (
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;">
+                    {agent.specializations.slice(0, 3).map((spec: string) => (
+                      <span style="background: #e0e7ff; color: #4f46e5; padding: 3px 8px; border-radius: 100px; font-size: 10px; font-weight: 600;">{spec}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+      <p style="font-size: 14px; color: rgba(255,255,255,0.6); text-align: center; margin-top: 40px; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+        Each of these top PE and VC firms brings unique strengths across different sectors and stages.
+      </p>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  {sections.how_it_works && (
+    <section class="gradient-section" style="padding: 80px 20px;">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <h2 style="font-size: 32px; font-weight: 800; margin-bottom: 16px; text-align: center; color: #fff;">{sections.how_it_works.title}</h2>
+        {sections.how_it_works.subtitle && <p style="font-size: 16px; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 48px;">{sections.how_it_works.subtitle}</p>}
+        {sections.how_it_works.content?.steps && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+            {sections.how_it_works.content.steps.map((step: any, i: number) => (
+              <div style="text-align: center;">
+                <div style="width: 50px; height: 50px; background: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 20px; font-weight: 800; color: #4f46e5;">{i + 1}</div>
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 10px; color: #fff;">{step.title}</h3>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.6);">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Fee Structures -->
+  {sections.fee_structures && (
+    <section class="dark-section" style="padding: 100px 20px;">
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.fee_structures.title}</h2>
+        {sections.fee_structures.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.fee_structures.subtitle}</p>}
+
+        {/* Standard Fees Table */}
+        {sections.fee_structures.content?.standard_fees && (
+          <div style="margin-bottom: 48px;">
+            <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Standard Fee Ranges</h3>
+            <div style="display: grid; gap: 12px;">
+              {sections.fee_structures.content.standard_fees.map((fee: any) => (
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 16px 20px;">
+                  <span style="color: rgba(255,255,255,0.9);">{fee.fund_type}</span>
+                  <span style="font-weight: 700; color: #818cf8;">{fee.fee_range}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Retainer Models */}
+        {sections.fee_structures.content?.retainer_models && (
+          <div style="margin-bottom: 48px;">
+            <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 24px;">Retainer Models</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+              {sections.fee_structures.content.retainer_models.map((model: any) => (
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                  <h4 style="font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #818cf8;">{model.type}</h4>
+                  <div style="font-size: 14px; color: rgba(255,255,255,0.8); line-height: 1.8;">
+                    {model.monthly_retainer && <p><strong>Monthly Retainer:</strong> {model.monthly_retainer}</p>}
+                    {model.success_fee && <p><strong>Success Fee:</strong> {model.success_fee}</p>}
+                    {model.retainer_period && <p><strong>Period:</strong> {model.retainer_period}</p>}
+                    {model.note && <p style="margin-top: 12px; font-style: italic; color: rgba(255,255,255,0.6);">{model.note}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Example Calculation */}
+        {sections.fee_structures.content?.example && (
+          <div style="background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2)); border-radius: 12px; padding: 32px; text-align: center;">
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">Example: {sections.fee_structures.content.example.fund_size} Fund</h3>
+            <div style="display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;">
+              <div><span style="display: block; font-size: 24px; font-weight: 800; color: #818cf8;">{sections.fee_structures.content.example.total}</span><span style="font-size: 13px; color: rgba(255,255,255,0.6);">Total Cost</span></div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Selection Criteria -->
+  {sections.selection && (
+    <section class="gradient-section" style="padding: 100px 20px;">
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.selection.title}</h2>
+        {sections.selection.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.selection.subtitle}</p>}
+
+        {sections.selection.content?.criteria && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            {sections.selection.content.criteria.map((item: any, i: number) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <span style="width: 32px; height: 32px; background: rgba(99,102,241,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #818cf8; font-size: 14px;">{i + 1}</span>
+                  <h3 style="font-size: 17px; font-weight: 700;">{item.name}</h3>
+                </div>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sections.selection.content?.red_flags && (
+          <div style="margin-top: 48px; background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 18px; font-weight: 700; color: #fca5a5; margin-bottom: 16px;">Red Flags to Watch</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+              {sections.selection.content.red_flags.map((flag: string) => (
+                <span style="background: rgba(220,38,38,0.2); color: #fca5a5; padding: 6px 14px; border-radius: 100px; font-size: 13px; font-weight: 500;">{flag}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Trends -->
+  {sections.trends && (
+    <section class="dark-section" style="padding: 100px 20px;">
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.trends.title}</h2>
+        {sections.trends.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.trends.subtitle}</p>}
+
+        {sections.trends.content?.trends && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            {sections.trends.content.trends.map((trend: any, i: number) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <span style="font-size: 24px; font-weight: 900; color: rgba(99,102,241,0.5);">{String(i + 1).padStart(2, '0')}</span>
+                  <h3 style="font-size: 17px; font-weight: 700;">{trend.name}</h3>
+                </div>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{trend.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- Why Use a Placement Agent -->
+  {sections.why_use && (
+    <section class="gradient-section" style="padding: 100px 20px;">
+      <div style="max-width: 1100px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 16px; text-align: center;">{sections.why_use.title}</h2>
+        {sections.why_use.subtitle && <p style="font-size: 18px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 48px;">{sections.why_use.subtitle}</p>}
+
+        {sections.why_use.content?.reasons && (
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            {sections.why_use.content.reasons.map((reason: any) => (
+              <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: #a5b4fc;">{reason.title}</h3>
+                <p style="font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.8);">{reason.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- FAQ -->
+  {sections.faq && (
+    <section class="dark-section" style="padding: 100px 20px;">
+      <div style="max-width: 900px; margin: 0 auto;">
+        <h2 style="font-size: 36px; font-weight: 800; margin-bottom: 48px; text-align: center;">{sections.faq.title || 'Frequently Asked Questions'}</h2>
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          {sections.faq.content?.questions?.map((faq: any) => (
+            <details style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px 24px;">
+              <summary style="font-size: 17px; font-weight: 600; cursor: pointer; color: #fff; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                {faq.question}
+                <span style="color: #818cf8;">+</span>
+              </summary>
+              <p style="font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.8); margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- CTA Section -->
+  <section style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 100px 20px; text-align: center;">
+    <div style="max-width: 700px; margin: 0 auto;">
+      <h2 style="font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 20px;">Track the PE & VC Market</h2>
+      <p style="font-size: 18px; color: rgba(255,255,255,0.9); margin-bottom: 40px;">Stay ahead with comprehensive intelligence on private equity and venture capital firms, deal flow, fund performance, and market trends.</p>
+      <a href="/contact" style="display: inline-block; background: rgba(255,255,255,0.03); color: #667eea; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 700;">Get Started</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="background: #0a0a0a; color: #fff; padding: 80px 20px 40px; border-top: 1px solid rgba(255,255,255,0.1);">
+    <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Rainmakrr</h3>
+        <p style="font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.6;">The insider guide to private equity and venture capital. Fund rankings, deal flow, firm profiles, and market intelligence.</p>
+      </div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 16px;">Directory</h4>
+        <ul style="list-style: none; font-size: 14px;">
+          <li style="margin-bottom: 10px;"><a href="/private-equity-placement-agents-list" style="color: rgba(255,255,255,0.6);">PE & VC Firms</a></li>
+          <li style="margin-bottom: 10px;"><a href="/ecosystem" style="color: rgba(255,255,255,0.6);">Firm Network</a></li>
+          <li style="margin-bottom: 10px;"><a href="/private-equity-placement-agent-news" style="color: rgba(255,255,255,0.6);">Market News</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 16px;">Resources</h4>
+        <ul style="list-style: none; font-size: 14px;">
+          <li style="margin-bottom: 10px;"><a href="/about" style="color: rgba(255,255,255,0.6);">About PE & VC</a></li>
+          <li style="margin-bottom: 10px;"><a href="/visualizations/geo-map" style="color: rgba(255,255,255,0.6);">Global Map</a></li>
+          <li style="margin-bottom: 10px;"><a href="/deal-flow" style="color: rgba(255,255,255,0.6);">Deal Flow</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 16px;">Company</h4>
+        <ul style="list-style: none; font-size: 14px;">
+          <li style="margin-bottom: 10px;"><a href="/about" style="color: rgba(255,255,255,0.6);">About</a></li>
+          <li style="margin-bottom: 10px;"><a href="/contact" style="color: rgba(255,255,255,0.6);">Contact</a></li>
+          <li style="margin-bottom: 10px;"><a href="/privacy" style="color: rgba(255,255,255,0.6);">Privacy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div style="max-width: 1200px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+      <p style="font-size: 14px; color: rgba(255,255,255,0.5);">© 2025 Rainmakrr. All rights reserved.</p>
+      <p style="font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 16px; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.6;">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+    </div>
+  </footer>
+
+  <style>
+    @media (max-width: 768px) {
+      .featured-grid { grid-template-columns: 1fr !important; }
+      .news-grid { grid-template-columns: 1fr !important; }
+      footer > div { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media (max-width: 480px) {
+      footer > div { grid-template-columns: 1fr !important; }
+    }
+  </style>
+
+  <!-- HLS.js for Mux videos -->
+  <script define:vars={{ heroPlaybackId, leadVideoId }}>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load HLS.js first
+      const hlsScript = document.createElement('script');
+      hlsScript.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+      hlsScript.onload = initializeVideos;
+      document.head.appendChild(hlsScript);
+
+      // Detect mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+      // Track video states
+      const videoStates = new Map();
+
+      function initializeVideos() {
+        // Lead article hero video (priority)
+        const leadVideo = document.getElementById('lead-video');
+        if (leadVideo && leadVideoId) {
+          loadHlsVideo(leadVideo, leadVideoId);
+        }
+
+        // Fallback hero video
+        const heroVideo = document.getElementById('hero-video');
+        if (heroVideo) {
+          loadHlsVideo(heroVideo, heroPlaybackId);
+        }
+
+        // Thumbnail videos - preload aggressively for both mobile and desktop
+        const newsItems = document.querySelectorAll('.news-item');
+
+        newsItems.forEach(item => {
+          const video = item.querySelector('.thumb-video');
+          const img = item.querySelector('.thumb-img');
+          if (!video) return;
+
+          const playbackId = video.dataset.playbackId;
+          if (!playbackId) return;
+
+          // Initialize state
+          videoStates.set(video, { loaded: false, ready: false, isVisible: false });
+
+          // Preload observer - starts loading 400px before viewport
+          const preloadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              const state = videoStates.get(video);
+              if (entry.isIntersecting && !state.loaded) {
+                state.loaded = true;
+                loadHlsVideo(video, playbackId, () => {
+                  state.ready = true;
+                  // If already visible, start playing immediately
+                  if (state.isVisible) {
+                    playVideo(video, img);
+                  }
+                });
+              }
+            });
+          }, { rootMargin: '400px 0px' });
+          preloadObserver.observe(item);
+
+          // Visibility observer - controls play/pause
+          const visibilityObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              const state = videoStates.get(video);
+              state.isVisible = entry.isIntersecting;
+
+              if (entry.isIntersecting && state.ready) {
+                playVideo(video, img);
+              } else if (!entry.isIntersecting) {
+                video.pause();
+                // On desktop, hide video when not visible (hover will show it)
+                if (!isMobile) {
+                  video.style.opacity = '0';
+                  if (img) img.style.opacity = '1';
+                }
+              }
+            });
+          }, { threshold: 0.2 });
+          visibilityObserver.observe(item);
+
+          // Desktop: also support hover
+          if (!isMobile) {
+            item.addEventListener('mouseenter', () => {
+              const state = videoStates.get(video);
+              if (state.ready) {
+                playVideo(video, img);
+              }
+            });
+
+            item.addEventListener('mouseleave', () => {
+              video.style.opacity = '0';
+              if (img) img.style.opacity = '1';
+              video.pause();
+            });
+          }
+        });
+      }
+
+      function playVideo(video, img) {
+        video.style.opacity = '1';
+        if (img) img.style.opacity = '0';
+
+        // Try to play with retry
+        const tryPlay = (attempts = 0) => {
+          video.play().catch(err => {
+            if (attempts < 3) {
+              setTimeout(() => tryPlay(attempts + 1), 100);
+            }
+          });
+        };
+        tryPlay();
+      }
+
+      function loadHlsVideo(video, playbackId, onReady) {
+        const src = `https://stream.mux.com/${playbackId}.m3u8`;
+
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS support (Safari, iOS)
+          video.src = src;
+          video.addEventListener('canplaythrough', () => {
+            if (onReady) onReady();
+            else video.play().catch(() => {});
+          }, { once: true });
+          // Fallback if canplaythrough doesn't fire
+          video.addEventListener('loadeddata', () => {
+            setTimeout(() => {
+              if (onReady) onReady();
+            }, 100);
+          }, { once: true });
+        } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+          const hls = new Hls({
+            maxBufferLength: 15,
+            maxMaxBufferLength: 30,
+            startLevel: -1, // Auto quality
+            capLevelToPlayerSize: true
+          });
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (onReady) onReady();
+            else video.play().catch(() => {});
+          });
+          // Also listen for first fragment loaded for faster start
+          hls.on(Hls.Events.FRAG_LOADED, () => {
+            if (onReady) onReady();
+          });
+        }
+      }
+    });
+  </script>
+</body>
+</html>

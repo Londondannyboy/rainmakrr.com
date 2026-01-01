@@ -1,0 +1,372 @@
+---
+import SEO from '../components/SEO.astro';
+import Navigation from '../components/Navigation.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="How to Choose a Placement Agent | Selection Guide 2025"
+    description="Expert guide on choosing the right placement agent for your fund. Key criteria, red flags, and questions to ask when selecting a PE fundraising advisor."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 80px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(240, 147, 251, 0.15), rgba(0, 0, 0, 0.95));
+    }
+
+    .hero-content { max-width: 900px; }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .content-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .content-block {
+      margin-bottom: 60px;
+    }
+
+    .content-block h2 {
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .content-block p {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .content-block ul {
+      list-style: none;
+      margin-top: 20px;
+    }
+
+    .content-block ul li {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.8;
+      margin-bottom: 14px;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .content-block ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .criteria-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .criteria-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .criteria-card h3::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .criteria-card p {
+      margin-bottom: 0;
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .red-flag {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .red-flag h3::before {
+      content: '⚠';
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .highlight-box {
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 24px;
+      border-radius: 12px;
+      margin: 32px 0;
+    }
+
+    .highlight-box p {
+      margin-bottom: 0;
+    }
+
+    .question-list {
+      background: rgba(102, 126, 234, 0.05);
+      border-radius: 16px;
+      padding: 32px;
+      margin-top: 24px;
+    }
+
+    .question-list h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+
+    .question-list ol {
+      margin: 0;
+      padding-left: 24px;
+    }
+
+    .question-list li {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .cta-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(240, 147, 251, 0.1));
+      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 28px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 18px 40px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    footer {
+      padding: 60px 40px 30px;
+      background: #000;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 30px; }
+      .nav-links { display: none; }
+      .hero { padding: 140px 30px 60px; }
+      .content-section { padding: 60px 30px; }
+    }
+  </style>
+</head>
+
+<body>
+  <Navigation />
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>How to Choose a Placement Agent</h1>
+      <p>Key criteria and considerations for selecting the right fundraising partner</p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="content-block">
+      <h2>Essential Selection Criteria</h2>
+      <p>Choosing the right placement agent can significantly impact your fundraising success. Here are the key factors to evaluate:</p>
+
+      <div class="criteria-card">
+        <h3>Proven Track Record</h3>
+        <p>Look for agents with demonstrable success raising capital for funds similar to yours in strategy, size, and vintage. Ask for specific examples and references from recent mandates.</p>
+      </div>
+
+      <div class="criteria-card">
+        <h3>LP Network Depth</h3>
+        <p>Evaluate the quality and relevance of their LP relationships. Top agents maintain active relationships with 500-1,000+ institutional investors, but depth matters more than breadth for your specific strategy.</p>
+      </div>
+
+      <div class="criteria-card">
+        <h3>Strategy Expertise</h3>
+        <p>Ensure the agent has genuine expertise in your fund's strategy (buyout, growth, venture, credit, real estate, etc.). Specialist knowledge enables more credible LP conversations.</p>
+      </div>
+
+      <div class="criteria-card">
+        <h3>Geographic Coverage</h3>
+        <p>Confirm their ability to access LPs in your target markets. Leading agents have teams across North America, Europe, and Asia-Pacific with local market knowledge.</p>
+      </div>
+
+      <div class="criteria-card">
+        <h3>Team Quality & Continuity</h3>
+        <p>Understand who will actually work on your mandate. Senior relationships matter, but day-to-day execution is often handled by more junior team members. Assess the full team.</p>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <p><strong>Pro Tip:</strong> Request a detailed LP target list as part of the pitch process. This reveals both the agent's understanding of your strategy and the actual depth of their relevant relationships.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>Red Flags to Watch For</h2>
+      <p>Be cautious of placement agents who exhibit these warning signs:</p>
+
+      <div class="criteria-card red-flag">
+        <h3>Overpromising on Timeline</h3>
+        <p>Agents promising unrealistically fast closes or guaranteed commitments may be overselling. Quality fundraises take time, typically 12-18 months.</p>
+      </div>
+
+      <div class="criteria-card red-flag">
+        <h3>Vague LP Relationships</h3>
+        <p>Inability to provide specific examples of LP relationships or recent closes in your strategy is a warning sign. Real relationships can be evidenced.</p>
+      </div>
+
+      <div class="criteria-card red-flag">
+        <h3>Excessive Mandate Volume</h3>
+        <p>Agents handling too many simultaneous mandates may not provide adequate attention. Ask about current workload and capacity.</p>
+      </div>
+
+      <div class="criteria-card red-flag">
+        <h3>Lack of Regulatory Compliance</h3>
+        <p>Ensure the agent is properly registered (SEC, FCA, etc.) and follows industry best practices. Non-compliance creates significant risk.</p>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h2>Questions to Ask</h2>
+      <p>During your selection process, ensure you get clear answers to these key questions:</p>
+
+      <div class="question-list">
+        <h3>Track Record & Experience</h3>
+        <ol>
+          <li>How many funds similar to ours have you raised in the past 3 years?</li>
+          <li>What was the average time to close for those mandates?</li>
+          <li>Can you provide references from recent GP clients?</li>
+        </ol>
+      </div>
+
+      <div class="question-list">
+        <h3>LP Network & Coverage</h3>
+        <ol>
+          <li>Which LPs do you have genuine relationships with that are relevant to our strategy?</li>
+          <li>What percentage of your target list represents warm vs. cold outreach?</li>
+          <li>Which LPs have you placed capital with in our strategy in the past year?</li>
+        </ol>
+      </div>
+
+      <div class="question-list">
+        <h3>Team & Process</h3>
+        <ol>
+          <li>Who specifically will work on our mandate and what is their experience?</li>
+          <li>How many active mandates does this team currently handle?</li>
+          <li>What is your typical approach to roadshow planning and LP engagement?</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h2>Making Your Decision</h2>
+      <p>The best placement agent for your fund is rarely the biggest or most prestigious. Focus on finding an agent with genuine expertise in your strategy, relevant LP relationships, and a team that will prioritize your mandate. Chemistry and communication style matter—you'll be working closely together for 12-18 months or more.</p>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Compare Top Placement Agents</h2>
+    <p>Research leading placement agents in our comprehensive directory</p>
+    <a href="/private-equity-placement-agents-list" class="cta-button">Browse Directory</a>
+  </section>
+
+  <footer>
+    <p>© 2025 <a href="/">Placement</a>. Your guide to <a href="/">top private equity placement agents</a>.</p>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 16px;">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+  </footer>
+</body>
+</html>

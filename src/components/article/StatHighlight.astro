@@ -1,0 +1,52 @@
+---
+/**
+ * StatHighlight Component
+ * Key insight section with headline and stats
+ *
+ * @prop headline - Main takeaway text
+ * @prop stats - Array of stat objects with value and label
+ * @prop playbackId - Optional Mux playback ID for background
+ */
+interface Stat {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  headline: string;
+  stats?: Stat[];
+  playbackId?: string;
+}
+
+const { headline, stats, playbackId } = Astro.props;
+
+function getMuxThumbnail(time: number): string {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=1600`;
+}
+---
+
+<section class="mb-16 -mx-4 md:-mx-8 lg:-mx-16">
+  <div class="relative py-16 px-8 overflow-hidden">
+    {playbackId && (
+      <div class="absolute inset-0">
+        <img src={getMuxThumbnail(10)} alt="" class="w-full h-full object-cover opacity-10" loading="lazy" />
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-50 via-white/90 to-blue-50"></div>
+      </div>
+    )}
+    <div class="relative max-w-3xl mx-auto text-center">
+      <span class="text-blue-600 text-sm font-semibold uppercase tracking-wider">💰 Key Insight</span>
+      <p class="text-3xl md:text-4xl font-bold text-gray-900 mt-4 mb-6" set:html={headline} />
+      {stats && stats.length > 0 && (
+        <div class="flex justify-center gap-8 mt-8">
+          {stats.map((stat) => (
+            <div class="text-center">
+              <div class="text-4xl font-bold text-blue-600">{stat.value}</div>
+              <div class="text-sm text-gray-500 mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>

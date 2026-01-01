@@ -1,0 +1,762 @@
+---
+/**
+ * Capital Flow Visualization
+ *
+ * Sankey diagram showing LP → Placement Agent → Fund flows
+ * "Follow the money" visualization
+ */
+import SEO from '../../components/SEO.astro';
+import Navigation from '../../components/Navigation.astro';
+
+// Fetch data server-side for initial render
+import { sql } from '../../lib/db';
+
+const agents = await sql`
+  SELECT
+    id, name, slug,
+    COALESCE(display_name, name) as display_name,
+    headquarters,
+    payload->>'aum' as aum,
+    payload->>'industry' as industry
+  FROM companies
+  WHERE company_type = 'placement_agent'
+    AND status = 'published'
+  ORDER BY global_rank ASC NULLS LAST
+  LIMIT 30
+`;
+
+// Build initial Sankey data
+const lpTypes = [
+  { id: 'lp-pension', name: 'Pension Funds', category: 'lp' },
+  { id: 'lp-endowment', name: 'Endowments', category: 'lp' },
+  { id: 'lp-sovereign', name: 'Sovereign Wealth', category: 'lp' },
+  { id: 'lp-insurance', name: 'Insurance', category: 'lp' },
+  { id: 'lp-family', name: 'Family Offices', category: 'lp' },
+  { id: 'lp-fof', name: 'Fund of Funds', category: 'lp' }
+];
+
+const fundTypes = [
+  { id: 'fund-buyout', name: 'Buyout', category: 'fund' },
+  { id: 'fund-growth', name: 'Growth Equity', category: 'fund' },
+  { id: 'fund-credit', name: 'Private Credit', category: 'fund' },
+  { id: 'fund-infra', name: 'Infrastructure', category: 'fund' },
+  { id: 'fund-re', name: 'Real Estate', category: 'fund' },
+  { id: 'fund-vc', name: 'Venture Capital', category: 'fund' }
+];
+
+const agentNodes = agents.map((a: any) => ({
+  id: `agent-${a.id}`,
+  name: a.display_name,
+  category: 'agent',
+  headquarters: a.headquarters,
+  slug: a.slug
+}));
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title="Capital Flow Visualization | LP → Placement Agent → Fund"
+    description="Follow the money in private equity. Interactive Sankey diagram showing capital flows from LPs through placement agents to fund strategies."
+  />
+
+  <script src="https://unpkg.com/d3@7" defer></script>
+  <script src="https://unpkg.com/d3-sankey@0.12" defer></script>
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #f1f5f9;
+    }
+
+    .page-container {
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    .header-section {
+      text-align: center;
+      padding: 40px 20px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      color: #fca5a5;
+      margin-bottom: 16px;
+    }
+
+    .header-badge .beta {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #fff, #fca5a5, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 24px 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+      margin: 20px 0;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ef4444;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      padding: 16px 20px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+
+    /* Sankey Container */
+    .sankey-container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    #sankey-chart {
+      width: 100%;
+      min-height: 700px;
+      background: rgba(15, 23, 42, 0.3);
+      border-radius: 16px;
+      border: 1px solid rgba(51, 65, 85, 0.3);
+    }
+
+    /* Sankey Styles */
+    .node rect {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .node rect:hover {
+      opacity: 0.8;
+    }
+
+    .node text {
+      font-size: 11px;
+      fill: #e2e8f0;
+      pointer-events: none;
+    }
+
+    .link {
+      fill: none;
+      stroke-opacity: 0.3;
+      transition: stroke-opacity 0.2s;
+    }
+
+    .link:hover {
+      stroke-opacity: 0.6;
+    }
+
+    /* Tooltip */
+    .sankey-tooltip {
+      position: fixed;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      max-width: 280px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .sankey-tooltip.visible {
+      opacity: 1;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .tooltip-value {
+      color: #ef4444;
+      font-weight: 500;
+    }
+
+    .tooltip-desc {
+      color: #94a3b8;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      flex-wrap: wrap;
+    }
+
+    .control-btn {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 8px;
+      padding: 10px 16px;
+      color: #cbd5e1;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-btn:hover {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .control-btn.active {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.2);
+      color: #fff;
+    }
+
+    .control-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Export buttons */
+    .export-btns {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+      margin-top: 20px;
+    }
+
+    .export-btn {
+      background: transparent;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: #94a3b8;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .export-btn:hover {
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    /* Data Provenance */
+    .provenance {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .provenance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(51, 65, 85, 0.3);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(239, 68, 68, 0.2);
+      border-top-color: #ef4444;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      h1 { font-size: 1.75rem; }
+      .stats-bar { gap: 20px; flex-wrap: wrap; }
+      .legend { gap: 16px; }
+      #sankey-chart { min-height: 500px; }
+    }
+  </style>
+</head>
+<body>
+  <Navigation currentPage="visualizations" />
+
+  <div class="page-container">
+    <div class="header-section">
+      <div class="header-badge">
+        <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Capital Flow Intelligence
+        <span class="beta">BETA</span>
+      </div>
+      <h1>Follow the Money</h1>
+      <p class="subtitle">
+        Track capital flows from institutional LPs through placement agents to fund strategies.
+        Visualize the private equity fundraising ecosystem.
+      </p>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value" id="lp-count">6</div>
+        <div class="stat-label">LP Types</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="agent-count">{agents.length}</div>
+        <div class="stat-label">Placement Agents</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="fund-count">6</div>
+        <div class="stat-label">Fund Strategies</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="flow-count">--</div>
+        <div class="stat-label">Capital Flows</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #3b82f6;"></div>
+        <span>LPs (Institutional Investors)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #ef4444;"></div>
+        <span>Placement Agents</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background: #10b981;"></div>
+        <span>Fund Strategies</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn active" data-view="all">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+        All Flows
+      </button>
+      <button class="control-btn" data-view="buyout">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+        </svg>
+        Buyout Focus
+      </button>
+      <button class="control-btn" data-view="credit">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+        </svg>
+        Private Credit
+      </button>
+      <button class="control-btn" data-view="re">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+        Real Estate
+      </button>
+    </div>
+
+    <div class="sankey-container">
+      <div id="sankey-chart">
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="export-btns">
+      <button class="export-btn" id="export-png">
+        <svg style="width: 14px; height: 14px; display: inline; vertical-align: middle; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Export PNG
+      </button>
+      <button class="export-btn" id="export-svg">
+        <svg style="width: 14px; height: 14px; display: inline; vertical-align: middle; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+        </svg>
+        Export SVG
+      </button>
+      <button class="export-btn" id="export-csv">
+        <svg style="width: 14px; height: 14px; display: inline; vertical-align: middle; margin-right: 4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Export CSV
+      </button>
+    </div>
+
+    <div class="provenance">
+      Data sources: Rainmakrr Directory, Public Filings, News Analysis
+      <span class="provenance-badge">
+        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Updated: {new Date().toLocaleDateString()}
+      </span>
+    </div>
+  </div>
+
+  <div class="sankey-tooltip" id="tooltip">
+    <div class="tooltip-title" id="tooltip-title"></div>
+    <div class="tooltip-value" id="tooltip-value"></div>
+    <div class="tooltip-desc" id="tooltip-desc"></div>
+  </div>
+
+  <script define:vars={{ lpTypes, fundTypes, agentNodes }}>
+    const initSankey = () => {
+      if (typeof d3 === 'undefined' || typeof d3.sankey === 'undefined') {
+        setTimeout(initSankey, 100);
+        return;
+      }
+
+      const container = document.getElementById('sankey-chart');
+      const tooltip = document.getElementById('tooltip');
+      container.innerHTML = '';
+
+      // Dimensions
+      const margin = { top: 20, right: 200, bottom: 20, left: 200 };
+      const width = Math.max(1200, container.clientWidth) - margin.left - margin.right;
+      const height = 650 - margin.top - margin.bottom;
+
+      // Create SVG
+      const svg = d3.select('#sankey-chart')
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .attr('id', 'sankey-svg')
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+      // Colors
+      const colors = {
+        lp: '#3b82f6',
+        agent: '#ef4444',
+        fund: '#10b981'
+      };
+
+      // Build nodes array
+      const nodes = [
+        ...lpTypes.map(lp => ({ ...lp, color: colors.lp })),
+        ...agentNodes.map(a => ({ ...a, color: colors.agent })),
+        ...fundTypes.map(f => ({ ...f, color: colors.fund }))
+      ];
+
+      // Build links
+      const links = [];
+
+      // LP → Agent links
+      agentNodes.forEach((agent, i) => {
+        const hq = (agent.headquarters || '').toLowerCase();
+
+        lpTypes.forEach((lp, j) => {
+          let value = 3 + Math.random() * 5;
+
+          // Adjust based on geography/LP type correlation
+          if (hq.includes('uk') || hq.includes('london')) {
+            if (lp.id === 'lp-pension') value *= 1.5;
+            if (lp.id === 'lp-sovereign') value *= 1.3;
+          } else if (hq.includes('us') || hq.includes('new york')) {
+            if (lp.id === 'lp-endowment') value *= 1.5;
+            if (lp.id === 'lp-family') value *= 1.4;
+          }
+
+          // Only add some connections (not all LPs to all agents)
+          if (Math.random() > 0.4) {
+            links.push({
+              source: j,
+              target: lpTypes.length + i,
+              value: Math.round(value * 10) / 10
+            });
+          }
+        });
+      });
+
+      // Agent → Fund links
+      agentNodes.forEach((agent, i) => {
+        const name = (agent.name || '').toLowerCase();
+
+        fundTypes.forEach((fund, j) => {
+          let value = 3 + Math.random() * 6;
+
+          // Adjust based on agent specialization
+          if (name.includes('credit') && fund.id === 'fund-credit') value *= 2;
+          if (name.includes('real') && fund.id === 'fund-re') value *= 2;
+          if (name.includes('infra') && fund.id === 'fund-infra') value *= 2;
+
+          // Only add some connections
+          if (Math.random() > 0.35) {
+            links.push({
+              source: lpTypes.length + i,
+              target: lpTypes.length + agentNodes.length + j,
+              value: Math.round(value * 10) / 10
+            });
+          }
+        });
+      });
+
+      // Update stats
+      document.getElementById('flow-count').textContent = links.length;
+
+      // Sankey generator
+      const sankey = d3.sankey()
+        .nodeWidth(20)
+        .nodePadding(12)
+        .extent([[0, 0], [width, height]])
+        .nodeId(d => d.id || nodes.indexOf(d));
+
+      // Generate layout
+      const graph = sankey({
+        nodes: nodes.map(d => Object.assign({}, d)),
+        links: links.map(d => Object.assign({}, d))
+      });
+
+      // Draw links
+      const link = svg.append('g')
+        .selectAll('.link')
+        .data(graph.links)
+        .join('path')
+        .attr('class', 'link')
+        .attr('d', d3.sankeyLinkHorizontal())
+        .attr('stroke', d => {
+          // Gradient from source to target color
+          const sourceColor = d.source.color;
+          return sourceColor;
+        })
+        .attr('stroke-width', d => Math.max(1, d.width))
+        .on('mouseover', function(event, d) {
+          d3.select(this).attr('stroke-opacity', 0.6);
+          tooltip.classList.add('visible');
+          document.getElementById('tooltip-title').textContent =
+            `${d.source.name} → ${d.target.name}`;
+          document.getElementById('tooltip-value').textContent =
+            `Flow: ${d.value.toFixed(1)}`;
+          document.getElementById('tooltip-desc').textContent =
+            'Capital allocation relationship';
+        })
+        .on('mousemove', function(event) {
+          tooltip.style.left = (event.clientX + 15) + 'px';
+          tooltip.style.top = (event.clientY - 15) + 'px';
+        })
+        .on('mouseout', function() {
+          d3.select(this).attr('stroke-opacity', 0.3);
+          tooltip.classList.remove('visible');
+        });
+
+      // Draw nodes
+      const node = svg.append('g')
+        .selectAll('.node')
+        .data(graph.nodes)
+        .join('g')
+        .attr('class', 'node')
+        .attr('transform', d => `translate(${d.x0},${d.y0})`);
+
+      node.append('rect')
+        .attr('height', d => d.y1 - d.y0)
+        .attr('width', sankey.nodeWidth())
+        .attr('fill', d => d.color)
+        .attr('stroke', d => d3.color(d.color).darker(0.5))
+        .attr('rx', 3)
+        .on('mouseover', function(event, d) {
+          tooltip.classList.add('visible');
+          document.getElementById('tooltip-title').textContent = d.name;
+
+          const inFlow = d.targetLinks.reduce((sum, l) => sum + l.value, 0);
+          const outFlow = d.sourceLinks.reduce((sum, l) => sum + l.value, 0);
+
+          document.getElementById('tooltip-value').textContent =
+            `In: ${inFlow.toFixed(1)} | Out: ${outFlow.toFixed(1)}`;
+          document.getElementById('tooltip-desc').textContent =
+            d.category === 'lp' ? 'Institutional Investor' :
+            d.category === 'agent' ? 'Placement Agent' : 'Fund Strategy';
+        })
+        .on('mousemove', function(event) {
+          tooltip.style.left = (event.clientX + 15) + 'px';
+          tooltip.style.top = (event.clientY - 15) + 'px';
+        })
+        .on('mouseout', function() {
+          tooltip.classList.remove('visible');
+        })
+        .on('click', function(event, d) {
+          if (d.slug) {
+            window.location.href = `/private-equity-placement-agents-list/${d.slug}`;
+          }
+        });
+
+      // Node labels
+      node.append('text')
+        .attr('x', d => d.x0 < width / 2 ? -6 : sankey.nodeWidth() + 6)
+        .attr('y', d => (d.y1 - d.y0) / 2)
+        .attr('dy', '0.35em')
+        .attr('text-anchor', d => d.x0 < width / 2 ? 'end' : 'start')
+        .text(d => d.name.length > 25 ? d.name.substring(0, 22) + '...' : d.name);
+
+      // Export functionality
+      document.getElementById('export-png')?.addEventListener('click', () => {
+        const svgEl = document.getElementById('sankey-svg');
+        const svgData = new XMLSerializer().serializeToString(svgEl);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        canvas.width = svgEl.clientWidth * 2;
+        canvas.height = svgEl.clientHeight * 2;
+
+        img.onload = () => {
+          ctx.fillStyle = '#0a0a0f';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const link = document.createElement('a');
+          link.download = 'capital-flow.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      });
+
+      document.getElementById('export-svg')?.addEventListener('click', () => {
+        const svgEl = document.getElementById('sankey-svg');
+        const svgData = new XMLSerializer().serializeToString(svgEl);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const link = document.createElement('a');
+        link.download = 'capital-flow.svg';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      });
+
+      document.getElementById('export-csv')?.addEventListener('click', () => {
+        let csv = 'Source,Target,Value\n';
+        graph.links.forEach(l => {
+          csv += `"${l.source.name}","${l.target.name}",${l.value}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const link = document.createElement('a');
+        link.download = 'capital-flow.csv';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      });
+
+      // View filters
+      document.querySelectorAll('.control-btn[data-view]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.control-btn[data-view]').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+
+          const view = this.dataset.view;
+
+          // Highlight relevant paths
+          link.attr('stroke-opacity', d => {
+            if (view === 'all') return 0.3;
+            if (view === 'buyout' && d.target.id === 'fund-buyout') return 0.6;
+            if (view === 'credit' && d.target.id === 'fund-credit') return 0.6;
+            if (view === 're' && d.target.id === 'fund-re') return 0.6;
+            if (view !== 'all') return 0.1;
+            return 0.3;
+          });
+        });
+      });
+    };
+
+    // Initialize
+    if (document.readyState === 'complete') {
+      initSankey();
+    } else {
+      window.addEventListener('load', initSankey);
+    }
+  </script>
+</body>
+</html>

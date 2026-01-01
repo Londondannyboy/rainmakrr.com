@@ -1,0 +1,501 @@
+---
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Schema from '../../components/Schema.astro';
+import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+
+// Fetch all placement agents, focusing on smaller/boutique firms
+// Boutique firms are typically characterized by:
+// - Specialized focus (regional, asset class, or stage)
+// - Smaller team size
+// - More personalized service
+// We'll show all firms and let content/filtering help users identify boutique characteristics
+const companies = await sql`
+  SELECT
+    id,
+    name,
+    COALESCE(display_name, name) as display_name,
+    slug,
+    description,
+    featured_asset_url,
+    headquarters,
+    logo_url,
+    specializations,
+    global_rank,
+    primary_country,
+    primary_region,
+    payload
+  FROM companies
+  WHERE company_type = 'placement_agent'
+    AND status = 'published'
+  ORDER BY
+    name ASC
+`;
+
+// Separate companies into those with boutique characteristics vs larger firms
+const boutiqueCompanies = companies.filter((c: any) => {
+  // Boutique indicators: no global rank (smaller firm), or rank > 20
+  return !c.global_rank || c.global_rank > 20;
+});
+
+const largerFirms = companies.filter((c: any) => {
+  return c.global_rank && c.global_rank <= 20;
+});
+
+// Show boutique firms first, then larger firms
+const sortedCompanies = [...boutiqueCompanies, ...largerFirms];
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Boutique Placement Agents | Specialized PE Fundraising Advisors"
+    description="Directory of top boutique placement agents offering specialized, personalized fundraising services. Find independent boutique placement agents for emerging managers and mid-market PE funds."
+  />
+  <Schema type="company_list" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    nav {
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    /* Dropdown navigation */
+    .nav-item {
+      position: relative;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 250px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 1000;
+      margin-top: 12px;
+    }
+
+    .nav-item:hover .dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s;
+    }
+
+    .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      opacity: 1;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(0, 0, 0, 0.8));
+      padding: 120px 60px 80px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 64px;
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 80px 60px;
+    }
+
+    .region-switcher {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 64px;
+    }
+
+    .region-btn {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .region-btn:hover {
+      background: rgba(102, 126, 234, 0.2);
+      border-color: rgba(102, 126, 234, 0.5);
+      color: #fff;
+    }
+
+    h2, h3 {
+      color: rgba(255, 255, 255, 0.95);
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 32px;
+      margin-top: 48px;
+    }
+
+    h3 {
+      font-size: 24px;
+      margin-top: 32px;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .companies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .company-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 32px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .company-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(102, 126, 234, 0.5);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+    }
+
+    .company-name {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+
+    .company-location {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+    }
+
+    .company-description {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 700;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    }
+
+    .highlight-box {
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 24px;
+      margin: 32px 0;
+      border-radius: 8px;
+    }
+
+    .highlight-box h3 {
+      margin-top: 0;
+      color: #667eea;
+    }
+
+    .highlight-box ul {
+      margin-left: 20px;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .highlight-box li {
+      margin: 8px 0;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <a href="/" class="logo">Rainmakrr</a>
+    <ul class="nav-links">
+      <li><a href="/private-equity-placement-agent-news">News</a></li>
+      <li class="nav-item">
+        <a href="/private-equity-placement-agents-list">Agents</a>
+        <div class="dropdown">
+          <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-north-america">North America</a>
+          <a href="/top-private-equity-placement-agents-europe">Europe</a>
+          <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+          <a href="/top-private-equity-placement-agents-africa">Africa</a>
+          <a href="/top-private-equity-placement-agents-middle-east">Middle East</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-us">United States</a>
+          <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+          <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+          <div class="dropdown-divider"></div>
+          <a href="/venture-capital-placement-agents">Venture Capital Placement Agents</a>
+          <a href="/private-credit-placement-agents">Private Credit Placement Agents</a>
+          <a href="/real-estate-private-equity-placement-agents">Real Estate PE Placement Agents</a>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Boutique Placement Agents</h1>
+    <p class="subtitle">
+      Discover the leading <strong>boutique placement agents</strong> offering specialized, personalized fundraising services with focused LP access and dedicated attention for emerging and mid-market fund managers.
+    </p>
+  </section>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="region-switcher">
+      <a href="/private-equity-placement-agents-list" class="region-btn">All Placement Agents</a>
+      <a href="/venture-capital-placement-agents" class="region-btn">Venture Capital</a>
+      <a href="/private-credit-placement-agents" class="region-btn">Private Credit</a>
+      <a href="/real-estate-private-equity-placement-agents" class="region-btn">Real Estate PE</a>
+    </div>
+
+    <h2>What Defines Boutique Placement Agents</h2>
+    <p>
+      Boutique placement agents are specialized, often independent firms that provide personalized fundraising services distinct from bulge bracket placement agencies. These boutique placement agents typically focus on specific regions, asset classes, fund sizes, or investment strategies, offering deep expertise and tailored LP access within their areas of specialization.
+    </p>
+
+    <div class="highlight-box">
+      <h3>Key Characteristics of Boutique Placement Agents</h3>
+      <ul>
+        <li><strong>Specialized Focus:</strong> Deep expertise in specific geographies (e.g., European funds, Asian LPs), asset classes (e.g., infrastructure, real estate), or fund stages (e.g., emerging managers, first-time funds)</li>
+        <li><strong>Personalized Service:</strong> Senior-level attention on every mandate with smaller client portfolios allowing for customized fundraising strategies</li>
+        <li><strong>Nimble Execution:</strong> Faster decision-making and ability to adapt strategies mid-campaign without bureaucratic constraints</li>
+        <li><strong>Selective LP Network:</strong> Curated relationships with 100-300 highly targeted institutional investors rather than broad databases</li>
+        <li><strong>Aligned Economics:</strong> Often willing to structure creative fee arrangements including success-based pricing for emerging managers</li>
+        <li><strong>Independent Advisory:</strong> Free from conflicts of interest associated with investment banking parents or proprietary fund interests</li>
+      </ul>
+    </div>
+
+    <h3>Why Choose Boutique Placement Agents</h3>
+    <p>
+      Fund managers, particularly emerging managers and specialized strategies, often prefer boutique placement agents for several strategic reasons. Boutique firms provide senior partner involvement from day one, avoiding the "bait and switch" where junior staff handle actual execution after senior rainmakers win the mandate.
+    </p>
+    <p>
+      Their focused LP networks mean higher-quality introductions to genuinely interested investors rather than mass outreach. Boutique placement agents typically maintain long-term relationships with 150-250 core LPs they know intimately, understanding investment mandates, decision timelines, and key decision-makers personally.
+    </p>
+
+    <h3>Boutique vs. Bulge Bracket Placement Agents</h3>
+    <p>
+      While large placement firms offer global reach and extensive LP databases, boutique placement agents provide advantages in specific scenarios:
+    </p>
+
+    <div class="highlight-box">
+      <h3>When Boutique Makes Sense</h3>
+      <ul>
+        <li><strong>Emerging Managers:</strong> First-time or small funds ($50M-$500M) benefit from personalized attention that large firms may not prioritize</li>
+        <li><strong>Specialized Strategies:</strong> Niche sectors (e.g., impact investing, sector-focused funds) where boutique expertise exceeds generalist knowledge</li>
+        <li><strong>Regional Focus:</strong> Asia-Pacific or Latin American funds where boutique firms' local relationships provide superior access</li>
+        <li><strong>Relationship-Driven:</strong> GPs prioritizing senior-level partnership and strategic counsel over transactional execution</li>
+        <li><strong>Cost Sensitivity:</strong> Smaller funds seeking flexible fee structures that boutiques can more readily accommodate</li>
+      </ul>
+    </div>
+
+    <h3>Success Metrics for Boutique Placement Agents</h3>
+    <p>
+      Leading boutique placement agents demonstrate track records through:
+    </p>
+    <p>
+      <strong>Emerging Manager Expertise:</strong> 60-80% of mandates from first-time or small funds, with proven success closing $100M-$750M funds.
+    </p>
+    <p>
+      <strong>LP Conversion Rates:</strong> 15-25% conversion from introduction to commitment, significantly higher than industry averages of 5-10%, indicating quality over quantity targeting.
+    </p>
+    <p>
+      <strong>Multi-Fund Relationships:</strong> 70%+ of clients return for subsequent funds, demonstrating satisfaction and long-term partnership value.
+    </p>
+    <p>
+      <strong>Average Time to Close:</strong> 12-18 months for first-time funds, competitive with or faster than larger placement firms through focused execution.
+    </p>
+
+    <h3>Boutique Private Equity Placement Agents ({sortedCompanies.length})</h3>
+
+    <div class="companies-grid">
+      {sortedCompanies.map((company: any) => (
+        <a href={`/${company.slug}`} style="text-decoration: none; color: inherit;">
+          <div class="company-card">
+            {company.featured_asset_url && (
+              <div style="width: 100%; height: 200px; overflow: hidden; margin: -32px -32px 24px -32px; border-radius: 24px 24px 0 0;">
+                <img
+                  src={company.featured_asset_url}
+                  alt={company.display_name}
+                  loading="lazy"
+                  decoding="async"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                />
+              </div>
+            )}
+            <h4 class="company-name">{company.display_name}</h4>
+            {company.primary_country && (
+              <div class="company-location">🌍 {company.primary_country} · {company.primary_region}</div>
+            )}
+            {company.global_rank && (
+              <div class="company-location">🏆 Rank #{company.global_rank}</div>
+            )}
+            {company.description && (
+              <p class="company-description">{company.description}</p>
+            )}
+            <div style="margin-top: 16px; color: #667eea; font-weight: 600;">
+              View Profile →
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <div style="text-align: center; margin-top: 64px;">
+      <a href="/private-equity-placement-agents-list" class="btn">View All Placement Agents</a>
+    </div>
+  </div>
+
+  <!-- Regional Knowledge Graph Section -->
+  <div class="content" style="margin-top: 80px;">
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); border-radius: 24px; padding: 48px; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
+          <h2 style="font-size: 32px; font-weight: 900; color: #fff; margin: 0;">
+            Boutique PE Network
+          </h2>
+          <span style="padding: 8px 16px; background: rgba(16, 185, 129, 0.2); color: rgba(16, 185, 129, 1); font-size: 14px; font-weight: 600; border-radius: 24px; border: 1px solid rgba(16, 185, 129, 0.3);">
+            Knowledge Graph
+          </span>
+        </div>
+
+        <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 32px; font-size: 16px; line-height: 1.8;">
+          Interactive network visualization showing relationships between boutique placement agents, their focus areas, and key market connections.
+        </p>
+
+        <div style="background: rgba(0, 0, 0, 0.3); border-radius: 16px; padding: 32px; min-height: 500px; display: flex; align-items: center; justify-content: center;">
+          <div style="text-align: center;">
+            <svg style="width: 64px; height: 64px; margin: 0 auto 24px; opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <h3 style="color: rgba(255, 255, 255, 0.6); font-size: 18px; margin-bottom: 12px;">Boutique Network Graph</h3>
+            <p style="color: rgba(255, 255, 255, 0.4); font-size: 14px;">
+              Comprehensive network visualization showing {sortedCompanies.length} boutique placement agents
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer style="background: #0a0a0a; padding: 40px 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1);">
+    <p style="font-size: 14px; color: rgba(255,255,255,0.5);">© 2025 Rainmakrr. All rights reserved.</p>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 12px;">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+  </footer>
+</body>
+</html>

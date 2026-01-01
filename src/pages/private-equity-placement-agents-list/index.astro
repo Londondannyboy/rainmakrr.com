@@ -1,0 +1,832 @@
+---
+import { sql } from '../../lib/db';
+import SEO from '../../components/SEO.astro';
+import Schema from '../../components/Schema.astro';
+import ZepGraphVisualization from '../../components/ZepGraphVisualization.astro';
+import OptimizedFonts from '../../components/OptimizedFonts.astro';
+
+// Fetch all placement agents - filter by company_type (singular!)
+const companies = await sql`
+  SELECT
+    id,
+    name,
+    COALESCE(display_name, name) as display_name,
+    slug,
+    description,
+    featured_asset_url,
+    payload->>'short_description' as short_description,
+    headquarters,
+    logo_url,
+    specializations,
+    global_rank,
+    primary_country,
+    primary_region
+  FROM companies
+  WHERE company_type = 'placement_agent'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+`;
+
+// Country code mapping to full names
+const countryCodeMap: Record<string, string> = {
+  'NO': 'Norway',
+  'EE': 'Estonia',
+  'IT': 'Italy',
+  'LT': 'Lithuania',
+  'LV': 'Latvia',
+  'PT': 'Portugal',
+  'US': 'United States',
+  'UK': 'United Kingdom',
+};
+
+// Normalize country names
+const normalizedCompanies = companies.map((company: any) => ({
+  ...company,
+  primary_country: countryCodeMap[company.primary_country] || company.primary_country
+}));
+
+// Group by region, country, and specializations
+const companiesByRegion = normalizedCompanies.reduce((acc: any, company: any) => {
+  const region = company.primary_region || 'Other';
+  if (!acc[region]) acc[region] = [];
+  acc[region].push(company);
+  return acc;
+}, {});
+
+const companiesByCountry = normalizedCompanies.reduce((acc: any, company: any) => {
+  const country = company.primary_country || 'Other';
+  if (!acc[country]) acc[country] = [];
+  acc[country].push(company);
+  return acc;
+}, {});
+
+// Extract unique values for filters
+const regions = ['North America', 'Europe', 'Asia Pacific', 'Latin America', 'Africa', 'Middle East'];
+const countries = Object.keys(companiesByCountry).filter(c => c !== 'Other').sort();
+const allSpecializations = [...new Set(normalizedCompanies.flatMap((c: any) => c.specializations || []))].sort();
+
+// Sort countries by region priority
+const sortedCountries = Object.keys(companiesByCountry).sort((a, b) => {
+  if (a === 'United States') return -1;
+  if (b === 'United States') return 1;
+  if (a === 'United Kingdom') return -1;
+  if (b === 'United Kingdom') return 1;
+  if (a === 'Other') return 1;
+  if (b === 'Other') return -1;
+  return a.localeCompare(b);
+});
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Private Equity Placement Agents List | Top, Largest & Best PE Agencies"
+    description="Comprehensive list of private equity placement agents featuring the top, largest, and best boutique and bulge bracket agencies specializing in PE fundraising and capital raising. Your definitive resource for connecting with leading placement agents worldwide."
+  />
+  <Schema type="company_list" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+
+  <!-- Optimized Font Loading (astro-font) -->
+  <OptimizedFonts />
+
+  <!-- GSAP Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+
+  <!-- Load vis-network library for deal graphs -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+
+  <!-- Mux Video -->
+  <link rel="preconnect" href="https://stream.mux.com" crossorigin>
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover { opacity: 0.6; }
+
+    /* Dropdown navigation */
+    .nav-item {
+      position: relative;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 250px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      z-index: 1000;
+      margin-top: 12px;
+    }
+
+    .nav-item:hover .dropdown {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .dropdown a {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s;
+    }
+
+    .dropdown a:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      opacity: 1;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 8px 0;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 100px;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .hero-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      max-width: 1000px;
+      position: relative;
+      z-index: 10;
+      opacity: 0;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      padding: 12px 28px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 90px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 24px);
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* Companies Section */
+    .companies-section {
+      padding: 120px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    .companies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .company-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      text-decoration: none;
+      display: block;
+      opacity: 1;
+      position: relative;
+      z-index: 20;
+    }
+
+    .company-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-8px);
+    }
+
+    .company-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+
+    .company-name {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .company-rank {
+      background: rgba(102, 126, 234, 0.2);
+      color: #667eea;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      white-space: nowrap;
+      margin-left: 16px;
+    }
+
+    .company-location {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .company-description {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    .company-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 8px 16px;
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 100px 40px;
+      opacity: 1;
+    }
+
+    .empty-state h3 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .empty-state p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Footer */
+    footer {
+      padding: 80px 60px 40px;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.05), transparent);
+      pointer-events: none;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 12px;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: #fff;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    .footer-bottom .disclaimer {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    .filter-link:hover {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%) !important;
+      border-color: rgba(102, 126, 234, 0.5) !important;
+      transform: translateY(-2px);
+    }
+
+    .filter-link-secondary:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      color: #fff !important;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 30px; }
+
+      .nav-links {
+        gap: 20px;
+        font-size: 12px;
+      }
+
+      .hero {
+        padding: 140px 30px 80px;
+        min-height: 60vh;
+      }
+
+      /* Filter section mobile adjustments */
+      .filter-section {
+        padding: 40px 20px !important;
+      }
+
+      .filter-section > div {
+        padding: 0 !important;
+      }
+
+      .filter-section h3 {
+        font-size: 12px !important;
+        margin-bottom: 16px !important;
+      }
+
+      .filter-section a {
+        padding: 10px 16px !important;
+        font-size: 12px !important;
+      }
+
+      .filter-group {
+        margin-bottom: 32px !important;
+      }
+
+      .companies-section {
+        padding: 80px 30px;
+      }
+
+      .companies-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      footer {
+        padding: 60px 30px 30px;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav>
+    <a href="/" class="logo">Rainmakrr</a>
+    <ul class="nav-links">
+      <li><a href="/private-equity-placement-agent-news">News</a></li>
+      <li class="nav-item">
+        <a href="/private-equity-placement-agents-list">Agents</a>
+        <div class="dropdown">
+          <a href="/private-equity-placement-agents-list">All Regions & Countries</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-north-america">North America</a>
+          <a href="/top-private-equity-placement-agents-europe">Europe</a>
+          <a href="/top-private-equity-placement-agents-asia-pacific">Asia Pacific</a>
+          <a href="/top-private-equity-placement-agents-latin-america">Latin America</a>
+          <a href="/top-private-equity-placement-agents-africa">Africa</a>
+          <a href="/top-private-equity-placement-agents-middle-east">Middle East</a>
+          <div class="dropdown-divider"></div>
+          <a href="/top-private-equity-placement-agents-us">United States</a>
+          <a href="/top-private-equity-placement-agents-uk">United Kingdom</a>
+          <a href="/top-private-equity-placement-agents-singapore">Singapore</a>
+          <div class="dropdown-divider"></div>
+          <a href="/venture-capital-placement-agents">Venture Capital Placement Agents</a>
+          <a href="/private-credit-placement-agents">Private Credit Placement Agents</a>
+          <a href="/real-estate-private-equity-placement-agents">Real Estate PE Placement Agents</a>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <video id="hero-video" class="hero-video" autoplay muted loop playsinline></video>
+    <div class="hero-content">
+      <div class="hero-badge">Curated Directory</div>
+      <h1>Private Equity Placement Agents List - Top, Largest & Best Agencies</h1>
+      <p class="hero-subtitle">
+        Comprehensive directory of the world's top private equity placement agents, featuring the largest and best boutique and bulge bracket agencies specializing in PE fundraising and capital raising. Your definitive resource for connecting with leading placement agents worldwide.
+      </p>
+    </div>
+  </section>
+
+  <!-- Filter Navigation -->
+  <section class="filter-section" style="background: rgba(0, 0, 0, 0.95); padding: 60px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+    <div style="max-width: 1400px; margin: 0 auto;">
+
+      <!-- Regions -->
+      <div class="filter-group" style="margin-bottom: 48px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+          Browse by Region
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          {regions.map((region: string) => (
+            <a
+              href={`/top-private-equity-placement-agents-${region.toLowerCase().replace(' ', '-')}`}
+              style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%); border: 1px solid rgba(102, 126, 234, 0.3); border-radius: 8px; color: rgba(255, 255, 255, 0.9); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.3s;"
+              class="filter-link"
+            >
+              {region}
+              <span style="margin-left: 8px; opacity: 0.6; font-size: 12px;">
+                ({companiesByRegion[region]?.length || 0})
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- Countries -->
+      <div class="filter-group" style="margin-bottom: 48px;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+          Browse by Country
+        </h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          {countries.slice(0, 12).map((country: string) => (
+            <a
+              href={`#${country.toLowerCase().replace(/\s+/g, '-')}`}
+              style="display: inline-block; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: rgba(255, 255, 255, 0.8); text-decoration: none; font-size: 13px; transition: all 0.3s;"
+              class="filter-link-secondary"
+            >
+              {country}
+              <span style="margin-left: 6px; opacity: 0.5; font-size: 11px;">
+                ({companiesByCountry[country]?.length})
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- Specializations -->
+      {allSpecializations.length > 0 && (
+        <div>
+          <h3 style="font-size: 14px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+            Browse by Specialization
+          </h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <a href="/venture-capital-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Venture Capital
+            </a>
+            <a href="/private-credit-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Private Credit
+            </a>
+            <a href="/real-estate-private-equity-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Real Estate PE
+            </a>
+            <a href="/boutique-private-equity-placement-agents" style="display: inline-block; padding: 10px 20px; background: rgba(102, 126, 234, 0.1); border: 1px solid rgba(102, 126, 234, 0.2); border-radius: 6px; color: rgba(102, 126, 234, 0.9); text-decoration: none; font-size: 13px; transition: all 0.3s;" class="filter-link-secondary">
+              Boutique Firms
+            </a>
+          </div>
+        </div>
+      )}
+
+    </div>
+  </section>
+
+  <!-- Companies Section -->
+  <section class="companies-section">
+    {normalizedCompanies.length > 0 ? (
+      <div>
+        {sortedCountries.map((country: string) => (
+          <div id={country.toLowerCase().replace(/\s+/g, '-')} style="margin-bottom: 80px; scroll-margin-top: 100px;">
+            <h2 style="color: #fff; font-size: 32px; font-weight: 700; margin-bottom: 40px; text-align: center;">
+              {country}
+            </h2>
+            <div class="companies-grid">
+              {companiesByCountry[country].map((company: any) => (
+                <a href={`/${company.slug}`} class="company-card">
+                  {company.featured_asset_url && (
+                    <div style="width: 100%; height: 200px; overflow: hidden; margin-bottom: 20px; border-radius: 8px 8px 0 0; margin: -20px -20px 20px -20px;">
+                      <img
+                        src={company.featured_asset_url}
+                        alt={company.display_name}
+                        style="width: 100%; height: 100%; object-fit: cover;"
+                      />
+                    </div>
+                  )}
+                  <div class="company-header">
+                    <div style="flex: 1;">
+                      <div class="company-name">{company.display_name}</div>
+                      {company.headquarters && company.headquarters !== 'Unavailable from provided context' && (
+                        <div class="company-location">{company.headquarters}</div>
+                      )}
+                    </div>
+                    {company.global_rank && (
+                      <div class="company-rank">#{company.global_rank}</div>
+                    )}
+                  </div>
+                  {(company.short_description || company.description) && (
+                    <p class="company-description">{company.short_description || company.description}</p>
+                  )}
+
+                  <!-- Mini Knowledge Graph -->
+                  <div style="margin: 20px 0; padding: 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                      🌐 Knowledge Graph Preview
+                    </div>
+                    <div style="height: 200px; overflow: hidden; border-radius: 8px;">
+                      <ZepGraphVisualization companyId={company.slug} companyName={company.name} />
+                    </div>
+                  </div>
+
+                  {company.specializations && company.specializations.length > 0 && (
+                    <div class="company-tags">
+                      {company.specializations.slice(0, 3).map((spec: string) => (
+                        <span class="tag">{spec}</span>
+                      ))}
+                      {company.specializations.length > 3 && (
+                        <span class="tag">+{company.specializations.length - 3} more</span>
+                      )}
+                    </div>
+                  )}
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state">
+        <h3>Coming Soon</h3>
+        <p>We're currently curating the finest placement agents. Check back soon!</p>
+      </div>
+    )}
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Placement</h3>
+        <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
+          Your definitive private equity placement agents news source.
+        </p>
+        <p style="margin-top: 16px;">
+          <a href="/" style="color: #667eea; text-decoration: none; font-weight: 600;">Top Private Equity Placement Agents</a>
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h3>Resources</h3>
+        <ul class="footer-links">
+          <li><a href="/private-equity-placement-agent-news">News</a></li>
+          <li><a href="/private-equity-placement-agents-list">Agency Directory</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <ul class="footer-links">
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms & Conditions</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Placement. All rights reserved.</p>
+      <p class="disclaimer">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Wait for DOM and GSAP to load
+    window.addEventListener('load', function() {
+      if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animation
+        gsap.to('.hero-content', {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: 'power3.out'
+        });
+
+        // Company cards staggered animation
+        ScrollTrigger.batch('.company-card', {
+          onEnter: (elements) => {
+            gsap.to(elements, {
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'power2.out'
+            });
+          },
+          start: 'top 85%',
+          once: true
+        });
+      }
+    });
+
+    // Initialize Mux HLS video for hero
+    const heroVideo = document.getElementById('hero-video');
+    const heroVideoSrc = 'https://stream.mux.com/mOMmHitiSizSxgTqzF1Y7tcryugkc700QL65SMOC2WEU.m3u8';
+
+    function loadHLS(callback) {
+      if (typeof Hls !== 'undefined') {
+        callback();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+      script.onload = callback;
+      document.head.appendChild(script);
+    }
+
+    if (heroVideo) {
+      if (heroVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (Safari)
+        heroVideo.src = heroVideoSrc;
+        heroVideo.play().catch(() => {});
+      } else {
+        // Load HLS.js for other browsers
+        loadHLS(function() {
+          if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            const hls = new Hls({ maxBufferLength: 10 });
+            hls.loadSource(heroVideoSrc);
+            hls.attachMedia(heroVideo);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => heroVideo.play().catch(() => {}));
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

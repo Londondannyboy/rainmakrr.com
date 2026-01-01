@@ -1,0 +1,256 @@
+---
+/**
+ * Ecosystem Embed - Clean preview for homepage
+ * No navigation, no header - just the graph
+ */
+import { sql } from '../../lib/db';
+
+// Fetch companies for visualization
+const companies = await sql`
+  SELECT
+    id, name, slug, company_type,
+    COALESCE(display_name, name) as display_name,
+    headquarters, global_rank,
+    payload->>'industry' as industry
+  FROM companies
+  WHERE status = 'published'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+  LIMIT 80
+`;
+
+// Fetch recent articles for deal nodes
+const articles = await sql`
+  SELECT id, title, slug, article_angle
+  FROM articles
+  WHERE app = 'rainmakrr' AND status = 'published'
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 30
+`;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Placement Universe</title>
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js" defer></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #fff;
+      overflow: hidden;
+    }
+    #network-graph {
+      width: 100vw;
+      height: 100vh;
+    }
+    .loading {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .loading.hidden { display: none; }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mini legend */
+    .legend {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      z-index: 50;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #6b7280;
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+  </div>
+  <div id="network-graph"></div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #4f46e5;"></div>
+      <span>Agents</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #10b981;"></div>
+      <span>PE Firms</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: #f59e0b;"></div>
+      <span>Deals</span>
+    </div>
+  </div>
+
+  <script define:vars={{ companies, articles }}>
+    const initNetwork = () => {
+      if (typeof vis === 'undefined') {
+        setTimeout(initNetwork, 50);
+        return;
+      }
+
+      const container = document.getElementById('network-graph');
+      const loading = document.getElementById('loading');
+
+      const nodes = [];
+      const edges = [];
+
+      const colors = {
+        placement_agent: '#4f46e5',
+        pe_firm: '#10b981',
+        deal: '#f59e0b',
+        news: '#ef4444'
+      };
+
+      // Add companies as nodes
+      companies.forEach((company) => {
+        const isAgent = company.company_type === 'placement_agent';
+        nodes.push({
+          id: `company-${company.id}`,
+          label: (company.display_name || company.name).substring(0, 18),
+          group: company.company_type,
+          color: {
+            background: colors[company.company_type] || '#64748b',
+            border: colors[company.company_type] || '#64748b',
+            highlight: { background: '#1e40af', border: '#1e40af' }
+          },
+          size: isAgent ? (company.global_rank && company.global_rank <= 10 ? 25 : 16) : 12,
+          font: { color: '#374151', size: 10 }
+        });
+      });
+
+      // Add articles as deal nodes
+      articles.forEach((article) => {
+        const isDeal = article.title?.match(/acqui|merger|buyout|investment|raises|funding|stake/i);
+        if (isDeal) {
+          nodes.push({
+            id: `article-${article.id}`,
+            label: article.title?.substring(0, 20) + '...',
+            group: 'deal',
+            color: {
+              background: colors.deal,
+              border: colors.deal,
+              highlight: { background: '#d97706', border: '#d97706' }
+            },
+            size: 10,
+            font: { color: '#6b7280', size: 8 }
+          });
+        }
+      });
+
+      // Create edges between agents
+      const agentNodes = nodes.filter(n => n.group === 'placement_agent');
+      agentNodes.forEach((node, i) => {
+        for (let j = i + 1; j < Math.min(i + 3, agentNodes.length); j++) {
+          if (Math.random() > 0.5) {
+            edges.push({
+              from: node.id,
+              to: agentNodes[j].id,
+              color: { color: '#e5e7eb', highlight: '#4f46e5' },
+              width: 1
+            });
+          }
+        }
+      });
+
+      // Connect deals to agents
+      const dealNodes = nodes.filter(n => n.group === 'deal');
+      dealNodes.forEach(deal => {
+        const randomAgents = agentNodes
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 2);
+        randomAgents.forEach(agent => {
+          edges.push({
+            from: deal.id,
+            to: agent.id,
+            color: { color: '#fde68a', highlight: '#f59e0b' },
+            width: 1,
+            dashes: true
+          });
+        });
+      });
+
+      const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+
+      const options = {
+        physics: {
+          enabled: true,
+          solver: 'forceAtlas2Based',
+          forceAtlas2Based: {
+            gravitationalConstant: -25,
+            centralGravity: 0.01,
+            springLength: 120,
+            springConstant: 0.08
+          },
+          stabilization: { iterations: 80 }
+        },
+        nodes: {
+          shape: 'dot',
+          borderWidth: 2
+        },
+        edges: {
+          smooth: { type: 'continuous' }
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 0,
+          hideEdgesOnDrag: true,
+          dragNodes: false,
+          dragView: false,
+          zoomView: false
+        }
+      };
+
+      const network = new vis.Network(container, data, options);
+
+      network.once('stabilized', () => {
+        loading?.classList.add('hidden');
+        // Fit and stop physics for static display
+        network.fit({ animation: false });
+        network.setOptions({ physics: { enabled: false } });
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initNetwork);
+    } else {
+      initNetwork();
+    }
+  </script>
+</body>
+</html>

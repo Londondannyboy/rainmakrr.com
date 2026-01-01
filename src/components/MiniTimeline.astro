@@ -1,0 +1,112 @@
+---
+/**
+ * Mini Timeline Component
+ *
+ * Compact horizontal timeline for displaying under news thumbnails
+ * Shows key events extracted from article data
+ */
+
+interface TimelineEvent {
+  date: string;
+  title: string;
+  description?: string;
+}
+
+interface Props {
+  timeline?: TimelineEvent[];
+  maxEvents?: number;
+}
+
+const { timeline = [], maxEvents = 4 } = Astro.props;
+
+// Only show if we have events
+const events = timeline.slice(0, maxEvents);
+const hasEvents = events.length > 0;
+---
+
+{hasEvents && (
+  <div class="mini-timeline">
+    <div class="timeline-track">
+      {events.map((event, i) => (
+        <div
+          class="timeline-point"
+          style={`left: ${events.length > 1 ? (i / (events.length - 1)) * 100 : 50}%`}
+          title={`${event.date}: ${event.title}`}
+        >
+          <div class="point-dot"></div>
+          <span class="point-date">{event.date}</span>
+        </div>
+      ))}
+    </div>
+    <div class="timeline-labels">
+      {events.map((event, i) => (
+        <span
+          class="timeline-label"
+          style={`left: ${events.length > 1 ? (i / (events.length - 1)) * 100 : 50}%`}
+        >
+          {event.title.length > 12 ? event.title.substring(0, 10) + '...' : event.title}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+<style>
+  .mini-timeline {
+    position: relative;
+    padding: 8px 4px;
+    margin-top: 8px;
+    height: 40px;
+  }
+
+  .timeline-track {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #10b981);
+    border-radius: 1px;
+    margin: 0 8px;
+  }
+
+  .timeline-point {
+    position: absolute;
+    transform: translateX(-50%);
+    top: -4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .point-dot {
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+  }
+
+  .point-date {
+    font-size: 9px;
+    font-weight: 600;
+    color: #6366f1;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  .timeline-labels {
+    position: relative;
+    margin-top: 4px;
+    height: 14px;
+  }
+
+  .timeline-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 8px;
+    color: #6b7280;
+    white-space: nowrap;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>

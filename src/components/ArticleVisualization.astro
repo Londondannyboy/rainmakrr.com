@@ -1,0 +1,486 @@
+---
+/**
+ * Article Visualization Component
+ *
+ * Shows article-specific 3D and 2D graphs based on companies/entities mentioned
+ * Plus the article's timeline if available
+ */
+import ZepGraph3D from './ZepGraph3D.astro';
+import ZepGraphVisualization from './ZepGraphVisualization.astro';
+
+interface Props {
+  articleId: number;
+  articleTitle: string;
+  timeline?: any[];
+  zepFacts?: any[];
+}
+
+const { articleId, articleTitle, timeline, zepFacts } = Astro.props;
+
+// Extract company/entity names from zep_facts
+const extractEntities = (facts: any[]) => {
+  if (!facts) return [];
+
+  const entities = new Set<string>();
+
+  facts.forEach(fact => {
+    // Extract entity names from fact text
+    const factText = fact.fact || '';
+
+    // Common patterns to extract
+    const patterns = [
+      /([A-Z][a-z]+ (?:Capital|Partners|Group|Management|Investments?|Advisory))/g,
+      /([A-Z][A-Z]+(?:\s+[A-Z][a-z]+)?)/g, // Acronyms like PAG, HIG
+    ];
+
+    patterns.forEach(pattern => {
+      const matches = factText.match(pattern);
+      if (matches) {
+        matches.forEach(m => {
+          if (m.length > 3 && m.length < 50) {
+            entities.add(m.trim());
+          }
+        });
+      }
+    });
+  });
+
+  return Array.from(entities).slice(0, 10);
+};
+
+const entities = extractEntities(zepFacts);
+const hasTimeline = timeline && timeline.length > 0;
+const uniqueId = `article-viz-${articleId}`;
+---
+
+<div class="article-visualization">
+  <!-- Article Timeline (if available) -->
+  {hasTimeline && (
+    <div class="viz-section">
+      <div class="viz-header">
+        <div class="viz-icon" style="background: linear-gradient(135deg, #10b981, #14b8a6);">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3>Deal Timeline</h3>
+          <p>Key events in this story</p>
+        </div>
+        <span class="viz-badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3);">Timeline</span>
+      </div>
+
+      <div class="timeline-container">
+        <div class="timeline-track">
+          {timeline.map((event: any, i: number) => (
+            <div class="timeline-event" style={`left: ${(i / (timeline.length - 1 || 1)) * 100}%`}>
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <span class="timeline-date">{event.date}</span>
+                <span class="timeline-title">{event.title}</span>
+                {event.description && (
+                  <span class="timeline-desc">{event.description}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- 3D Deal Network -->
+  <div class="viz-section">
+    <div class="viz-header">
+      <div class="viz-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+      <div>
+        <h3>Deal Network</h3>
+        <p>Entities and relationships in this article</p>
+      </div>
+      <span class="viz-badge">3D WebGL</span>
+    </div>
+
+    <div class="graph-container">
+      <div id={`${uniqueId}-3d`} class="graph-3d"></div>
+
+      <!-- Entity Legend -->
+      <div class="entity-legend">
+        <div class="legend-title">Mentioned Entities</div>
+        {entities.slice(0, 6).map((entity, i) => (
+          <div class="legend-item">
+            <div class="legend-dot" style={`background: hsl(${(i * 60) % 360}, 70%, 60%);`}></div>
+            <span>{entity}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- 2D Network View -->
+  <div class="viz-section viz-section-small">
+    <div class="viz-header">
+      <div class="viz-icon" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"></path>
+        </svg>
+      </div>
+      <div>
+        <h3>2D Network</h3>
+        <p>Accessible view</p>
+      </div>
+      <span class="viz-badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.3);">2D</span>
+    </div>
+
+    <div id={`${uniqueId}-2d`} class="graph-2d"></div>
+  </div>
+</div>
+
+<script define:vars={{ uniqueId, entities, timeline, articleTitle, zepFacts }}>
+  const init3DGraph = async () => {
+    const graphEl = document.getElementById(`${uniqueId}-3d`);
+    if (!graphEl || typeof ForceGraph3D === 'undefined') return;
+
+    // Build nodes from entities and facts
+    const nodes = [];
+    const links = [];
+
+    // Central article node
+    nodes.push({
+      id: 'article',
+      label: articleTitle.substring(0, 30) + '...',
+      group: 'article',
+      val: 20,
+      color: '#6366f1',
+      fx: 0, fy: 0, fz: 0
+    });
+
+    // Entity nodes in a circle around
+    entities.forEach((entity, i) => {
+      const angle = (i / entities.length) * Math.PI * 2;
+      const radius = 30;
+
+      nodes.push({
+        id: `entity-${i}`,
+        label: entity,
+        group: 'entity',
+        val: 10,
+        color: `hsl(${(i * 60) % 360}, 70%, 60%)`,
+        fx: Math.cos(angle) * radius,
+        fy: Math.sin(angle * 0.5) * 10,
+        fz: Math.sin(angle) * radius
+      });
+
+      links.push({
+        source: 'article',
+        target: `entity-${i}`,
+        value: 1
+      });
+    });
+
+    // Add timeline events as nodes
+    if (timeline && timeline.length) {
+      timeline.forEach((event, i) => {
+        const x = (i - timeline.length / 2) * 15;
+
+        nodes.push({
+          id: `event-${i}`,
+          label: event.title,
+          group: 'event',
+          date: event.date,
+          val: 8,
+          color: '#10b981',
+          fx: x,
+          fy: -25,
+          fz: 0
+        });
+
+        links.push({
+          source: 'article',
+          target: `event-${i}`,
+          value: 0.5
+        });
+
+        // Chain events
+        if (i > 0) {
+          links.push({
+            source: `event-${i-1}`,
+            target: `event-${i}`,
+            value: 0.3
+          });
+        }
+      });
+    }
+
+    // Create graph
+    const Graph = ForceGraph3D()
+      (graphEl)
+      .graphData({ nodes, links })
+      .backgroundColor('rgba(0,0,0,0)')
+      .nodeColor(node => node.color)
+      .nodeVal(node => node.val)
+      .nodeOpacity(0.9)
+      .nodeRelSize(5)
+      .linkColor(() => 'rgba(99, 102, 241, 0.3)')
+      .linkWidth(1.5)
+      .linkDirectionalParticles(1)
+      .linkDirectionalParticleSpeed(0.004)
+      .enableNodeDrag(false)
+      .onNodeHover(node => {
+        graphEl.style.cursor = node ? 'pointer' : 'default';
+      });
+
+    // Camera
+    Graph.cameraPosition({ x: 50, y: 30, z: 50 }, { x: 0, y: 0, z: 0 }, 1500);
+
+    // Rotation
+    let angle = 0;
+    const animate = () => {
+      angle += 0.002;
+      Graph.cameraPosition({
+        x: Math.sin(angle) * 60,
+        y: 25,
+        z: Math.cos(angle) * 60
+      });
+      requestAnimationFrame(animate);
+    };
+    setTimeout(animate, 2000);
+  };
+
+  const init2DGraph = async () => {
+    const graphEl = document.getElementById(`${uniqueId}-2d`);
+    if (!graphEl || typeof vis === 'undefined') return;
+
+    const nodes = new vis.DataSet([
+      { id: 'article', label: 'Article', color: { background: '#6366f1', border: '#4f46e5' }, size: 30 },
+      ...entities.map((e, i) => ({
+        id: `e-${i}`,
+        label: e.length > 20 ? e.substring(0, 18) + '...' : e,
+        color: { background: `hsl(${(i * 60) % 360}, 70%, 60%)`, border: `hsl(${(i * 60) % 360}, 70%, 50%)` },
+        size: 20
+      }))
+    ]);
+
+    const edges = new vis.DataSet([
+      ...entities.map((_, i) => ({
+        from: 'article',
+        to: `e-${i}`,
+        color: { color: 'rgba(99, 102, 241, 0.4)' }
+      }))
+    ]);
+
+    new vis.Network(graphEl, { nodes, edges }, {
+      physics: { stabilization: { iterations: 100 } },
+      nodes: { shape: 'dot', font: { color: '#fff', size: 12 } },
+      edges: { width: 2 }
+    });
+  };
+
+  // Lazy load
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        init3DGraph();
+        init2DGraph();
+        observer.disconnect();
+      }
+    });
+  }, { rootMargin: '200px' });
+
+  const container = document.querySelector('.article-visualization');
+  if (container) observer.observe(container);
+</script>
+
+<style>
+  .article-visualization {
+    margin: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .viz-section {
+    background: linear-gradient(135deg, #0f172a, #1e1b4b);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  .viz-section-small {
+    background: rgba(15, 23, 42, 0.8);
+  }
+
+  .viz-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .viz-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .viz-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #fff;
+  }
+
+  .viz-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin: 0;
+  }
+
+  .viz-header p {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .viz-badge {
+    margin-left: auto;
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+
+  /* Timeline */
+  .timeline-container {
+    position: relative;
+    padding: 2rem 1rem;
+    overflow-x: auto;
+  }
+
+  .timeline-track {
+    position: relative;
+    height: 120px;
+    min-width: 100%;
+  }
+
+  .timeline-track::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #10b981, #14b8a6);
+  }
+
+  .timeline-event {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+  }
+
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+    background: #10b981;
+    border: 2px solid #0f172a;
+    border-radius: 50%;
+    margin-top: 50px;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  }
+
+  .timeline-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+
+  .timeline-date {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #10b981;
+  }
+
+  .timeline-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .timeline-desc {
+    font-size: 0.65rem;
+    color: #64748b;
+    display: none;
+  }
+
+  /* Graphs */
+  .graph-container {
+    position: relative;
+  }
+
+  .graph-3d {
+    height: 350px;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(51, 65, 85, 0.3);
+  }
+
+  .graph-2d {
+    height: 250px;
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(51, 65, 85, 0.3);
+  }
+
+  .entity-legend {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+  }
+
+  .legend-title {
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+    color: #cbd5e1;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  @media (max-width: 768px) {
+    .timeline-event {
+      width: 80px;
+    }
+  }
+</style>

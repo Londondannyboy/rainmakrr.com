@@ -1,0 +1,132 @@
+---
+/**
+ * ActSection Component
+ * Renders a single act/section with video header and content
+ *
+ * @prop act - Act data with title, factoid, video_title
+ * @prop actIndex - 0-based index (0-3)
+ * @prop playbackId - Mux playback ID
+ * @prop content - HTML content for this section
+ * @prop isLast - Whether this is the final act (uses translucent bg)
+ */
+interface Act {
+  title: string;
+  factoid?: string;
+  video_title?: string;
+}
+
+interface Props {
+  act: Act;
+  actIndex: number;
+  playbackId?: string;
+  content?: string;
+}
+
+const { act, actIndex, playbackId, content } = Astro.props;
+
+const actTimestamps = [
+  { start: 0, end: 3, mid: 1.5 },
+  { start: 3, end: 6, mid: 4.5 },
+  { start: 6, end: 9, mid: 7.5 },
+  { start: 9, end: 12, mid: 10.5 }
+];
+
+const actTime = actTimestamps[actIndex] || actTimestamps[0];
+const isLast = actIndex === 3;
+
+// Finance-themed icons
+const financeIcons: Record<string, string> = {
+  'breakthrough': '🚀',
+  'regulatory': '⚖️',
+  'strategy': '📊',
+  'playbook': '📋',
+  'wealth': '💰',
+  'opportunity': '💎',
+  'future': '🔮',
+  'growth': '📈',
+  'investment': '💵',
+  'legal': '⚖️',
+  'default': '💼'
+};
+
+function getFinanceIcon(title: string): string {
+  const lower = title.toLowerCase();
+  for (const [keyword, icon] of Object.entries(financeIcons)) {
+    if (lower.includes(keyword)) return icon;
+  }
+  return financeIcons.default;
+}
+
+function getMuxThumbnail(time: number, width: number = 800): string {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=${width}`;
+}
+
+function getMuxStream(): string {
+  if (!playbackId) return '';
+  return `https://stream.mux.com/${playbackId}.m3u8`;
+}
+
+const icon = getFinanceIcon(act.title || '');
+---
+
+<section class={`mb-16 ${isLast ? 'relative bg-gradient-to-br from-blue-50/80 to-indigo-50/60 -mx-4 md:-mx-8 px-4 md:px-8 py-8 rounded-2xl' : ''}`}>
+  {/* Translucent video background for final section */}
+  {isLast && playbackId && (
+    <div class="absolute inset-0 rounded-2xl overflow-hidden -z-10">
+      <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-[0.12] blur-[1px]" loading="lazy" />
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-50/40 via-white/50 to-indigo-50/40"></div>
+    </div>
+  )}
+
+  {/* Section Header with HLS Video */}
+  {playbackId && (
+    <div class="relative rounded-xl mb-6 overflow-hidden">
+      <video
+        class="section-video w-full aspect-[21/9] object-cover rounded-xl"
+        muted
+        playsinline
+        loop
+        poster={getMuxThumbnail(actTime.mid, 800)}
+        data-hls={getMuxStream()}
+        data-start={actTime.start}
+        data-end={actTime.end}
+      ></video>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent rounded-xl pointer-events-none"></div>
+      <div class="absolute top-3 right-3">
+        <span class="bg-blue-600/90 backdrop-blur-sm text-white/90 px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider">
+          Rainmakrr
+        </span>
+      </div>
+      <div class="absolute bottom-4 left-4 right-4">
+        <h2 class="text-xl md:text-2xl font-bold text-white drop-shadow-lg flex items-center gap-2">
+          <span class="text-2xl">{icon}</span>
+          {act.title}
+        </h2>
+        {act.factoid && (
+          <p class="text-white/80 text-sm mt-1 drop-shadow">{act.factoid}</p>
+        )}
+      </div>
+    </div>
+  )}
+
+  {/* Section Content */}
+  {content ? (
+    <div class="prose prose-lg max-w-none" set:html={content} />
+  ) : (
+    <div class="prose prose-lg max-w-none">
+      <h2 class="flex items-center gap-2">
+        <span>{icon}</span>
+        {act.title}
+      </h2>
+    </div>
+  )}
+
+  {/* Pull Quote for first act */}
+  {actIndex === 0 && act.factoid && (
+    <div class="relative border-l-4 border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 my-8 rounded-r-xl">
+      <span class="absolute -top-2 left-4 text-6xl text-blue-300 font-serif">"</span>
+      <p class="text-xl italic text-gray-800 pl-8">{act.factoid}</p>
+    </div>
+  )}
+</section>

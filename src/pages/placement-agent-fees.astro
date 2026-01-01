@@ -1,0 +1,331 @@
+---
+import SEO from '../components/SEO.astro';
+import Navigation from '../components/Navigation.astro';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Placement Agent Fees Private Equity | Fee Guide 2025"
+    description="Complete guide to placement agent fees in private equity. Learn typical retainers, success fees, and cost structures for PE fundraising advisors."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style is:inline>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 160px 40px 80px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(240, 147, 251, 0.15), rgba(0, 0, 0, 0.95));
+    }
+
+    .hero-content { max-width: 900px; }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+    }
+
+    .content-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .content-block {
+      margin-bottom: 60px;
+    }
+
+    .content-block h2 {
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .content-block p {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .fee-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .fee-table th, .fee-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .fee-table th {
+      background: rgba(102, 126, 234, 0.2);
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .fee-table td {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .fee-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .highlight-box {
+      background: rgba(102, 126, 234, 0.1);
+      border-left: 4px solid #667eea;
+      padding: 24px;
+      border-radius: 12px;
+      margin: 32px 0;
+    }
+
+    .highlight-box p {
+      margin-bottom: 0;
+    }
+
+    .content-block ul {
+      list-style: none;
+      margin-top: 20px;
+    }
+
+    .content-block ul li {
+      font-size: 17px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.8;
+      margin-bottom: 14px;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .content-block ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .cta-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(240, 147, 251, 0.1));
+      border-top: 1px solid rgba(102, 126, 234, 0.2);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(28px, 5vw, 40px);
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 28px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 18px 40px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    footer {
+      padding: 60px 40px 30px;
+      background: #000;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px 30px; }
+      .nav-links { display: none; }
+      .hero { padding: 140px 30px 60px; }
+      .content-section { padding: 60px 30px; }
+      .fee-table { font-size: 14px; }
+      .fee-table th, .fee-table td { padding: 12px 14px; }
+    }
+  </style>
+</head>
+
+<body>
+  <Navigation />
+
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Placement Agent Fees Private Equity</h1>
+      <p>Understanding the cost structure and fee models used by private equity placement agents</p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="content-block">
+      <p style="margin-bottom: 32px;">When engaging a <strong>placement agent for private equity fundraising</strong>, understanding fee structures is essential. This guide covers typical placement agent fees in private equity, including retainers, success fees, and factors that influence pricing.</p>
+
+      <h2>Typical Fee Structure</h2>
+      <p>Private equity placement agent fees typically consist of two components: an upfront retainer and a success-based fee tied to capital raised. Fee structures vary based on fund size, strategy, and the placement agent's track record.</p>
+
+      <table class="fee-table">
+        <tr>
+          <th>Fee Component</th>
+          <th>Typical Range</th>
+          <th>Notes</th>
+        </tr>
+        <tr>
+          <td>Retainer Fee</td>
+          <td>$25,000 - $100,000</td>
+          <td>Monthly or quarterly; covers operational costs</td>
+        </tr>
+        <tr>
+          <td>Success Fee</td>
+          <td>1.0% - 2.0%</td>
+          <td>Percentage of capital raised from agent-sourced LPs</td>
+        </tr>
+        <tr>
+          <td>Tail Period</td>
+          <td>12 - 24 months</td>
+          <td>Fee protection for leads generated during engagement</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="highlight-box">
+      <p><strong>Market Benchmark:</strong> For funds under $500M, success fees typically range from 1.5-2.0%. Larger funds ($1B+) often negotiate fees of 1.0-1.5% due to economies of scale and competitive dynamics.</p>
+    </div>
+
+    <div class="content-block">
+      <h2>Fee Variations by Fund Size</h2>
+      <p>Placement agent fees typically scale inversely with fund size:</p>
+
+      <table class="fee-table">
+        <tr>
+          <th>Fund Size</th>
+          <th>Success Fee Range</th>
+          <th>Retainer</th>
+        </tr>
+        <tr>
+          <td>Under $250M</td>
+          <td>1.75% - 2.0%</td>
+          <td>$25,000 - $50,000</td>
+        </tr>
+        <tr>
+          <td>$250M - $500M</td>
+          <td>1.5% - 1.75%</td>
+          <td>$50,000 - $75,000</td>
+        </tr>
+        <tr>
+          <td>$500M - $1B</td>
+          <td>1.25% - 1.5%</td>
+          <td>$75,000 - $100,000</td>
+        </tr>
+        <tr>
+          <td>Over $1B</td>
+          <td>1.0% - 1.25%</td>
+          <td>Negotiated</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="content-block">
+      <h2>Additional Fee Considerations</h2>
+      <ul>
+        <li><strong>Expense Reimbursement:</strong> Travel, accommodation, and marketing materials are typically reimbursed separately</li>
+        <li><strong>Tiered Structures:</strong> Some agents offer declining rates above certain thresholds (e.g., 1.5% on first $300M, 1.0% thereafter)</li>
+        <li><strong>Exclusive vs. Non-Exclusive:</strong> Exclusive mandates may command slightly higher fees but provide dedicated focus</li>
+        <li><strong>Geographic Carve-Outs:</strong> Fees may vary by region, with higher rates for harder-to-access markets</li>
+        <li><strong>Affiliate Fee Structures:</strong> Some firms offer reduced fees for re-ups or affiliated fund vehicles</li>
+      </ul>
+    </div>
+
+    <div class="content-block">
+      <h2>Negotiation Factors</h2>
+      <p>Several factors influence fee negotiations:</p>
+      <ul>
+        <li>Manager's track record and existing LP relationships</li>
+        <li>Strategy complexity and market appetite</li>
+        <li>Target raise size and timeline</li>
+        <li>Competitive dynamics among placement agents</li>
+        <li>Scope of services (full mandate vs. targeted regional coverage)</li>
+      </ul>
+    </div>
+
+    <div class="content-block">
+      <h2>Value vs. Cost</h2>
+      <p>While fees represent a meaningful cost, successful placement agents often deliver significant value through faster closes, access to hard-to-reach LPs, market intelligence, and strategic positioning advice. The key is ensuring alignment between the agent's capabilities and your fund's specific needs.</p>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Compare Placement Agents</h2>
+    <p>Research top placement agents and their service offerings in our comprehensive directory</p>
+    <a href="/private-equity-placement-agents-list" class="cta-button">Browse Directory</a>
+  </section>
+
+  <footer>
+    <p>© 2025 <a href="/">Placement</a>. Your guide to <a href="/">top private equity placement agents</a>.</p>
+    <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 16px;">Rainmakrr is a financial news site. Nothing on this site should be considered financial advice.</p>
+  </footer>
+</body>
+</html>

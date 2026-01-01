@@ -1,0 +1,656 @@
+---
+/**
+ * Momentum Signals
+ *
+ * NLP-extracted market signals from placement agent news.
+ * Tracks hiring, spinouts, fund launches, deals, and more.
+ */
+import SEO from '../components/SEO.astro';
+import Navigation from '../components/Navigation.astro';
+import { sql } from '../lib/db';
+
+// Signal type configuration
+const signalConfig: Record<string, { label: string; icon: string; color: string; bgColor: string }> = {
+  hiring: { label: 'Senior Hire', icon: '👤', color: '#10b981', bgColor: '#ecfdf5' },
+  spinout: { label: 'Spin-Out', icon: '🚀', color: '#8b5cf6', bgColor: '#f5f3ff' },
+  fund_launch: { label: 'Fund Launch', icon: '💰', color: '#f59e0b', bgColor: '#fffbeb' },
+  fund_close: { label: 'Fund Close', icon: '✅', color: '#22c55e', bgColor: '#f0fdf4' },
+  deal: { label: 'Deal Activity', icon: '🤝', color: '#3b82f6', bgColor: '#eff6ff' },
+  expansion: { label: 'Expansion', icon: '🌍', color: '#06b6d4', bgColor: '#ecfeff' },
+  personnel_change: { label: 'Leadership', icon: '🔄', color: '#6366f1', bgColor: '#eef2ff' },
+  partnership: { label: 'Partnership', icon: '🔗', color: '#ec4899', bgColor: '#fdf2f8' },
+  award: { label: 'Award', icon: '🏆', color: '#eab308', bgColor: '#fefce8' }
+};
+
+// Fetch existing signals
+const signals = await sql`
+  SELECT ms.*, a.title as article_title, a.slug as article_slug,
+    a.featured_asset_url, a.video_playback_id, a.published_at,
+    c.name as company_name, c.slug as company_slug
+  FROM momentum_signals ms
+  LEFT JOIN articles a ON ms.article_id = a.id
+  LEFT JOIN companies c ON ms.company_id = c.id
+  ORDER BY ms.detected_at DESC
+  LIMIT 100
+`;
+
+// Get signal counts by type
+const signalCounts = await sql`
+  SELECT signal_type, COUNT(*) as count
+  FROM momentum_signals
+  GROUP BY signal_type
+  ORDER BY count DESC
+`;
+
+const counts = signalCounts.reduce((acc: any, row: any) => {
+  acc[row.signal_type] = parseInt(row.count);
+  return acc;
+}, {});
+
+// Format date
+function formatDate(date: string | Date | null): string {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Get thumbnail
+function getThumbnail(signal: any): string | null {
+  if (signal.video_playback_id) {
+    return `https://image.mux.com/${signal.video_playback_id}/thumbnail.webp?time=1&width=200`;
+  }
+  return signal.featured_asset_url || null;
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <SEO
+    title="Momentum Signals | Placement Agent Market Intelligence"
+    description="Real-time market signals from placement agent news. Track hiring, spinouts, fund launches, deals, and industry movements."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .page-container {
+      min-height: 100vh;
+      padding-top: 80px;
+    }
+
+    /* Header */
+    .header-section {
+      background: linear-gradient(180deg, #0f0f1a 0%, #0a0a0f 100%);
+      padding: 40px 20px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      color: #fbbf24;
+      margin-bottom: 12px;
+    }
+
+    .header-badge .beta {
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 1rem;
+      max-width: 600px;
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px 20px;
+      min-width: 120px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #60a5fa;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Main Layout */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    /* Filter Pills */
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .filter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-pill:hover {
+      border-color: #60a5fa;
+      color: #60a5fa;
+    }
+
+    .filter-pill.active {
+      background: #60a5fa;
+      border-color: #60a5fa;
+      color: #fff;
+    }
+
+    .filter-pill .count {
+      background: rgba(255,255,255,0.1);
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 11px;
+    }
+
+    .filter-pill.active .count {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Signal Cards */
+    .signals-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .signal-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: start;
+      transition: all 0.2s;
+    }
+
+    .signal-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .signal-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .signal-content {
+      min-width: 0;
+    }
+
+    .signal-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .signal-strength {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .signal-strength.high {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    .signal-strength.medium {
+      background: rgba(251, 191, 36, 0.15);
+      color: #fbbf24;
+    }
+
+    .signal-strength.low {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+
+    .signal-headline {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .signal-headline a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .signal-headline a:hover {
+      color: #60a5fa;
+    }
+
+    .signal-excerpt {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .signal-meta {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .signal-thumbnail {
+      width: 120px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .signal-placeholder {
+      width: 120px;
+      height: 80px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .signal-placeholder svg {
+      width: 24px;
+      height: 24px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* Scan Button */
+    .scan-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .scan-info h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .scan-info p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .scan-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scan-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .scan-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .scan-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 12px;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      color: rgba(255,255,255,0.2);
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+    }
+
+    /* Provenance */
+    .provenance {
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      h1 { font-size: 1.5rem; }
+      .signal-card {
+        grid-template-columns: 1fr;
+      }
+      .signal-thumbnail,
+      .signal-placeholder {
+        display: none;
+      }
+      .stats-row {
+        gap: 8px;
+      }
+      .stat-card {
+        min-width: 100px;
+        padding: 12px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <Navigation />
+
+  <div class="page-container">
+    <div class="header-section">
+      <div class="header-inner">
+        <div class="header-badge">
+          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+          Market Intelligence
+          <span class="beta">BETA</span>
+        </div>
+        <h1>Momentum Signals</h1>
+        <p class="subtitle">NLP-extracted market signals from placement agent news. Track hiring, spinouts, fund launches, deals, and industry movements.</p>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value">{signals.length}</div>
+            <div class="stat-label">Total Signals</div>
+          </div>
+          {Object.entries(counts).slice(0, 4).map(([type, count]) => (
+            <div class="stat-card">
+              <div class="stat-value">{count}</div>
+              <div class="stat-label">{signalConfig[type]?.label || type}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Scan Section -->
+      <div class="scan-section">
+        <div class="scan-info">
+          <h3>Scan News for Signals</h3>
+          <p>Analyze recent articles to extract market momentum signals using NLP.</p>
+        </div>
+        <button class="scan-btn" id="scan-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Scan Articles
+        </button>
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="filter-row">
+        <button class="filter-pill active" data-type="all">
+          All Signals
+          <span class="count">{signals.length}</span>
+        </button>
+        {Object.entries(signalConfig).map(([type, config]) => (
+          <button class="filter-pill" data-type={type}>
+            <span>{config.icon}</span>
+            {config.label}
+            {counts[type] && <span class="count">{counts[type]}</span>}
+          </button>
+        ))}
+      </div>
+
+      <!-- Signals Grid -->
+      {signals.length > 0 ? (
+        <div class="signals-grid" id="signals-grid">
+          {signals.map((signal: any) => {
+            const config = signalConfig[signal.signal_type] || { label: signal.signal_type, icon: '📊', color: '#6b7280', bgColor: '#f3f4f6' };
+            const thumb = getThumbnail(signal);
+
+            return (
+              <div class="signal-card" data-signal-type={signal.signal_type}>
+                <div class="signal-icon" style={`background: ${config.bgColor};`}>
+                  {config.icon}
+                </div>
+
+                <div class="signal-content">
+                  <div class="signal-type" style={`color: ${config.color};`}>
+                    {config.label}
+                    <span class={`signal-strength ${signal.signal_strength}`}>
+                      {signal.signal_strength}
+                    </span>
+                  </div>
+
+                  <h3 class="signal-headline">
+                    {signal.article_slug ? (
+                      <a href={`/${signal.article_slug}`}>{signal.headline}</a>
+                    ) : (
+                      signal.headline
+                    )}
+                  </h3>
+
+                  {signal.detail && (
+                    <p class="signal-excerpt">{signal.detail}</p>
+                  )}
+
+                  <div class="signal-meta">
+                    {signal.published_at && (
+                      <span>{formatDate(signal.published_at)}</span>
+                    )}
+                    {signal.confidence && (
+                      <span>Confidence: {Math.round(signal.confidence * 100)}%</span>
+                    )}
+                    {signal.company_name && (
+                      <a href={`/private-equity-placement-agents-list/${signal.company_slug}`} style="color: #4f46e5;">
+                        {signal.company_name}
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {thumb ? (
+                  <img src={thumb} alt="" class="signal-thumbnail" />
+                ) : (
+                  <div class="signal-placeholder">
+                    <svg fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+          </svg>
+          <h3>No Signals Yet</h3>
+          <p>Click "Scan Articles" to extract momentum signals from recent news.</p>
+        </div>
+      )}
+
+      <div class="provenance">
+        Data extracted from Rainmakrr news articles using NLP pattern matching.
+        Last updated: {new Date().toLocaleDateString()}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Filter functionality
+    const filterPills = document.querySelectorAll('.filter-pill');
+    const signalCards = document.querySelectorAll('.signal-card');
+
+    filterPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        filterPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        const type = pill.getAttribute('data-type');
+
+        signalCards.forEach(card => {
+          if (type === 'all' || card.getAttribute('data-signal-type') === type) {
+            (card as HTMLElement).style.display = 'grid';
+          } else {
+            (card as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Scan button
+    const scanBtn = document.getElementById('scan-btn');
+    scanBtn?.addEventListener('click', async () => {
+      scanBtn.disabled = true;
+      scanBtn.innerHTML = '<svg class="animate-spin" style="width: 18px; height: 18px;" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Scanning...';
+
+      try {
+        const response = await fetch('/api/momentum-signals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scan: true })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert(`Scanned ${result.scanned} articles, found ${result.inserted} new signals.`);
+          window.location.reload();
+        } else {
+          alert('Scan failed. Please try again.');
+        }
+      } catch (error) {
+        alert('Scan failed. Please try again.');
+      }
+
+      scanBtn.disabled = false;
+      scanBtn.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg> Scan Articles';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+---
+import { siteConfig } from '../config/site';
+
+interface Props {
+  type?: 'homepage' | 'article' | 'company' | 'directory';
+  article?: any;
+  company?: any;
+  companies?: any[];  // For directory pages ItemList
+  pageTitle?: string;
+  pageDescription?: string;
+}
+
+const { type = 'homepage', article, company, companies, pageTitle, pageDescription } = Astro.props;
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteConfig.name,
+  alternateName: ['Rainmakrr', 'PE Intelligence', 'VC Intelligence', 'Private Equity Directory'],
+  url: siteConfig.url,
+  logo: `${siteConfig.url}/logo.png`,
+  description: 'The insider guide to private equity and venture capital. Fund rankings, deal flow, firm profiles, and market intelligence for investors and founders.',
+  about: 'Comprehensive intelligence on private equity firms, venture capital funds, deal flow, and market trends. Connecting investors, founders, and industry professionals with actionable PE/VC insights.',
+  knowsAbout: [
+    'Private Equity Firms',
+    'Venture Capital Funds',
+    'PE Deal Flow',
+    'VC Investments',
+    'Startup Funding',
+    'Growth Equity',
+    'Buyout Funds',
+    'Fund Performance',
+  ],
+  sameAs: [
+    siteConfig.links.twitter,
+    siteConfig.links.linkedin,
+  ],
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  description: 'Private equity and venture capital intelligence. Fund rankings, firm profiles, deal flow, and market insights for serious investors.',
+  about: 'Private equity and venture capital market intelligence',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteConfig.url}/search?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: siteConfig.url,
+    },
+  ],
+};
+
+let articleSchema;
+if (type === 'article' && article) {
+  articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.excerpt || article.title,
+    image: article.images?.hero || article.hero_image_legacy?.url,
+    datePublished: article.published_at || article.created_at,
+    dateModified: article.updated_at || article.published_at || article.created_at,
+    author: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteConfig.url}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${siteConfig.url}/${article.slug}`,
+    },
+  };
+}
+
+let companySchema;
+if (type === 'company' && company) {
+  companySchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: company.name,
+    description: company.description,
+    url: company.website_url,
+    logo: company.logo_url,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: company.headquarters,
+    },
+  };
+}
+
+// Citations Schema for Homepage - E-E-A-T signals
+let citationSchema;
+if (type === 'homepage') {
+  citationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'Industry Rankings & Data Sources',
+    description: 'Rankings and data from leading industry sources including Preqin, PitchBook, and proprietary research',
+    citation: [
+      {
+        '@type': 'CreativeWork',
+        name: 'Preqin 2025 Private Capital Report',
+        url: 'https://www.preqin.com',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Preqin',
+          description: 'Leading provider of private capital data and intelligence',
+        },
+      },
+      {
+        '@type': 'CreativeWork',
+        name: 'PitchBook PE & VC Data',
+        url: 'https://pitchbook.com',
+        publisher: {
+          '@type': 'Organization',
+          name: 'PitchBook',
+          description: 'Comprehensive PE, VC, and M&A data platform',
+        },
+      },
+      {
+        '@type': 'CreativeWork',
+        name: 'Private Equity International',
+        url: 'https://www.privateequityinternational.com',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Private Equity International',
+          description: 'Industry news, rankings, and market analysis',
+        },
+      },
+    ],
+  };
+}
+
+// ItemList Schema for directory pages - helps with rich snippets
+let itemListSchema;
+if (type === 'directory' && companies && companies.length > 0) {
+  itemListSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: pageTitle || 'Private Equity & Venture Capital Firms',
+    description: pageDescription || 'Directory of top PE and VC firms',
+    numberOfItems: companies.length,
+    itemListElement: companies.slice(0, 20).map((company: any, index: number) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Organization',
+        name: company.display_name || company.name,
+        description: company.description?.substring(0, 200) || `${company.display_name || company.name} - Investment firm`,
+        url: `${siteConfig.url}/${company.slug}`,
+        logo: company.logo_url,
+        address: company.headquarters ? {
+          '@type': 'PostalAddress',
+          addressLocality: company.headquarters,
+        } : undefined,
+      },
+    })),
+  };
+}
+
+// CollectionPage schema for better indexing of directory pages
+let collectionPageSchema;
+if (type === 'directory') {
+  collectionPageSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: pageTitle || 'PE & VC Firms Directory',
+    description: pageDescription || 'Browse our directory of private equity and venture capital firms',
+    url: Astro.url.href,
+    isPartOf: {
+      '@type': 'WebSite',
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+    about: {
+      '@type': 'Thing',
+      name: 'Private Equity and Venture Capital',
+      description: 'Investment firms specializing in private equity, venture capital, and growth equity',
+    },
+  };
+}
+
+let faqSchema;
+if (type === 'homepage') {
+  faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'What is private equity?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Private equity refers to investment funds that acquire equity ownership in companies not publicly traded on stock exchanges. PE firms raise capital from institutional investors and high-net-worth individuals to buy, improve, and eventually sell companies for profit. Strategies include leveraged buyouts, growth equity, and distressed investments.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What is venture capital?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Venture capital is a form of private equity financing provided to early-stage, high-potential startups in exchange for equity. VC firms invest in companies with strong growth prospects, typically in technology, healthcare, and other innovative sectors. Funding stages include seed, Series A, B, C and beyond.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'How do PE and VC firms make money?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'PE and VC firms earn returns through management fees (typically 2% of assets under management annually) and carried interest (usually 20% of profits above a hurdle rate). The primary source of returns comes from successfully exiting investments through IPOs, strategic sales, or secondary transactions at valuations higher than the original investment.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'What is the difference between PE and VC?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Private equity typically invests in mature, established companies using leveraged buyouts, taking majority control positions. Venture capital focuses on early-stage startups with high growth potential, usually taking minority stakes. PE deals are larger ($100M+) while VC investments range from seed ($500K-$2M) to late-stage ($50M+).',
+        },
+      },
+    ],
+  };
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+{articleSchema && <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />}
+{companySchema && <script type="application/ld+json" set:html={JSON.stringify(companySchema)} />}
+{faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />}
+{citationSchema && <script type="application/ld+json" set:html={JSON.stringify(citationSchema)} />}
+{itemListSchema && <script type="application/ld+json" set:html={JSON.stringify(itemListSchema)} />}
+{collectionPageSchema && <script type="application/ld+json" set:html={JSON.stringify(collectionPageSchema)} />}
