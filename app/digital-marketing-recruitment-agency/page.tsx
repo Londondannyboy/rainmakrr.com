@@ -254,6 +254,9 @@ export default function DigitalMarketingRecruitmentAgency() {
                 </div>
               ))}
             </div>
+            <p className="text-slate-400 mt-8 max-w-3xl">
+              For membership and subscription businesses requiring specialist marketing talent, we also recommend <a href="https://membership.quest" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline">membership marketing</a> expertise — particularly for acquisition, retention, and lifecycle marketing roles.
+            </p>
           </div>
         </section>
 
@@ -266,7 +269,7 @@ export default function DigitalMarketingRecruitmentAgency() {
                 <p className="text-slate-300">
                   Early-stage hiring is different. You need marketers who can build from zero — set up attribution,
                   launch channels, and iterate fast. We recruit from the startup ecosystem: candidates who&apos;ve
-                  scaled spend from £10k to £1m/month and know how to operate without a playbook.
+                  scaled spend from £10k to £1m/month and know how to operate without a playbook. For startups also refining their <a href="https://gtm.quest" target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:underline">go-to-market strategy</a>, aligning hiring with GTM execution is critical.
                 </p>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-8 border border-slate-700">
